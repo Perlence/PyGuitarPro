@@ -544,6 +544,9 @@ class Track(object):
         measure.track = self
         self.measures.append(measure)
 
+    def __str__(self):
+        return '<guitarpro.base.Track %d>' % (self.number)
+
     def __eq__(self, other):
         if other is None or not isinstance(other, self.__class__):
             return None
@@ -746,6 +749,11 @@ class Measure(object):
         beat.measure = self
         beat.index = len(self.beats)
         self.beats.append(beat)
+
+    def __str__(self):
+        measure = self.number()
+        track = self.track.number
+        return '<guitarpro.base.Measure %d on Track %d>' % (measure, track)
 
     def __eq__(self, other):
         if other is None or not isinstance(other, self.__class__):
