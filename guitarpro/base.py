@@ -122,7 +122,6 @@ class GPFileBase(object):
 class RepeatGroup(object):
     '''This class can store the information about a group of measures which are repeated
     '''
-
     def __init__(self):
         self.measureHeaders = []
         self.closings = []
@@ -189,6 +188,42 @@ class Song(object):
         track.song = self
         self.tracks.append(track)
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return False
+        return (self.title == other.title and
+            self.subtitle == other.subtitle and
+            self.artist == other.artist and
+            self.album == other.album and
+            self.words == other.words and
+            self.music == other.music and
+            self.copyright == other.copyright and
+            self.tab == other.tab and
+            self.instructions == other.instructions and
+            self.notice == other.notice and
+            self.lyrics == other.lyrics and
+            self.pageSetup == other.pageSetup and
+            self.tempoName == other.tempoName and
+            self.tempo == other.tempo and
+            self.hideTempo == other.hideTempo and
+            self.key == other.key and
+            self.octave == other.octave and
+            # self.measureHeaders == other.measureHeaders and
+            self.tracks == other.tracks)
+
+
+class LyricLine(object):
+    '''A lyrics line. 
+    '''
+    def __init__(self, startingMeasure, lyrics):
+        self.startingMeasure = startingMeasure
+        self.lyrics = lyrics
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.startingMeasure == other.startingMeasure and
+            self.lyrics == other.lyrics)
 
 class Lyrics(object):
     '''Represents a collection of lyrics lines for a track. 
@@ -209,6 +244,11 @@ class Lyrics(object):
         ret = ret.replace('\r', ' ')
         return ret.split(' ')
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.trackChoice == other.trackChoice and
+            self.lines == other.lines)
 
 class Point(object):
     '''A point construct using floating point coordinates.
@@ -216,6 +256,12 @@ class Point(object):
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.x == other.x and
+            self.y == other.y)
 
 
 class Padding(object):
@@ -232,6 +278,14 @@ class Padding(object):
         
     def getVertical(self):
         return self.top + self.bottom
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.right == other.right and
+            self.top == other.top and
+            self.left == other.left and
+            self.bottom == other.bottom)
 
 
 class HeaderFooterElements(object):
@@ -284,6 +338,23 @@ class PageSetup(object):
                           "All Rights Reserved - International Copyright Secured")
         self.pageNumber = "Page %N%/%P%"
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.pageSize == other.pageSize and
+            self.pageMargin == other.pageMargin and
+            self.scoreSizeProportion == other.scoreSizeProportion and
+            self.headerAndFooter == other.headerAndFooter and
+            self.title == other.title and
+            self.subtitle == other.subtitle and
+            self.artist == other.artist and
+            self.album == other.album and
+            self.words == other.words and
+            self.music == other.music and
+            self.wordsAndMusic == other.wordsAndMusic and
+            self.copyright == other.copyright and
+            self.pageNumber == other.pageNumber)
+
 
 class Tempo(object):
     '''A song tempo in BPM. 
@@ -300,6 +371,11 @@ class Tempo(object):
     def tempoToUsq(self, tempo):
         # BPM to microseconds per quarternote
         return int(60000000 / tempo)
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return False
+        return self.value == other.value
 
 
 class MidiChannel(object):
@@ -333,6 +409,19 @@ class MidiChannel(object):
     def isPercussionChannel(self):
         return self.channel == self.DEFAULT_PERCUSSION_CHANNEL
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.channel == other.channel and
+            self.effectChannel == other.effectChannel and
+            self.volume == other.volume and
+            self.balance == other.balance and
+            self.chorus == other.chorus and
+            self.reverb == other.reverb and
+            self.phaser == other.phaser and
+            self.tremolo == other.tremolo and
+            self.instrument() == other.instrument())
+
 
 class MeasureHeader(object):
     '''A measure header contains metadata for measures over multiple tracks. 
@@ -359,6 +448,24 @@ class MeasureHeader(object):
         self.repeatAlternative = 0
         self.realStart = -1
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.number == other.number and
+            self.hasDoubleBar == other.hasDoubleBar and
+            self.keySignature == other.keySignature and
+            self.keySignatureType == other.keySignatureType and
+            self.start == other.start and
+            self.realStart == other.realStart and
+            self.timeSignature == other.timeSignature and
+            self.tempo == other.tempo and
+            self.marker == other.marker and
+            self.isRepeatOpen == other.isRepeatOpen and
+            self.repeatAlternative == other.repeatAlternative and
+            self.repeatClose == other.repeatClose and
+            # self.repeatGroup == other.repeatGroup and
+            self.tripletFeel == other.tripletFeel)
+
 
 class Color(object):
     '''A RGB Color.
@@ -375,6 +482,14 @@ class Color(object):
         else:
             return "rgba(%d,%d,%d,%d)" % (r, g, b, a)
     
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return False
+        return (self.r == other.r and
+            self.g == other.g and
+            self.b == other.b and
+            self.a == other.a)
+
     @staticmethod
     def fromRgb(r, g, b):
         return Color(r, g, b, 1)
@@ -397,6 +512,12 @@ class Marker(object):
         self.title = ''
         self.color = None
         self.measureHeader = None
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return False
+        return (self.title == other.title and
+            self.color == other.color)
 
 
 class Track(object):
@@ -423,6 +544,24 @@ class Track(object):
         measure.track = self
         self.measures.append(measure)
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.fretCount == other.fretCount and
+            self.number == other.number and
+            self.offset == other.offset and
+            self.isSolo == other.isSolo and
+            self.isMute == other.isMute and
+            self.isPercussionTrack == other.isPercussionTrack and
+            self.is12StringedGuitarTrack == other.is12StringedGuitarTrack and
+            self.isBanjoTrack == other.isBanjoTrack and
+            self.name == other.name and
+            self.measures == other.measures and
+            self.strings == other.strings and
+            self.port == other.port and
+            self.channel == other.channel and
+            self.color == other.color)
+
 
 class GuitarString(object):
     '''A guitar string with a special tuning.
@@ -430,6 +569,12 @@ class GuitarString(object):
     def __init__(self):
         self.number = 0
         self.value = 0
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.number == other.number and
+            self.value == other.value)
     
     # def clone(self):
     #     pass
@@ -530,10 +675,8 @@ class Duration(object):
     #     pass
     
     def __eq__(self, other):
-        if other is None:
+        if other is None or not isinstance(other, self.__class__):
             return False
-        # if self == other 
-        #     return true
         return (other.value == self.value and
             other.isDotted == self.isDotted and
             other.isDoubleDotted == self.isDoubleDotted and
@@ -604,6 +747,13 @@ class Measure(object):
         beat.index = len(self.beats)
         self.beats.append(beat)
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return False
+        return (self.clef == other.clef and
+            self.beats == other.beats and
+            self.header == other.header)
+
 
 class VoiceDirection(object):
     '''Voice directions indicating the direction of beams. 
@@ -630,6 +780,15 @@ class Voice(object):
         note.voice = self
         self.notes.append(note)
         self.isEmpty = False
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.duration == other.duration and
+            self.notes == other.notes and
+            self.index == other.index and
+            self.direction == other.direction and
+            self.isEmpty == other.isEmpty)
 
 
 class BeatStrokeDirection(object):
@@ -660,6 +819,11 @@ class BeatStroke(object):
                 return round((duration / 8.0) * (4.0 / value))
         return 0
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return False
+        return self.direction == other.direction
+
 
 class BeatEffect(object):
     '''This class contains all beat effects.
@@ -684,6 +848,22 @@ class BeatEffect(object):
         self.popping = False
         self.fadeIn = False
         self.stroke = BeatStroke()
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return False
+        return (self.stroke == other.stroke and
+            self.hasRasgueado == other.hasRasgueado and
+            self.pickStroke == other.pickStroke and
+            self.hasPickStroke == other.hasPickStroke and
+            self.chord == other.chord and
+            self.fadeIn == other.fadeIn and
+            self.vibrato == other.vibrato and
+            self.tremoloBar == other.tremoloBar and
+            self.mixTableChange == other.mixTableChange and
+            self.tapping == other.tapping and
+            self.slapping == other.slapping and
+            self.popping == other.popping)
 
 
 class Beat(object):
@@ -726,11 +906,116 @@ class Beat(object):
     def __init__(self):
         self.start = Duration.QUARTER_TIME
         self.effect = BeatEffect()
+        self.text = None
         self.voices = []
         for i in range(Beat.MAX_VOICES):
             voice = Voice(i)
             voice.beat = self
             self.voices.append(voice)
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.voices == other.voices and
+            self.text == other.text and
+            self.start == other.start and
+            self.effect == other.effect and
+            self.index == other.index)
+
+
+class HarmonicEffect(object):
+    '''A harmonic note effect
+    '''
+    # Lists all harmonic type groups
+    # [i][0] -> The note played
+    # [i][1] -> The according harmonic note to [i][0]
+    NATURAL_FREQUENCIES = [[12, 12], [9, 28], [5, 28], [7, 19], [4, 28], [3, 31]]
+          
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.type == other.type and
+            self.data == other.data)
+
+
+class GraceEffectTransition(object):
+    '''All transition types for grace notes. 
+    '''
+    # No transition
+    None_ = 0
+    # Slide from the grace note to the real one
+    Slide = 1
+    # Perform a bend from the grace note to the real one
+    Bend = 2
+    # Perform a hammer on 
+    Hammer = 3
+
+
+class GraceEffect(object):
+    '''A grace note effect.
+    '''  
+    def durationTime(self):
+        '''Gets the duration of the effect. 
+        '''
+        return int((Duration.QUARTER_TIME / 16.00) * self.duration)
+    
+    def __init__(self, ):
+        '''Initializes a new instance of the GraceEffect class. 
+        '''
+        self.fret = 0
+        self.duration = 1
+        self.velocity = Velocities.DEFAULT
+        self.transition = GraceEffectTransition.None_
+        self.isOnBeat = False
+        self.isDead = False
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.isDead == other.isDead and
+            self.duration == other.duration and
+            self.velocity == other.velocity and
+            self.fret == other.fret and
+            self.isOnBeat == other.isOnBeat and
+            self.transition == other.transition)
+
+    # def clone(self, factory):
+    #     pass
+
+
+class TrillEffect(object):
+    '''A trill effect. 
+    '''  
+    def __init__(self):
+        self.fret = 0
+        self.duration = Duration()
+    
+    # def clone(self):
+    #     pass
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.fret == other.fret and
+            self.duration == other.duration)
+
+
+class TremoloPickingEffect(object):
+    '''A tremolo picking effect. 
+    '''
+    def __init__(self):
+        '''Initializes a new instance of he TremoloPickingEffect class.
+        :param: factory the factory to create new instances. 
+        '''
+        self.duration = Duration()
+    
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return self.duration == other.duration
+
+    # def clone(self):
+    #     pass
 
 
 class NoteEffect(object):
@@ -753,6 +1038,9 @@ class NoteEffect(object):
         self.staccato = False
         self.letRing = False
         self.isFingering = False
+        self.leftHandFinger = -1
+        self.rightHandFinger = -1
+        self.slideType = -1
     
     def isBend(self):
         return self.bend is not None and len(self.bend.points)
@@ -769,6 +1057,29 @@ class NoteEffect(object):
     def isTremoloPicking(self):
         return self.tremoloPicking is not None
     
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.leftHandFinger == other.leftHandFinger and
+            self.rightHandFinger == other.rightHandFinger and
+            self.isFingering == other.isFingering and
+            self.bend == other.bend and
+            self.harmonic == other.harmonic and
+            self.grace == other.grace and
+            self.trill == other.trill and
+            self.tremoloPicking == other.tremoloPicking and
+            self.vibrato == other.vibrato and
+            self.deadNote == other.deadNote and
+            self.slideType == other.slideType and
+            self.slide == other.slide and
+            self.hammer == other.hammer and
+            self.ghostNote == other.ghostNote and
+            self.accentuatedNote == other.accentuatedNote and
+            self.heavyAccentuatedNote == other.heavyAccentuatedNote and
+            self.palmMute == other.palmMute and
+            self.staccato == other.staccato and
+            self.letRing == other.letRing)
+
     # def clone(self, factory):
     #     pass
 
@@ -789,6 +1100,23 @@ class Note(object):
         self.isTiedNote = False
         self.swapAccidentals = False
         self.effect = NoteEffect()
+        # self.duration = 0
+        # self.tuplet = 0
+        # self.durationPercent = 1
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (
+            # self.duration == other.duration and
+            # self.tuplet == other.tuplet and
+            self.value == other.value and
+            self.velocity == other.velocity and
+            self.string == other.string and
+            self.isTiedNote == other.isTiedNote and
+            self.effect == other.effect and
+            # self.durationPercent == other.durationPercent and
+            self.swapAccidentals == other.swapAccidentals)
 
 
 class Chord(object):
@@ -807,13 +1135,25 @@ class Chord(object):
     def __init__(self, length):
         self.strings = [-1] * length
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return False
+        return (self.firstFret == other.firstFret and
+            self.strings == other.strings and
+            self.name == other.name)
+
 
 class BeatText(object):
     '''A text annotation for beats.
     '''
     def __init__(self):
         self.value = ''
-        self.beat = None    
+        self.beat = None
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return self.value == other.value
 
 
 class MixTableItem(object):
@@ -824,6 +1164,12 @@ class MixTableItem(object):
         self.duration = 0
         self.allTracks = False
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.value == other.value and
+            self.duration == other.duration and
+            self.allTracks == other.allTracks)
 
 class MixTableChange(object):
     '''A mixtablechange describes several track changes. 
@@ -838,6 +1184,20 @@ class MixTableChange(object):
         self.instrument = MixTableItem()
         self.tempo = MixTableItem()
         self.hideTempo = True
+
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return None
+        return (self.volume == other.volume and
+            self.balance == other.balance and
+            self.chorus == other.chorus and
+            self.reverb == other.reverb and
+            self.phaser == other.phaser and
+            self.tremolo == other.tremolo and
+            self.instrument == other.instrument and
+            self.tempoName == other.tempoName and
+            self.tempo == other.tempo and
+            self.hideTempo == other.hideTempo)
 
 
 class BendTypes(object):
@@ -872,27 +1232,6 @@ class BendTypes(object):
     ReleaseDown = 11
 
 
-class BendEffect(object):
-    '''This effect is used for creating string bendings and whammybar effects (tremolo bar)
-    '''
-    # The note offset per bend point offset. 
-    SEMITONE_LENGTH = 1
-    # The max position of the bend points (x axis)
-    MAX_POSITION = 12
-    # The max value of the bend points (y axis)
-    MAX_VALUE = SEMITONE_LENGTH * 12
-
-    def __init__(self):
-        '''Initializes a new instance of the BendEffect
-        '''
-        self.type_ = BendTypes.None_
-        self.value = 0
-        self.points = []
-    
-    # def clone(self, factory):
-    #     pass
-
-
 class BendPoint(object):
     '''A single point within the BendEffect or TremoloBarEffect 
     '''
@@ -910,6 +1249,41 @@ class BendPoint(object):
         '''
         return int(duration * self.position / BendEffect.MAX_POSITION)
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return False
+        return (self.position == other.position and
+            self.value == other.value and
+            self.vibrato == other.vibrato)
+
+
+class BendEffect(object):
+    '''This effect is used for creating string bendings and whammybar effects (tremolo bar)
+    '''
+    # The note offset per bend point offset. 
+    SEMITONE_LENGTH = 1
+    # The max position of the bend points (x axis)
+    MAX_POSITION = 12
+    # The max value of the bend points (y axis)
+    MAX_VALUE = SEMITONE_LENGTH * 12
+
+    def __init__(self):
+        '''Initializes a new instance of the BendEffect
+        '''
+        self.type = BendTypes.None_
+        self.value = 0
+        self.points = []
+    
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return False
+        return (self.type == other.type and
+            self.value == other.value and
+            self.points == other.points)
+
+    # def clone(self, factory):
+    #     pass
+
 
 class TripletFeel(object):
     '''A list of different triplet feels
@@ -926,6 +1300,12 @@ class TimeSignature(object):
         self.numerator = 4
         self.denominator = Duration()
 
+    def __eq__(self, other):
+        if other is None or not isinstance(other, self.__class__):
+            return False
+        return (self.numerator == other.numerator and
+            self.denominator == other.denominator)
+
 
 class Velocities(object):
     '''A list of velocities / dynamics
@@ -941,38 +1321,3 @@ class Velocities(object):
     FORTISSIMO = MIN_VELOCITY + (VELOCITY_INCREMENT * 6)
     FORTE_FORTISSIMO = MIN_VELOCITY + (VELOCITY_INCREMENT * 7)
     DEFAULT = FORTE
-
-
-class GraceEffectTransition(object):
-    '''All transition types for grace notes. 
-    '''
-    # No transition
-    None_ = 0
-    # Slide from the grace note to the real one
-    Slide = 1
-    # Perform a bend from the grace note to the real one
-    Bend = 2
-    # Perform a hammer on 
-    Hammer = 3
-
-
-class GraceEffect(object):
-    '''A grace note effect.
-    '''  
-    def durationTime(self):
-        '''Gets the duration of the effect. 
-        '''
-        return int((Duration.QUARTER_TIME / 16.00) * self.duration)
-    
-    def __init__(self, ):
-        '''Initializes a new instance of the GraceEffect class. 
-        '''
-        self.fret = 0
-        self.duration = 1
-        self.velocity = Velocities.DEFAULT
-        self.transition = GraceEffectTransition.None_
-        self.isOnBeat = False
-        self.isDead = False
-
-    # def clone(self, factory):
-    #     pass
