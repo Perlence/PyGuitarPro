@@ -532,9 +532,10 @@ class GP3File(gp.GPFileBase):
         song.instructions = self.readIntSizeCheckByteString()
         
         iNotes = self.readInt()
-        song.notice = ""
+        notice = []
         for i in range(iNotes):
-            song.notice += self.readIntSizeCheckByteString() + "\n"
+            notice.append(self.readIntSizeCheckByteString())
+        song.notice = '\n'.join(notice)
     
     def toKeySignature(self, p):
         return 7 + abs(p) if p < 0 else p
@@ -554,3 +555,82 @@ class GP3File(gp.GPFileBase):
             return gp.Duration.QUARTER
         else:
             return gp.Duration.SIXTY_FOURTH
+
+    # Writing
+    # =======
+    def writeSong(self, song):
+        '''Writes the song
+        '''
+        self.writeVersion(0)
+        self.writeInfo(song)
+        self.writeBool(song.tracks[0].measures[0].tripletFeel())
+        self.writeLyrics(song)
+        self.readPageSetup(song)
+        
+        # song.tempoName = ""
+        # song.tempo = self.readInt()
+        # song.hideTempo = False
+        self.writeInt(song.tempo)
+       
+        # song.key = self.readInt()
+        # song.octave = 0
+        self.writeInt(song.key)
+
+        # channels = self.readMidiChannels()
+        self.writeMidiChannels(song)
+        
+        # measureCount = self.readInt()
+        # trackCount = self.readInt()
+        self.writeInt(len(song.tracks[0].measures))
+        self.writeInt(len(song.tracks))
+        
+        # self.measureHeaders = self.readMeasureHeaders(song, measureCount)
+        # self.readTracks(song, trackCount, channels)
+        # self.readMeasures(song)
+
+    def writeInfo(self, song):
+        self.writeIntSizeCheckByteString(song.title)
+        self.writeIntSizeCheckByteString(song.subtitle)
+        self.writeIntSizeCheckByteString(song.artist)
+        self.writeIntSizeCheckByteString(song.album)
+        self.writeIntSizeCheckByteString(song.words)
+        self.writeIntSizeCheckByteString(song.copyright)
+        self.writeIntSizeCheckByteString(song.tab)
+        self.writeIntSizeCheckByteString(song.instructions)
+        
+        lines = song.notice.splitlines()
+        self.writeInt(len(lines))
+        for line in lines:
+            self.writeIntSizeCheckByteString(line)
+
+    def writeLyrics(self, song):
+        pass
+
+    def writePageSetup(self, song):
+        pass
+
+    def writeMidiChannels(self, song):
+        def getTrackChannelByChannel(channel):
+            for track in song.tracks:
+                if channel in (track.channel.channel, track.channel.effectChannel):
+                    return track.channel
+            default = gp.MidiChannel()
+            default.channel = channel
+            default.effectChannel = channel
+            return default
+
+        for channel in map(getTrackChannelByChannel, range(64)):
+            # Check if percussion channel
+            if channel.channel % 16 == 9:
+                self.writeInt(-1)
+            else:
+                self.writeInt(channel.instrument())
+            
+            self.writeSignedByte(self.fromChannelShort(channel.volume))
+            self.writeSignedByte(self.fromChannelShort(channel.balance))
+            self.writeSignedByte(self.fromChannelShort(channel.chorus))
+            self.writeSignedByte(self.fromChannelShort(channel.reverb))
+            self.writeSignedByte(self.fromChannelShort(channel.phaser))
+            self.writeSignedByte(self.fromChannelShort(channel.tremolo))
+            # Backward compatibility with version 3.0
+            self.placeholder(2)

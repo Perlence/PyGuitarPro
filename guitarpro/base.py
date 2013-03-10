@@ -36,6 +36,8 @@ class GPFileBase(object):
     def initVersions(self, supportedVersions):
         self._supportedVersions = supportedVersions
     
+    # Reading
+    # =======
     def skip(self, count):
         self.data.read(count)
 
@@ -59,25 +61,33 @@ class GPFileBase(object):
         result = struct.unpack('<i', self.data.read(4))
         return result[0]
 
-    def readByteSizeString(self, size, charset=DEFAULT_CHARSET):
-        return self.readString(size, self.readByte(), charset=charset)
+    def readFloat(self):
+        result = struct.unpack('<f', self.data.read(4))
+        return result[0]
+    
+    def readDouble(self):
+        result = struct.unpack('<d', self.data.read(8))
+        return result[0]
 
-    def readString(self, size, length=-2, charset=DEFAULT_CHARSET):
+    def readString(self, size, length=-2):
         if length == -2:
             length = size
         count = size if size > 0 else length
         s = self.data.read(count)
         return s[:(length if length >= 0 else size)]
 
-    def readIntSizeCheckByteString(self, charset=DEFAULT_CHARSET):
-        d = self.readInt() - 1
-        return self.readByteSizeString(d, charset=charset)
-    
-    def readByteSizeCheckByteString(self, charset=DEFAULT_CHARSET):
-        return self.readByteSizeString(self.readByte() - 1, charset=charset)
+    def readByteSizeString(self, size):
+        return self.readString(size, self.readByte())
 
-    def readIntSizeString(self, charset=DEFAULT_CHARSET):
-        return self.readString(self.readInt(), charset=charset)
+    def readIntSizeCheckByteString(self):
+        d = self.readInt() - 1
+        return self.readByteSizeString(d)
+    
+    def readByteSizeCheckByteString(self):
+        return self.readByteSizeString(self.readByte() - 1)
+
+    def readIntSizeString(self):
+        return self.readString(self.readInt())
     
     def readVersion(self):
         if self.version is None:
@@ -85,9 +95,88 @@ class GPFileBase(object):
         return self.version in self._supportedVersions
     
     def toChannelShort(self, data):
-        value = max(-32768, min(32767, (data * 8) - 1))
+        value = max(-32768, min(32767, (data << 3) - 1))
         return max(value, -1) + 1
 
+    # Writing
+    # =======
+    def placeholder(self, count):
+        self.data.write('\x00' * count)
+
+    def writeByte(self, data):
+        packed = struct.pack('B', data)
+        self.data.write(packed)
+
+    def writeSignedByte(self, data):
+        packed = struct.pack('b', data)
+        self.data.write(packed)
+
+    def writeBool(self, data):
+        packed = struct.pack('?', data)
+        self.data.write(packed)
+    
+    def writeShort(self, data):
+        packed = struct.pack('<h', data)
+        self.data.write(packed)
+    
+    def writeInt(self, data):
+        packed = struct.pack('<i', data)
+        self.data.write(packed)
+
+    def writeFloat(self, data):
+        packed = struct.pack('<f', data)
+        self.data.write(packed)
+    
+    def writeDouble(self, data):
+        packed = struct.pack('<d', data)
+        self.data.write(packed)
+
+    def writeString(self, data, size=None):
+        if size is None:
+            size = len(data)
+        self.data.write(data)
+        placeholder = '\x00' * (size - len(data))
+        self.data.write(placeholder)
+
+    # def writeString(self, data, size, length=-2):
+    #     if length == -2:
+    #         length = size
+    #     count = size if size > 0 else length
+    #     s = self.data.read(count)
+    #     return s[:(length if length >= 0 else size)]
+
+    def writeByteSizeString(self, data, size=None):
+        if size is None:
+            size = len(data)
+        self.writeByte(len(data))
+        return self.writeString(data, size)
+
+    def writeIntSizeCheckByteString(self, data):
+        # self.writeInt(len(data) - 1)
+        self.writeInt(len(data) + 1)
+        return self.writeByteSizeString(data)
+    
+    def writeByteSizeCheckByteString(self, data):
+        # self.writeByte() - 1
+        self.writeByte(len(data) + 1)
+        return self.writeByteSizeString(data)
+
+    def writeIntSizeString(self, data):
+        self.writeInt(len(data))
+        return self.writeString(data)
+    
+    def writeVersion(self, index=None):
+        if self.version is not None:
+            self.writeByteSizeString(self.version, 30)
+        else:
+            self.writeByteSizeString(self._supportedVersions[index], 30)
+
+    def fromChannelShort(self, data):
+        value = max(-128, min(127, (data >> 3) - 1))
+        return value + 1
+
+    # Misc
+    # ====
     def getTiedNoteValue(self, stringIndex, track):
         measureCount = track.measureCount()
         if measureCount > 0:
