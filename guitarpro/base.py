@@ -368,8 +368,8 @@ class MidiChannel(object):
     '''A midi channel describes playing data for a track
     '''
     DEFAULT_PERCUSSION_CHANNEL = 9
-    DEFAULT_INSTRUMENT = 25
-    DEFAULT_VOLUME = 127
+    DEFAULT_INSTRUMENT = 24
+    DEFAULT_VOLUME = 104
     DEFAULT_BALANCE = 64
     DEFAULT_CHORUS = 0
     DEFAULT_REVERB = 0

@@ -401,7 +401,7 @@ class GP3File(gp.GPFileBase):
                 oString.value = iTuning
                 track.strings.append(oString)
         track.port = self.readInt()
-        self.readChannel(track.channel, channels)
+        self.readChannel(track, channels)
         if track.channel.channel == 9:
             track.isPercussionTrack = True
         track.fretCount = self.readInt()
@@ -410,16 +410,16 @@ class GP3File(gp.GPFileBase):
         
         return track
     
-    def readChannel(self, midiChannel, channels):
+    def readChannel(self, track, channels):
         index = self.readInt() - 1
         effectChannel = self.readInt() - 1
         if 0 <= index < len(channels):
-            # channels[index].copy(midiChannel)
-            midiChannel = channels[index]
-            if midiChannel.instrument() < 0:
-                midiChannel.instrument(0)
-            if not midiChannel.isPercussionChannel():
-                midiChannel.effectChannel = effectChannel
+            # channels[index].copy(track.channel)
+            track.channel = copy.copy(channels[index])
+            if track.channel.instrument() < 0:
+                track.channel.instrument(0)
+            if not track.channel.isPercussionChannel():
+                track.channel.effectChannel = effectChannel
     
     def readMeasureHeaders(self, song, measureCount):
         timeSignature = gp.TimeSignature()
