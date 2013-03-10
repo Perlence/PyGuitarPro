@@ -30,22 +30,8 @@ class GPFileBase(object):
     _supportedVersions = []
     version = None
     
-    def __init__(self):
-        self.data = None
-
-    def open(self, filename, attrib="rb"): 
-        '''Open a GP file path for reading or writing.
-    
-        For writing to a GP file, `attrib` should be "wb".
-        '''
-        if attrib not in ('rb', 'wb'):
-            raise GuitarProException("cannot read or write unless in binary mode, not '%s'" % attrib)
-        self.data = open(filename, attrib) 
-
-    def openFileLike(self, fileLike):
-        '''Assign a file-like object, such as those provided by StringIO, as an open file object.
-        '''
-        self.data = fileLike
+    def __init__(self, data=None):
+        self.data = data
     
     def initVersions(self, supportedVersions):
         self._supportedVersions = supportedVersions
