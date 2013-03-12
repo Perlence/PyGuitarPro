@@ -416,8 +416,8 @@ class GP3File(gp.GPFileBase):
         if 0 <= index < len(channels):
             # channels[index].copy(track.channel)
             track.channel = copy.copy(channels[index])
-            if track.channel.instrument() < 0:
-                track.channel.instrument(0)
+            if track.channel.instrument < 0:
+                track.channel.instrument = 0
             if not track.channel.isPercussionChannel():
                 track.channel.effectChannel = effectChannel
     
@@ -501,9 +501,9 @@ class GP3File(gp.GPFileBase):
             newChannel.channel = i
             newChannel.effectChannel = i
             instrument = self.readInt()
-            if i % 16 == 9 and instrument == -1:
+            if newChannel.isPercussionChannel() and instrument == -1:
                 instrument = 0
-            newChannel.instrument(instrument)
+            newChannel.instrument = instrument
 
             newChannel.volume = self.toChannelShort(self.readSignedByte())
             newChannel.balance = self.toChannelShort(self.readSignedByte())
@@ -615,20 +615,19 @@ class GP3File(gp.GPFileBase):
             default = gp.MidiChannel()
             default.channel = channel
             default.effectChannel = channel
-            if channel % 16 == 9:
-                default.instrument(0)
+            if default.isPercussionChannel():
+                default.instrument = 0
             return default
 
         for channel in map(getTrackChannelByChannel, range(64)):
             # Check if percussion channel
-            if channel.channel % 16 == 9:
-                instrument = channel.instrument()
-                if instrument != 0:
-                    self.writeInt(instrument)
+            if channel.isPercussionChannel():
+                if channel.instrument != 0:
+                    self.writeInt(channel.instrument)
                 else:
                     self.writeInt(-1)
             else:
-                self.writeInt(channel.instrument())
+                self.writeInt(channel.instrument)
             
             self.writeSignedByte(self.fromChannelShort(channel.volume))
             self.writeSignedByte(self.fromChannelShort(channel.balance))

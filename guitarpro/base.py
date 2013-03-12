@@ -471,7 +471,7 @@ class MidiChannel(object):
     def __init__(self):
         self.channel = 0
         self.effectChannel = 0
-        self.instrument(self.DEFAULT_INSTRUMENT)
+        self.instrument = self.DEFAULT_INSTRUMENT
         self.volume = self.DEFAULT_VOLUME
         self.balance = self.DEFAULT_BALANCE
         self.chorus = self.DEFAULT_CHORUS
@@ -479,13 +479,8 @@ class MidiChannel(object):
         self.phaser = self.DEFAULT_PHASER
         self.tremolo = self.DEFAULT_TREMOLO
     
-    def instrument(self, newInstrument=-1):
-        if newInstrument != -1:
-            self._instrument = newInstrument
-        return self._instrument
-    
     def isPercussionChannel(self):
-        return self.channel == self.DEFAULT_PERCUSSION_CHANNEL
+        return self.channel % 16 == self.DEFAULT_PERCUSSION_CHANNEL
 
     def __eq__(self, other):
         if other is None or not isinstance(other, self.__class__):
@@ -498,7 +493,7 @@ class MidiChannel(object):
             self.reverb == other.reverb and
             self.phaser == other.phaser and
             self.tremolo == other.tremolo and
-            self.instrument() == other.instrument())
+            self.instrument == other.instrument)
 
 
 class MeasureHeader(object):
