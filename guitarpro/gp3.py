@@ -59,7 +59,7 @@ class GP3File(gp.GPFileBase):
         measureCount = self.readInt()
         trackCount = self.readInt()
         
-        self.measureHeaders = self.readMeasureHeaders(song, measureCount)
+        self.readMeasureHeaders(song, measureCount)
         self.readTracks(song, trackCount, channels)
         self.readMeasures(song)
 
@@ -443,13 +443,13 @@ class GP3File(gp.GPFileBase):
         header.isRepeatOpen = ((flags & 0x04) != 0)
         
         # timeSignature.copy(header.timeSignature)
-        header.timeSignature = timeSignature
+        header.timeSignature = copy.deepcopy(timeSignature)
         
         if (flags & 0x08) != 0:
             header.repeatClose = (self.readSignedByte() - 1)
         
         if (flags & 0x10) != 0:
-            header.repeatAlternative = self.parseRepeatAlternative(song, header.number, self.readByte())
+            header.repeatAlternative = self.unpackRepeatAlternative(song, header.number, self.readByte())
         
         if (flags & 0x20) != 0:
             header.marker = self.readMarker(header)
@@ -466,7 +466,7 @@ class GP3File(gp.GPFileBase):
        
         return header
     
-    def parseRepeatAlternative(self, song, measure, value):
+    def unpackRepeatAlternative(self, song, measure, value):
         repeatAlternative = 0
         existentAlternatives = 0
         for header in song.measureHeaders:
@@ -563,30 +563,25 @@ class GP3File(gp.GPFileBase):
         '''
         self.writeVersion(0)
         self.writeInfo(song)
-        self.writeBool(song.tracks[0].measures[0].tripletFeel())
-        self.writeLyrics(song)
-        self.readPageSetup(song)
-        
-        # song.tempoName = ""
-        # song.tempo = self.readInt()
-        # song.hideTempo = False
-        self.writeInt(song.tempo)
-       
-        # song.key = self.readInt()
-        # song.octave = 0
-        self.writeInt(song.key)
 
-        # channels = self.readMidiChannels()
+        self._tripletFeel = song.tracks[0].measures[0].tripletFeel()
+        self.writeBool(self._tripletFeel)
+        
+        self.writeLyrics(song)
+        self.readPageSetup(song)        
+        
+        self.writeInt(song.tempo)
+        self.writeInt(song.key)
         self.writeMidiChannels(song)
         
-        # measureCount = self.readInt()
-        # trackCount = self.readInt()
-        self.writeInt(len(song.tracks[0].measures))
-        self.writeInt(len(song.tracks))
+        measureCount = len(song.tracks[0].measures)
+        trackCount = len(song.tracks)
+        self.writeInt(measureCount)
+        self.writeInt(trackCount)
         
-        # self.measureHeaders = self.readMeasureHeaders(song, measureCount)
-        # self.readTracks(song, trackCount, channels)
-        # self.readMeasures(song)
+        self.writeMeasureHeaders(song, measureCount)
+        # self.writeTracks(song, trackCount, channels)
+        # self.writeMeasures(song)
 
     def writeInfo(self, song):
         self.writeIntSizeCheckByteString(song.title)
@@ -634,3 +629,75 @@ class GP3File(gp.GPFileBase):
             self.writeSignedByte(self.fromChannelShort(channel.tremolo))
             # Backward compatibility with version 3.0
             self.placeholder(2)
+
+    def writeMeasureHeaders(self, song, measureCount):
+        # timeSignature = gp.TimeSignature()
+        # for i in range(measureCount):
+        previous = None
+        for header in song.measureHeaders:
+            self.writeMeasureHeader(song, header, previous)
+            previous = header
+    
+    def writeMeasureHeader(self, song, header, previous):
+        # if header.number == 7:
+        #     import ipdb; ipdb.set_trace()
+        flags = 0x00
+        if previous is not None:
+            if header.timeSignature.numerator != previous.timeSignature.numerator:
+                flags |= 0x01
+            if header.timeSignature.denominator.value != previous.timeSignature.denominator.value:
+                flags |= 0x02
+        else:
+            flags |= 0x01
+            flags |= 0x02
+        if header.isRepeatOpen:
+            flags |= 0x04
+        if header.repeatClose > -1:
+            flags |= 0x08
+        if header.repeatAlternative != 0:
+            flags |= 0x10
+        if header.marker is not None:
+            flags |= 0x20
+        if previous is not None:
+            if header.keySignature != previous.keySignature:
+                flags |= 0x40
+        elif header.number > 1 or header.keySignature != 0:
+            flags |= 0x40
+        if header.hasDoubleBar:
+            flags |= 0x80
+
+        self.writeByte(flags)
+                
+        if (flags & 0x01) != 0:
+            self.writeSignedByte(header.timeSignature.numerator)
+        if (flags & 0x02) != 0:
+            self.writeSignedByte(header.timeSignature.denominator.value)
+        
+        if (flags & 0x08) != 0:
+            self.writeSignedByte(header.repeatClose + 1)
+        
+        if (flags & 0x10) != 0:
+            self.writeByte(self.packRepeatAlternative(song, header.number, header.repeatAlternative))
+        
+        if (flags & 0x20) != 0:
+            self.writeMarker(header.marker)
+        
+        if (flags & 0x40) != 0:
+            self.writeSignedByte(self.fromKeySignature(header.keySignature))
+            self.writeSignedByte(header.keySignatureType)
+
+    def packRepeatAlternative(self, song, measure, value):
+        return value.bit_length()
+
+    def writeMarker(self, marker):
+        self.writeIntSizeCheckByteString(marker.title)
+        self.writeColor(marker.color)
+
+    def writeColor(self, color):
+        self.writeByte(color.r)
+        self.writeByte(color.g)
+        self.writeByte(color.b)
+        self.placeholder(1)
+
+    def fromKeySignature(self, p):
+        return -(p - 7) if p > 7 else p

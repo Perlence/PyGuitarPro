@@ -32,6 +32,9 @@ class GPFileBase(object):
     
     def __init__(self, data=None):
         self.data = data
+
+    def close(self):
+        self.data.close()
     
     def initVersions(self, supportedVersions):
         self._supportedVersions = supportedVersions
@@ -504,7 +507,7 @@ class MeasureHeader(object):
     DEFAULT_KEY_SIGNATURE = 0
     
     def hasMarker(self):
-        return this.marker is not None
+        return self.marker is not None
     
     def length(self):
         return self.timeSignature.numerator * self.timeSignature.denominator.time()
@@ -519,7 +522,7 @@ class MeasureHeader(object):
         self.marker = None
         self.tripletFeel = TripletFeel.None_
         self.isRepeatOpen = False
-        self.repeatClose = 0
+        self.repeatClose = -1
         self.repeatAlternative = 0
         self.realStart = -1
 
