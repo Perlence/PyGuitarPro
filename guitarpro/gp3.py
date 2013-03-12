@@ -500,7 +500,10 @@ class GP3File(gp.GPFileBase):
             newChannel = gp.MidiChannel()
             newChannel.channel = i
             newChannel.effectChannel = i
-            newChannel.instrument(self.readInt())
+            instrument = self.readInt()
+            if i % 16 == 9 and instrument == -1:
+                instrument = 0
+            newChannel.instrument(instrument)
 
             newChannel.volume = self.toChannelShort(self.readSignedByte())
             newChannel.balance = self.toChannelShort(self.readSignedByte())
@@ -612,12 +615,18 @@ class GP3File(gp.GPFileBase):
             default = gp.MidiChannel()
             default.channel = channel
             default.effectChannel = channel
+            if channel % 16 == 9:
+                default.instrument(0)
             return default
 
         for channel in map(getTrackChannelByChannel, range(64)):
             # Check if percussion channel
             if channel.channel % 16 == 9:
-                self.writeInt(-1)
+                instrument = channel.instrument()
+                if instrument != 0:
+                    self.writeInt(instrument)
+                else:
+                    self.writeInt(-1)
             else:
                 self.writeInt(channel.instrument())
             

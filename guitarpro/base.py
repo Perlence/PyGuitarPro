@@ -482,7 +482,7 @@ class MidiChannel(object):
     def instrument(self, newInstrument=-1):
         if newInstrument != -1:
             self._instrument = newInstrument
-        return 0 if self.isPercussionChannel() else self._instrument
+        return self._instrument
     
     def isPercussionChannel(self):
         return self.channel == self.DEFAULT_PERCUSSION_CHANNEL
