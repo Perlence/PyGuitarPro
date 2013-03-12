@@ -62,10 +62,10 @@ def open(filename, mode='rb', format=None):
         gpfile.version = version
     return GPFile(fp)
 
-def parse(filename, version=None):
+def parse(filename, format=None):
     '''Open a GP file and read its contents
     '''
-    gpfile = open(filename, 'rb', version)
+    gpfile = open(filename, 'rb', format)
     song = gpfile.readSong()
     gpfile.close()
     return song
