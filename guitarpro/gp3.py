@@ -582,8 +582,8 @@ class GP3File(gp.GPFileBase):
         self.writeInt(measureCount)
         self.writeInt(trackCount)
         
-        self.writeMeasureHeaders(song, measureCount)
-        # self.writeTracks(song, trackCount, channels)
+        self.writeMeasureHeaders(song)
+        self.writeTracks(song)
         # self.writeMeasures(song)
 
     def writeInfo(self, song):
@@ -638,17 +638,13 @@ class GP3File(gp.GPFileBase):
             # Backward compatibility with version 3.0
             self.placeholder(2)
 
-    def writeMeasureHeaders(self, song, measureCount):
-        # timeSignature = gp.TimeSignature()
-        # for i in range(measureCount):
+    def writeMeasureHeaders(self, song):
         previous = None
         for header in song.measureHeaders:
             self.writeMeasureHeader(song, header, previous)
             previous = header
     
     def writeMeasureHeader(self, song, header, previous):
-        # if header.number == 7:
-        #     import ipdb; ipdb.set_trace()
         flags = 0x00
         if previous is not None:
             if header.timeSignature.numerator != previous.timeSignature.numerator:
@@ -709,3 +705,31 @@ class GP3File(gp.GPFileBase):
 
     def fromKeySignature(self, p):
         return -(p - 7) if p > 7 else p
+
+    def writeTracks(self, song):
+        for track in song.tracks:
+            self.writeTrack(track)
+        
+    def writeTrack(self, track):
+        flags = 0x00
+        flags |= 0x01 if track.isPercussionTrack else 0
+        flags |= 0x02 if track.is12StringedGuitarTrack else 0
+        flags |= 0x04 if track.isBanjoTrack else 0
+        self.writeByte(flags)
+        self.writeByteSizeString(track.name, 40)
+        self.writeInt(track.stringCount())
+        for i in range(7):
+            if i < track.stringCount():
+                tuning = track.strings[i].value
+            else:
+                tuning = 0
+            self.writeInt(tuning)
+        self.writeInt(track.port)
+        self.writeChannel(track)
+        self.writeInt(track.fretCount)
+        self.writeInt(track.offset)
+        self.writeColor(track.color)
+    
+    def writeChannel(self, track):
+        self.writeInt(track.channel.channel + 1)
+        self.writeInt(track.channel.effectChannel + 1)
