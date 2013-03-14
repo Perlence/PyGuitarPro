@@ -1031,6 +1031,23 @@ class Beat(GPObject):
             self.index == other.index)
 
 
+class HarmonicType(object):
+    '''All harmonic effect types
+    '''
+    # No harmonic
+    None_ = -1
+    # Natural harmonic
+    Natural = 0
+    # Artificial harmonic
+    Artificial = 1
+    # Tapped harmonic
+    Tapped = 2
+    # Pinch harmonic
+    Pinch = 3
+    # Semi harmonic
+    Semi = 4
+
+
 class HarmonicEffect(GPObject):
     '''A harmonic note effect
     '''
