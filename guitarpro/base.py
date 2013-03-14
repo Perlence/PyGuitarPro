@@ -928,6 +928,23 @@ class BeatEffect(GPObject):
     def isTremoloBar(self):
         return self.tremoloBar is not None
 
+    def isSlapEffect(self):
+        return self.tapping or self.slapping or self.popping
+
+    def isDefault(self):
+        default = BeatEffect()
+        return (self.stroke == default.stroke and
+            self.hasRasgueado == default.hasRasgueado and
+            self.pickStroke == default.pickStroke and
+            # self.chord == default.chord and
+            self.fadeIn == default.fadeIn and
+            self.vibrato == default.vibrato and
+            self.tremoloBar == default.tremoloBar and
+            # self.mixTableChange == default.mixTableChange and
+            self.tapping == default.tapping and
+            self.slapping == default.slapping and
+            self.popping == default.popping)
+
     def __init__(self):
         self.tapping = False
         self.slapping = False
@@ -941,7 +958,6 @@ class BeatEffect(GPObject):
         return (self.stroke == other.stroke and
             self.hasRasgueado == other.hasRasgueado and
             self.pickStroke == other.pickStroke and
-            self.hasPickStroke == other.hasPickStroke and
             self.chord == other.chord and
             self.fadeIn == other.fadeIn and
             self.vibrato == other.vibrato and
@@ -1142,6 +1158,24 @@ class NoteEffect(GPObject):
     
     def isTremoloPicking(self):
         return self.tremoloPicking is not None
+
+    def isDefault(self):
+        default = NoteEffect()
+        return (self.leftHandFinger == default.leftHandFinger and
+            self.rightHandFinger == default.rightHandFinger and
+            self.bend == default.bend and
+            self.harmonic == default.harmonic and
+            self.grace == default.grace and
+            self.trill == default.trill and
+            self.tremoloPicking == default.tremoloPicking and
+            self.vibrato == default.vibrato and
+            self.deadNote == default.deadNote and
+            self.slideType == default.slideType and
+            self.slide == default.slide and
+            self.hammer == default.hammer and
+            self.palmMute == default.palmMute and
+            self.staccato == default.staccato and
+            self.letRing == default.letRing)
     
     def __eq__(self, other):
         if other is None or not isinstance(other, self.__class__):
