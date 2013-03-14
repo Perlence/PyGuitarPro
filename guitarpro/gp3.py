@@ -17,7 +17,7 @@ from __future__ import division
 
 import copy
 
-from guitarpro import base as gp
+import base as gp
 
 class GP3File(gp.GPFileBase):
     '''A reader for GuitarPro 3 files. 

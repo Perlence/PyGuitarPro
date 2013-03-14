@@ -38,6 +38,12 @@ class GPFileBase(object):
     
     def initVersions(self, supportedVersions):
         self._supportedVersions = supportedVersions
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.data.close()
     
     # Reading
     # =======

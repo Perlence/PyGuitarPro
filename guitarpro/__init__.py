@@ -2,16 +2,15 @@ import __builtin__
 import os
 
 from base import *
-import base
-import gp3
+from gp3 import GP3File
 
 GPFILES = {
-    'FICHIER GUITAR PRO v3.00': gp3.GP3File,
-    # 'FICHIER GUITAR PRO v4.00': gp4.GP4File,
-    # 'FICHIER GUITAR PRO v4.06': gp4.GP4File,
-    # 'FICHIER GUITAR PRO L4.06': gp4.GP4File,
-    # 'FICHIER GUITAR PRO v5.00': gp5.GP5File,
-    # 'FICHIER GUITAR PRO v5.10': gp5.GP5File
+    'FICHIER GUITAR PRO v3.00': GP3File,
+    # 'FICHIER GUITAR PRO v4.00': GP4File,
+    # 'FICHIER GUITAR PRO v4.06': GP4File,
+    # 'FICHIER GUITAR PRO L4.06': GP4File,
+    # 'FICHIER GUITAR PRO v5.00': GP5File,
+    # 'FICHIER GUITAR PRO v5.10': GP5File
 }
 
 VERSIONS = {
@@ -69,3 +68,10 @@ def parse(filename, format=None):
     song = gpfile.readSong()
     gpfile.close()
     return song
+
+def write(song, filename, format=None):
+    '''Write a song into GP file
+    '''
+    gpfile = open(filename, 'wb', format)
+    song = gpfile.writeSong(song)
+    gpfile.close()
