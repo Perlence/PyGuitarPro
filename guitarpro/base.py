@@ -924,7 +924,11 @@ class BeatEffect(GPObject):
     pickStroke = 0
     hasPickStroke = False
     chord = None
+    
+    # Vibratos are stored here for compatibility with GP3
     vibrato = False
+    wideVibrato = False
+
     tremoloBar = None
     mixTableChange = None
 
@@ -942,11 +946,10 @@ class BeatEffect(GPObject):
         return (self.stroke == default.stroke and
             self.hasRasgueado == default.hasRasgueado and
             self.pickStroke == default.pickStroke and
-            # self.chord == default.chord and
             self.fadeIn == default.fadeIn and
             self.vibrato == default.vibrato and
+            self.wideVibrato == default.wideVibrato and
             self.tremoloBar == default.tremoloBar and
-            # self.mixTableChange == default.mixTableChange and
             self.tapping == default.tapping and
             self.slapping == default.slapping and
             self.popping == default.popping)
@@ -957,6 +960,7 @@ class BeatEffect(GPObject):
         self.popping = False
         self.fadeIn = False
         self.stroke = BeatStroke()
+        self.presence = False
 
     def __eq__(self, other):
         if other is None or not isinstance(other, self.__class__):
@@ -967,6 +971,7 @@ class BeatEffect(GPObject):
             self.chord == other.chord and
             self.fadeIn == other.fadeIn and
             self.vibrato == other.vibrato and
+            self.wideVibrato == other.wideVibrato and
             self.tremoloBar == other.tremoloBar and
             self.mixTableChange == other.mixTableChange and
             self.tapping == other.tapping and
@@ -992,6 +997,13 @@ class Beat(GPObject):
     def setText(self, text):
         text.beat = self
         self.text = text
+
+    def hasHarmonic(self):
+        for voice in self.voices:
+            for note in voice.notes:
+                if note.effect.isHarmonic():
+                    return True
+        return False
 
     def setChord(self, chord):
         chord.beat = self
@@ -1143,6 +1155,17 @@ class TremoloPickingEffect(GPObject):
     #     pass
 
 
+class SlideType(object):
+    '''Lists all supported slide types.
+    '''
+    FastSlideTo = 0
+    SlowSlideTo = 1
+    OutDownWards = 2
+    OutUpWards = 3
+    IntoFromBelow = 4
+    IntoFromAbove = 5
+
+
 class NoteEffect(GPObject):
     '''Contains all effects which can be applied to one note. 
     '''
@@ -1153,6 +1176,7 @@ class NoteEffect(GPObject):
         self.trill = None
         self.tremoloPicking = None
         self.vibrato = False
+        self.wideVibrato = False
         self.deadNote = False
         self.slide = False
         self.hammer = False
@@ -1166,6 +1190,7 @@ class NoteEffect(GPObject):
         self.leftHandFinger = -1
         self.rightHandFinger = -1
         self.slideType = -1
+        self.presence = False
     
     def isBend(self):
         return self.bend is not None and len(self.bend.points)
@@ -1192,7 +1217,6 @@ class NoteEffect(GPObject):
             self.trill == default.trill and
             self.tremoloPicking == default.tremoloPicking and
             self.vibrato == default.vibrato and
-            self.deadNote == default.deadNote and
             self.slideType == default.slideType and
             self.slide == default.slide and
             self.hammer == default.hammer and
@@ -1378,7 +1402,7 @@ class BendTypes(object):
 class BendPoint(GPObject):
     '''A single point within the BendEffect or TremoloBarEffect 
     '''
-    def __init__(self, position, value, vibrato):
+    def __init__(self, position, value, vibrato=False):
         '''Initializes a new instance of the BendPoint class. 
         '''
         self.position = position
