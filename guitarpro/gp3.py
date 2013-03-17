@@ -27,7 +27,7 @@ class GP3File(gp.GPFileBase):
 
     def __init__(self, *args, **kwargs):
         super(GP3File, self).__init__(*args, **kwargs)
-        self.initVersions(["FICHIER GUITAR PRO v3.00"])
+        self.initVersions(['FICHIER GUITAR PRO v3.00'])
     
     def readSong(self):
         '''Reads the song
@@ -42,7 +42,7 @@ class GP3File(gp.GPFileBase):
         self.readInfo(song)
         
         self._tripletFeel = (gp.TripletFeel.Eighth if self.readBool()
-            else gp.TripletFeel.None_)
+                             else gp.TripletFeel.None_)
         
         self.readLyrics(song)
         
@@ -318,8 +318,8 @@ class GP3File(gp.GPFileBase):
         
         barEffect.points.append(gp.BendPoint(0, 0))
         barEffect.points.append(gp.BendPoint(round(gp.BendEffect.MAX_POSITION / 2), 
-                                             round(barEffect.value / (gp.GPFileBase.BEND_SEMITONE * 2))))
-        barEffect.points.append(gp.BendPoint(gp.BendEffect.MAX_POSITION, 0))
+                                             round(barEffect.value / (self.BEND_SEMITONE * 2))))
+        barEffect.points.append(gp.BendPoint(self.MAX_POSITION, 0))
         
         effect.tremoloBar = barEffect
     
@@ -925,7 +925,7 @@ class GP3File(gp.GPFileBase):
             else:
                 write(-1)
 
-        # instrument doesn't have duration
+        # instrument change doesn't have duration
         for item, write in items[1:]:
             if item is not None:
                 write(item.duration)

@@ -3,12 +3,13 @@ import os
 
 from base import *
 from gp3 import GP3File
+from gp4 import GP4File
 
 GPFILES = {
     'FICHIER GUITAR PRO v3.00': GP3File,
-    # 'FICHIER GUITAR PRO v4.00': GP4File,
-    # 'FICHIER GUITAR PRO v4.06': GP4File,
-    # 'FICHIER GUITAR PRO L4.06': GP4File,
+    'FICHIER GUITAR PRO v4.00': GP4File,
+    'FICHIER GUITAR PRO v4.06': GP4File,
+    'FICHIER GUITAR PRO L4.06': GP4File,
     # 'FICHIER GUITAR PRO v5.00': GP5File,
     # 'FICHIER GUITAR PRO v5.10': GP5File
 }

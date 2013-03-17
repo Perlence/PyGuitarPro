@@ -304,7 +304,7 @@ class Song(GPObject):
 class LyricLine(GPObject):
     '''A lyrics line. 
     '''
-    def __init__(self, startingMeasure, lyrics):
+    def __init__(self, startingMeasure=-1, lyrics=''):
         self.startingMeasure = startingMeasure
         self.lyrics = lyrics
 
