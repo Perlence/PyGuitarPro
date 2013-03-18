@@ -304,6 +304,7 @@ class GP3File(gp.GPFileBase):
         if flags1 & 0x04 != 0:
             harmonic = gp.HarmonicEffect()
             harmonic.type = gp.HarmonicType.Natural
+            harmonic.data = 0
             effect.harmonic = harmonic
         
         if flags1 & 0x08 != 0:

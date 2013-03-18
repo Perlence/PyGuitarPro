@@ -112,13 +112,13 @@ class GP4File(gp3.GP3File):
             return gp.SlideType.ShiftSlideTo
         elif slideType == 2:
             return gp.SlideType.LegatoSlideTo
-        elif slideType == 4:
+        elif slideType == 3:
             return gp.SlideType.OutDownWards
-        elif slideType == 8:
+        elif slideType == 4:
             return gp.SlideType.OutUpWards
-        elif slideType == 16:
+        elif slideType == -1:
             return gp.SlideType.IntoFromBelow
-        elif slideType == 32:
+        elif slideType == -2:
             return gp.SlideType.IntoFromAbove
 
     def readNoteEffects(self, noteEffect):
@@ -178,7 +178,7 @@ class GP4File(gp3.GP3File):
     def readArtificialHarmonic(self, noteEffect):
         harmonicType = self.readSignedByte()
         oHarmonic = gp.HarmonicEffect()
-        oHarmonic.data. oHarmonic.type = self.fromHarmonicType(harmonicType)
+        oHarmonic.data, oHarmonic.type = self.fromHarmonicType(harmonicType)
         noteEffect.harmonic = oHarmonic
 
     def fromTremoloValue(self, value):
@@ -306,8 +306,6 @@ class GP4File(gp3.GP3File):
         self.writeTracks(song)
         self.writeMeasures(song)
 
-        self.writeInt(0)
-
     def writeLyrics(self, song):
         self.writeInt(song.lyrics.trackChoice)
         for line in song.lyrics.lines:
@@ -369,13 +367,13 @@ class GP4File(gp3.GP3File):
         elif slide == gp.SlideType.LegatoSlideTo:
             return 2
         elif slide == gp.SlideType.OutDownWards:
-            return 4
+            return 3
         elif slide == gp.SlideType.OutUpWards:
-            return 8
+            return 4
         elif slide == gp.SlideType.IntoFromBelow:
-            return 16
+            return -1
         elif slide == gp.SlideType.IntoFromAbove:
-            return 32
+            return -2
 
     def writeNoteEffects(self, noteEffect):
         flags1 = 0x00
@@ -455,15 +453,15 @@ class GP4File(gp3.GP3File):
         self.writeSignedByte(self.toHarmonicType(harmonic))
     
     def toTremoloValue(self, value):
-        if value == 1:
-            return gp.Duration.EIGHTH
-        elif value == 2:
-            return gp.Duration.SIXTEENTH
-        elif value == 3:
-            return gp.Duration.THIRTY_SECOND
+        if value == gp.Duration.EIGHTH:
+            return 1
+        elif value == gp.Duration.SIXTEENTH:
+            return 2
+        elif value == gp.Duration.THIRTY_SECOND:
+            return 3
 
     def writeTremoloPicking(self, tremoloPicking):
-        self.writeSignedByte(tremoloPicking.value)
+        self.writeSignedByte(self.toTremoloValue(tremoloPicking.duration.value))
     
     def writeMixTableChange(self, tableChange):
         super(GP4File, self).writeMixTableChange(tableChange)
@@ -493,17 +491,17 @@ class GP4File(gp3.GP3File):
         if beatEffect.stroke != gp.BeatStroke():
             flags1 |= 0x40
 
-        flags1 = self.writeSignedByte()
+        self.writeSignedByte(flags1)
 
         flags2 = 0x00
         if beatEffect.hasRasgueado:
             flags2 |= 0x01
         if beatEffect.hasPickStroke:
             flags2 |= 0x02
-        if beatEffect.isTremolo():
+        if beatEffect.isTremoloBar():
             flags2 |= 0x04
 
-        flags2 = self.writeSignedByte()
+        self.writeSignedByte(flags2)
 
         if flags1 & 0x20 != 0:
             if beatEffect.tapping:
@@ -514,7 +512,7 @@ class GP4File(gp3.GP3File):
                 slapEffect = 3
             self.writeSignedByte(slapEffect)
         if flags2 & 0x04 != 0:
-            self.writeTremoloBar(beatEffect)
+            self.writeTremoloBar(beatEffect.tremoloBar)
         if flags1 & 0x40 != 0:
             if beatEffect.stroke.direction == gp.BeatStrokeDirection.Up:
                 strokeUp = self.fromStrokeValue(beatEffect.stroke.value)
@@ -545,6 +543,7 @@ class GP4File(gp3.GP3File):
         #             fret = self.writeInt()
         #             if i < len(chord.strings):
         #                 chord.strings[i] = fret
+        self.writeSignedByte(1)
         self.placeholder(16)
         self.writeByteSizeString(chord.name, 21)
         self.placeholder(4)
@@ -553,5 +552,5 @@ class GP4File(gp3.GP3File):
             fret = -1
             if i < len(chord.strings):
                 fret = chord.strings[i]
-            fret = self.writeInt()
+            self.writeInt(fret)
         self.placeholder(32)
