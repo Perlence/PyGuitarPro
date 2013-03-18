@@ -281,24 +281,24 @@ class Song(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return False
         return (self.title == other.title and
-            self.subtitle == other.subtitle and
-            self.artist == other.artist and
-            self.album == other.album and
-            self.words == other.words and
-            self.music == other.music and
-            self.copyright == other.copyright and
-            self.tab == other.tab and
-            self.instructions == other.instructions and
-            self.notice == other.notice and
-            self.lyrics == other.lyrics and
-            self.pageSetup == other.pageSetup and
-            self.tempoName == other.tempoName and
-            self.tempo == other.tempo and
-            self.hideTempo == other.hideTempo and
-            self.key == other.key and
-            self.octave == other.octave and
-            # self.measureHeaders == other.measureHeaders and
-            self.tracks == other.tracks)
+                self.subtitle == other.subtitle and
+                self.artist == other.artist and
+                self.album == other.album and
+                self.words == other.words and
+                self.music == other.music and
+                self.copyright == other.copyright and
+                self.tab == other.tab and
+                self.instructions == other.instructions and
+                self.notice == other.notice and
+                self.lyrics == other.lyrics and
+                self.pageSetup == other.pageSetup and
+                self.tempoName == other.tempoName and
+                self.tempo == other.tempo and
+                self.hideTempo == other.hideTempo and
+                self.key == other.key and
+                self.octave == other.octave and
+                # self.measureHeaders == other.measureHeaders and
+                self.tracks == other.tracks)
 
 
 class LyricLine(GPObject):
@@ -312,7 +312,7 @@ class LyricLine(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.startingMeasure == other.startingMeasure and
-            self.lyrics == other.lyrics)
+                self.lyrics == other.lyrics)
 
 class Lyrics(GPObject):
     '''Represents a collection of lyrics lines for a track. 
@@ -337,7 +337,7 @@ class Lyrics(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.trackChoice == other.trackChoice and
-            self.lines == other.lines)
+                self.lines == other.lines)
 
 class Point(GPObject):
     '''A point construct using floating point coordinates.
@@ -350,7 +350,7 @@ class Point(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.x == other.x and
-            self.y == other.y)
+                self.y == other.y)
 
 
 class Padding(GPObject):
@@ -372,9 +372,9 @@ class Padding(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.right == other.right and
-            self.top == other.top and
-            self.left == other.left and
-            self.bottom == other.bottom)
+                self.top == other.top and
+                self.left == other.left and
+                self.bottom == other.bottom)
 
 
 class HeaderFooterElements(object):
@@ -431,18 +431,18 @@ class PageSetup(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.pageSize == other.pageSize and
-            self.pageMargin == other.pageMargin and
-            self.scoreSizeProportion == other.scoreSizeProportion and
-            self.headerAndFooter == other.headerAndFooter and
-            self.title == other.title and
-            self.subtitle == other.subtitle and
-            self.artist == other.artist and
-            self.album == other.album and
-            self.words == other.words and
-            self.music == other.music and
-            self.wordsAndMusic == other.wordsAndMusic and
-            self.copyright == other.copyright and
-            self.pageNumber == other.pageNumber)
+                self.pageMargin == other.pageMargin and
+                self.scoreSizeProportion == other.scoreSizeProportion and
+                self.headerAndFooter == other.headerAndFooter and
+                self.title == other.title and
+                self.subtitle == other.subtitle and
+                self.artist == other.artist and
+                self.album == other.album and
+                self.words == other.words and
+                self.music == other.music and
+                self.wordsAndMusic == other.wordsAndMusic and
+                self.copyright == other.copyright and
+                self.pageNumber == other.pageNumber)
 
 
 class Tempo(GPObject):
@@ -497,14 +497,14 @@ class MidiChannel(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.channel == other.channel and
-            self.effectChannel == other.effectChannel and
-            self.volume == other.volume and
-            self.balance == other.balance and
-            self.chorus == other.chorus and
-            self.reverb == other.reverb and
-            self.phaser == other.phaser and
-            self.tremolo == other.tremolo and
-            self.instrument == other.instrument)
+                self.effectChannel == other.effectChannel and
+                self.volume == other.volume and
+                self.balance == other.balance and
+                self.chorus == other.chorus and
+                self.reverb == other.reverb and
+                self.phaser == other.phaser and
+                self.tremolo == other.tremolo and
+                self.instrument == other.instrument)
 
 
 class MeasureHeader(GPObject):
@@ -536,19 +536,19 @@ class MeasureHeader(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.number == other.number and
-            self.hasDoubleBar == other.hasDoubleBar and
-            self.keySignature == other.keySignature and
-            self.keySignatureType == other.keySignatureType and
-            self.start == other.start and
-            self.realStart == other.realStart and
-            self.timeSignature == other.timeSignature and
-            self.tempo == other.tempo and
-            self.marker == other.marker and
-            self.isRepeatOpen == other.isRepeatOpen and
-            self.repeatAlternative == other.repeatAlternative and
-            self.repeatClose == other.repeatClose and
-            # self.repeatGroup == other.repeatGroup and
-            self.tripletFeel == other.tripletFeel)
+                self.hasDoubleBar == other.hasDoubleBar and
+                self.keySignature == other.keySignature and
+                self.keySignatureType == other.keySignatureType and
+                self.start == other.start and
+                self.realStart == other.realStart and
+                self.timeSignature == other.timeSignature and
+                self.tempo == other.tempo and
+                self.marker == other.marker and
+                self.isRepeatOpen == other.isRepeatOpen and
+                self.repeatAlternative == other.repeatAlternative and
+                self.repeatClose == other.repeatClose and
+                # self.repeatGroup == other.repeatGroup and
+                self.tripletFeel == other.tripletFeel)
 
 
 class Color(GPObject):
@@ -570,9 +570,9 @@ class Color(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return False
         return (self.r == other.r and
-            self.g == other.g and
-            self.b == other.b and
-            self.a == other.a)
+                self.g == other.g and
+                self.b == other.b and
+                self.a == other.a)
 
     @staticmethod
     def fromRgb(r, g, b):
@@ -601,7 +601,7 @@ class Marker(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return False
         return (self.title == other.title and
-            self.color == other.color)
+                self.color == other.color)
 
 
 class Track(GPObject):
@@ -635,19 +635,19 @@ class Track(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.fretCount == other.fretCount and
-            self.number == other.number and
-            self.offset == other.offset and
-            self.isSolo == other.isSolo and
-            self.isMute == other.isMute and
-            self.isPercussionTrack == other.isPercussionTrack and
-            self.is12StringedGuitarTrack == other.is12StringedGuitarTrack and
-            self.isBanjoTrack == other.isBanjoTrack and
-            self.name == other.name and
-            self.measures == other.measures and
-            self.strings == other.strings and
-            self.port == other.port and
-            self.channel == other.channel and
-            self.color == other.color)
+                self.number == other.number and
+                self.offset == other.offset and
+                self.isSolo == other.isSolo and
+                self.isMute == other.isMute and
+                self.isPercussionTrack == other.isPercussionTrack and
+                self.is12StringedGuitarTrack == other.is12StringedGuitarTrack and
+                self.isBanjoTrack == other.isBanjoTrack and
+                self.name == other.name and
+                self.measures == other.measures and
+                self.strings == other.strings and
+                self.port == other.port and
+                self.channel == other.channel and
+                self.color == other.color)
 
 
 class GuitarString(GPObject):
@@ -661,7 +661,7 @@ class GuitarString(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.number == other.number and
-            self.value == other.value)
+                self.value == other.value)
     
     # def clone(self):
     #     pass
@@ -680,7 +680,7 @@ class Tuplet(GPObject):
     
     def __eq__(self, other):
         return (self.enters == other.enters and 
-            self.times == other.times)
+                self.times == other.times)
         
     # def clone(self, factory):
     #     pass
@@ -765,10 +765,10 @@ class Duration(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return False
         return (other.value == self.value and
-            other.isDotted == self.isDotted and
-            other.isDoubleDotted == self.isDoubleDotted and
-            # other.tuplet.equals(tuplet);
-            other.tuplet == self.tuplet)
+                other.isDotted == self.isDotted and
+                other.isDoubleDotted == self.isDoubleDotted and
+                # other.tuplet.equals(tuplet);
+                other.tuplet == self.tuplet)
 
 
 class MeasureClef(object):
@@ -843,8 +843,8 @@ class Measure(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return False
         return (self.clef == other.clef and
-            self.beats == other.beats and
-            self.header == other.header)
+                self.beats == other.beats and
+                self.header == other.header)
 
 
 class VoiceDirection(object):
@@ -860,6 +860,18 @@ class Voice(GPObject):
     '''
     def isRestVoice(self):
         return len(self.notes) == 0
+
+    def hasVibrato(self):
+        for note in self.notes:
+            if note.effect.vibrato:
+                return True
+        return False
+
+    def hasHarmonic(self):
+        for note in self.notes:
+            if note.effect.isHarmonic():
+                return note.effect.harmonic.type
+        return HarmonicType.None_
     
     def __init__(self, index):
         self.duration = Duration()
@@ -877,10 +889,10 @@ class Voice(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.duration == other.duration and
-            self.notes == other.notes and
-            self.index == other.index and
-            self.direction == other.direction and
-            self.isEmpty == other.isEmpty)
+                self.notes == other.notes and
+                self.index == other.index and
+                self.direction == other.direction and
+                self.isEmpty == other.isEmpty)
 
 
 class BeatStrokeDirection(object):
@@ -924,11 +936,7 @@ class BeatEffect(GPObject):
     pickStroke = 0
     hasPickStroke = False
     chord = None
-    
-    # Vibratos are stored here for compatibility with GP3
     vibrato = False
-    wideVibrato = False
-
     tremoloBar = None
     mixTableChange = None
 
@@ -944,15 +952,14 @@ class BeatEffect(GPObject):
     def isDefault(self):
         default = BeatEffect()
         return (self.stroke == default.stroke and
-            self.hasRasgueado == default.hasRasgueado and
-            self.pickStroke == default.pickStroke and
-            self.fadeIn == default.fadeIn and
-            self.vibrato == default.vibrato and
-            self.wideVibrato == default.wideVibrato and
-            self.tremoloBar == default.tremoloBar and
-            self.tapping == default.tapping and
-            self.slapping == default.slapping and
-            self.popping == default.popping)
+                self.hasRasgueado == default.hasRasgueado and
+                self.pickStroke == default.pickStroke and
+                self.fadeIn == default.fadeIn and
+                self.vibrato == default.vibrato and
+                self.tremoloBar == default.tremoloBar and
+                self.tapping == default.tapping and
+                self.slapping == default.slapping and
+                self.popping == default.popping)
 
     def __init__(self):
         self.tapping = False
@@ -966,17 +973,15 @@ class BeatEffect(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return False
         return (self.stroke == other.stroke and
-            self.hasRasgueado == other.hasRasgueado and
-            self.pickStroke == other.pickStroke and
-            self.chord == other.chord and
-            self.fadeIn == other.fadeIn and
-            self.vibrato == other.vibrato and
-            self.wideVibrato == other.wideVibrato and
-            self.tremoloBar == other.tremoloBar and
-            self.mixTableChange == other.mixTableChange and
-            self.tapping == other.tapping and
-            self.slapping == other.slapping and
-            self.popping == other.popping)
+                self.hasRasgueado == other.hasRasgueado and
+                self.pickStroke == other.pickStroke and
+                self.chord == other.chord and
+                self.fadeIn == other.fadeIn and
+                self.tremoloBar == other.tremoloBar and
+                self.mixTableChange == other.mixTableChange and
+                self.tapping == other.tapping and
+                self.slapping == other.slapping and
+                self.popping == other.popping)
 
 
 class Beat(GPObject):
@@ -997,13 +1002,6 @@ class Beat(GPObject):
     def setText(self, text):
         text.beat = self
         self.text = text
-
-    def hasHarmonic(self):
-        for voice in self.voices:
-            for note in voice.notes:
-                if note.effect.isHarmonic():
-                    return True
-        return False
 
     def setChord(self, chord):
         chord.beat = self
@@ -1037,27 +1035,27 @@ class Beat(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.voices == other.voices and
-            self.text == other.text and
-            self.start == other.start and
-            self.effect == other.effect and
-            self.index == other.index)
+                self.text == other.text and
+                self.start == other.start and
+                self.effect == other.effect and
+                self.index == other.index)
 
 
 class HarmonicType(object):
     '''All harmonic effect types
     '''
     # No harmonic
-    None_ = -1
+    None_ = 0
     # Natural harmonic
-    Natural = 0
+    Natural = 1
     # Artificial harmonic
-    Artificial = 1
+    Artificial = 2
     # Tapped harmonic
-    Tapped = 2
+    Tapped = 3
     # Pinch harmonic
-    Pinch = 3
+    Pinch = 4
     # Semi harmonic
-    Semi = 4
+    Semi = 5
 
 
 class HarmonicEffect(GPObject):
@@ -1072,7 +1070,7 @@ class HarmonicEffect(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.type == other.type and
-            self.data == other.data)
+                self.data == other.data)
 
 
 class GraceEffectTransition(object):
@@ -1110,11 +1108,11 @@ class GraceEffect(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.isDead == other.isDead and
-            self.duration == other.duration and
-            self.velocity == other.velocity and
-            self.fret == other.fret and
-            self.isOnBeat == other.isOnBeat and
-            self.transition == other.transition)
+                self.duration == other.duration and
+                self.velocity == other.velocity and
+                self.fret == other.fret and
+                self.isOnBeat == other.isOnBeat and
+                self.transition == other.transition)
 
     # def clone(self, factory):
     #     pass
@@ -1134,7 +1132,7 @@ class TrillEffect(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.fret == other.fret and
-            self.duration == other.duration)
+                self.duration == other.duration)
 
 
 class TremoloPickingEffect(GPObject):
@@ -1158,12 +1156,13 @@ class TremoloPickingEffect(GPObject):
 class SlideType(object):
     '''Lists all supported slide types.
     '''
-    FastSlideTo = 0
-    SlowSlideTo = 1
-    OutDownWards = 2
-    OutUpWards = 3
-    IntoFromBelow = 4
-    IntoFromAbove = 5
+    None_ = 0
+    ShiftSlideTo = 1
+    LegatoSlideTo = 2
+    OutDownWards = 3
+    OutUpWards = 4
+    IntoFromBelow = 5
+    IntoFromAbove = 6
 
 
 class NoteEffect(GPObject):
@@ -1176,9 +1175,8 @@ class NoteEffect(GPObject):
         self.trill = None
         self.tremoloPicking = None
         self.vibrato = False
-        self.wideVibrato = False
         self.deadNote = False
-        self.slide = False
+        self.slide = SlideType.None_
         self.hammer = False
         self.ghostNote = False
         self.accentuatedNote = False
@@ -1189,7 +1187,6 @@ class NoteEffect(GPObject):
         self.isFingering = False
         self.leftHandFinger = -1
         self.rightHandFinger = -1
-        self.slideType = -1
         self.presence = False
     
     def isBend(self):
@@ -1210,42 +1207,40 @@ class NoteEffect(GPObject):
     def isDefault(self):
         default = NoteEffect()
         return (self.leftHandFinger == default.leftHandFinger and
-            self.rightHandFinger == default.rightHandFinger and
-            self.bend == default.bend and
-            self.harmonic == default.harmonic and
-            self.grace == default.grace and
-            self.trill == default.trill and
-            self.tremoloPicking == default.tremoloPicking and
-            self.vibrato == default.vibrato and
-            self.slideType == default.slideType and
-            self.slide == default.slide and
-            self.hammer == default.hammer and
-            self.palmMute == default.palmMute and
-            self.staccato == default.staccato and
-            self.letRing == default.letRing)
+                self.rightHandFinger == default.rightHandFinger and
+                self.bend == default.bend and
+                self.harmonic == default.harmonic and
+                self.grace == default.grace and
+                self.trill == default.trill and
+                self.tremoloPicking == default.tremoloPicking and
+                self.vibrato == default.vibrato and
+                self.slide == default.slide and
+                self.hammer == default.hammer and
+                self.palmMute == default.palmMute and
+                self.staccato == default.staccato and
+                self.letRing == default.letRing)
     
     def __eq__(self, other):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.leftHandFinger == other.leftHandFinger and
-            self.rightHandFinger == other.rightHandFinger and
-            self.isFingering == other.isFingering and
-            self.bend == other.bend and
-            self.harmonic == other.harmonic and
-            self.grace == other.grace and
-            self.trill == other.trill and
-            self.tremoloPicking == other.tremoloPicking and
-            self.vibrato == other.vibrato and
-            self.deadNote == other.deadNote and
-            self.slideType == other.slideType and
-            self.slide == other.slide and
-            self.hammer == other.hammer and
-            self.ghostNote == other.ghostNote and
-            self.accentuatedNote == other.accentuatedNote and
-            self.heavyAccentuatedNote == other.heavyAccentuatedNote and
-            self.palmMute == other.palmMute and
-            self.staccato == other.staccato and
-            self.letRing == other.letRing)
+                self.rightHandFinger == other.rightHandFinger and
+                self.isFingering == other.isFingering and
+                self.bend == other.bend and
+                self.harmonic == other.harmonic and
+                self.grace == other.grace and
+                self.trill == other.trill and
+                self.tremoloPicking == other.tremoloPicking and
+                self.vibrato == other.vibrato and
+                self.deadNote == other.deadNote and
+                self.slide == other.slide and
+                self.hammer == other.hammer and
+                self.ghostNote == other.ghostNote and
+                self.accentuatedNote == other.accentuatedNote and
+                self.heavyAccentuatedNote == other.heavyAccentuatedNote and
+                self.palmMute == other.palmMute and
+                self.staccato == other.staccato and
+                self.letRing == other.letRing)
 
     # def clone(self, factory):
     #     pass
@@ -1274,16 +1269,15 @@ class Note(GPObject):
     def __eq__(self, other):
         if other is None or not isinstance(other, self.__class__):
             return None
-        return (
-            # self.duration == other.duration and
-            # self.tuplet == other.tuplet and
-            self.value == other.value and
-            self.velocity == other.velocity and
-            self.string == other.string and
-            self.isTiedNote == other.isTiedNote and
-            self.effect == other.effect and
-            # self.durationPercent == other.durationPercent and
-            self.swapAccidentals == other.swapAccidentals)
+        return (# self.duration == other.duration and
+                # self.tuplet == other.tuplet and
+                self.value == other.value and
+                self.velocity == other.velocity and
+                self.string == other.string and
+                self.isTiedNote == other.isTiedNote and
+                self.effect == other.effect and
+                # self.durationPercent == other.durationPercent and
+                self.swapAccidentals == other.swapAccidentals)
 
 
 class Chord(GPObject):
@@ -1306,8 +1300,8 @@ class Chord(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return False
         return (self.firstFret == other.firstFret and
-            self.strings == other.strings and
-            self.name == other.name)
+                self.strings == other.strings and
+                self.name == other.name)
 
 
 class BeatText(GPObject):
@@ -1335,8 +1329,8 @@ class MixTableItem(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.value == other.value and
-            self.duration == other.duration and
-            self.allTracks == other.allTracks)
+                self.duration == other.duration and
+                self.allTracks == other.allTracks)
 
 class MixTableChange(GPObject):
     '''A mixtablechange describes several track changes. 
@@ -1356,15 +1350,15 @@ class MixTableChange(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return None
         return (self.volume == other.volume and
-            self.balance == other.balance and
-            self.chorus == other.chorus and
-            self.reverb == other.reverb and
-            self.phaser == other.phaser and
-            self.tremolo == other.tremolo and
-            self.instrument == other.instrument and
-            self.tempoName == other.tempoName and
-            self.tempo == other.tempo and
-            self.hideTempo == other.hideTempo)
+                self.balance == other.balance and
+                self.chorus == other.chorus and
+                self.reverb == other.reverb and
+                self.phaser == other.phaser and
+                self.tremolo == other.tremolo and
+                self.instrument == other.instrument and
+                self.tempoName == other.tempoName and
+                self.tempo == other.tempo and
+                self.hideTempo == other.hideTempo)
 
 
 class BendTypes(object):
@@ -1420,8 +1414,8 @@ class BendPoint(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return False
         return (self.position == other.position and
-            self.value == other.value and
-            self.vibrato == other.vibrato)
+                self.value == other.value and
+                self.vibrato == other.vibrato)
 
 
 class BendEffect(GPObject):
@@ -1445,8 +1439,8 @@ class BendEffect(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return False
         return (self.type == other.type and
-            self.value == other.value and
-            self.points == other.points)
+                self.value == other.value and
+                self.points == other.points)
 
     # def clone(self, factory):
     #     pass
@@ -1471,7 +1465,7 @@ class TimeSignature(GPObject):
         if other is None or not isinstance(other, self.__class__):
             return False
         return (self.numerator == other.numerator and
-            self.denominator == other.denominator)
+                self.denominator == other.denominator)
 
 
 class Velocities(object):

@@ -115,20 +115,19 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x04 != 0:
             self.readTremoloPicking(noteEffect)
         if flags2 & 0x08 != 0:
-            noteEffect.slide = True
             slideType = self.readSignedByte()
             if slideType == 1:
-                noteEffect.slideType = gp.SlideType.FastSlideTo
+                noteEffect.slide = gp.SlideType.ShiftSlideTo
             elif slideType == 2:
-                noteEffect.slideType = gp.SlideType.SlowSlideTo
+                noteEffect.slide = gp.SlideType.LegatoSlideTo
             elif slideType == 4:
-                noteEffect.slideType = gp.SlideType.OutDownWards
+                noteEffect.slide = gp.SlideType.OutDownWards
             elif slideType == 8:
-                noteEffect.slideType = gp.SlideType.OutUpWards
+                noteEffect.slide = gp.SlideType.OutUpWards
             elif slideType == 16:
-                noteEffect.slideType = gp.SlideType.IntoFromBelow
+                noteEffect.slide = gp.SlideType.IntoFromBelow
             elif slideType == 32:
-                noteEffect.slideType = gp.SlideType.IntoFromAbove
+                noteEffect.slide = gp.SlideType.IntoFromAbove
         if flags2 & 0x10 != 0:
             self.readArtificialHarmonic(noteEffect)
         if flags2 & 0x20 != 0:

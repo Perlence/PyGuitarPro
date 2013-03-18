@@ -280,8 +280,8 @@ class GP3File(gp.GPFileBase):
     def readBeatEffects(self, beat, effect):
         flags1 = self.readByte()
         beat.effect.fadeIn = (flags1 & 0x10) != 0
-        beat.effect.vibrato = effect.vibrato = (flags1 & 0x01) != 0 or beat.effect.vibrato
-        beat.effect.wideVibrato = effect.wideVibrato = (flags1 & 0x02) != 0 or beat.effect.wideVibrato
+        effect.vibrato = (flags1 & 0x01) != 0 or effect.vibrato
+        beat.effect.vibrato = (flags1 & 0x02) != 0 or beat.effect.vibrato
         if flags1 & 0x20 != 0:
             slapEffect = self.readByte()
             if slapEffect == 0:
@@ -308,7 +308,7 @@ class GP3File(gp.GPFileBase):
         if flags1 & 0x08 != 0:
             harmonic = gp.HarmonicEffect()
             harmonic.type = gp.HarmonicType.Artificial
-            harmonic.self = 0
+            harmonic.data = 0
             effect.harmonic = harmonic
     
     def readTremoloBar(self, effect):
@@ -319,7 +319,7 @@ class GP3File(gp.GPFileBase):
         barEffect.points.append(gp.BendPoint(0, 0))
         barEffect.points.append(gp.BendPoint(round(gp.BendEffect.MAX_POSITION / 2), 
                                              round(barEffect.value / (self.BEND_SEMITONE * 2))))
-        barEffect.points.append(gp.BendPoint(self.MAX_POSITION, 0))
+        barEffect.points.append(gp.BendPoint(gp.BendEffect.MAX_POSITION, 0))
         
         effect.tremoloBar = barEffect
     
@@ -769,7 +769,8 @@ class GP3File(gp.GPFileBase):
             flags |= 0x02
         if beat.text is not None:
             flags |= 0x04
-        if not beat.effect.isDefault() or beat.hasHarmonic() or beat.effect.presence:
+        if (not beat.effect.isDefault() or voice.hasVibrato() or
+            voice.hasHarmonic() or beat.effect.presence):
             flags |= 0x08
         if beat.effect.mixTableChange is not None:
             flags |= 0x10
@@ -793,11 +794,11 @@ class GP3File(gp.GPFileBase):
             self.writeText(beat.text)
         
         if flags & 0x08 != 0:
-            try:
-                noteEffect = voice.notes[0].effect
-            except IndexError:
-                noteEffect = gp.NoteEffect()
-            self.writeBeatEffects(beat.effect, noteEffect)
+            # try:
+            #     noteEffect = voice.notes[0].effect
+            # except IndexError:
+            #     noteEffect = gp.NoteEffect()
+            self.writeBeatEffects(beat.effect, voice)
         
         if flags & 0x10 != 0:
             self.writeMixTableChange(beat.effect.mixTableChange)
@@ -876,7 +877,7 @@ class GP3File(gp.GPFileBase):
             flags1 |= 0x01
         if noteEffect.hammer:
             flags1 |= 0x02
-        if noteEffect.slide:
+        if noteEffect.slide in (gp.SlideType.ShiftSlideTo, gp.SlideType.LegatoSlideTo):
             flags1 |= 0x04
         if noteEffect.letRing:
             flags1 |= 0x08
@@ -930,15 +931,15 @@ class GP3File(gp.GPFileBase):
             if item is not None:
                 write(item.duration)
 
-    def writeBeatEffects(self, beatEffect, noteEffect):
+    def writeBeatEffects(self, beatEffect, voice):
         flags1 = 0x00
-        if beatEffect.vibrato:
+        if voice.hasVibrato():
             flags1 |= 0x01
-        if beatEffect.wideVibrato:
+        if beatEffect.vibrato:
             flags1 |= 0x02
-        if noteEffect.isHarmonic() and noteEffect.harmonic.type == gp.HarmonicType.Natural:
+        if voice.hasHarmonic() == gp.HarmonicType.Natural:
             flags1 |= 0x04
-        if noteEffect.isHarmonic() and noteEffect.harmonic.type == gp.HarmonicType.Artificial:
+        if voice.hasHarmonic() == gp.HarmonicType.Artificial:
             flags1 |= 0x08
         if beatEffect.fadeIn:
             flags1 |= 0x10
