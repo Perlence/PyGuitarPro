@@ -272,7 +272,6 @@ class Song(GPObject):
     
     def addTrack(self, track):
         '''Adds a new track to the song. 
-        :param: track the track to add. 
         '''
         track.song = self
         self.tracks.append(track)
