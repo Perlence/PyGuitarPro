@@ -24,6 +24,7 @@ def findFormatExtFile(path):
     '''Guess format from filepath
     '''
     root, ext = os.path.splitext(path)
+    ext = ext.lstrip('.')
     if ext in ('gp3', 'gp4', 'gp5'):
         return ext
     else:

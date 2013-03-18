@@ -275,6 +275,7 @@ class GP3File(gp.GPFileBase):
             tableChange.hideTempo = False
         else:
             tableChange.tempo = None
+
         return tableChange
     
     def readBeatEffects(self, beat, effect):
@@ -469,6 +470,7 @@ class GP3File(gp.GPFileBase):
         if (flags & 0x40) != 0:
             header.keySignature = self.toKeySignature(self.readSignedByte())
             header.keySignatureType = self.readSignedByte()
+            header.keySignaturePresence = True
         
         elif header.number > 1:
             header.keySignature = song.measureHeaders[i - 1].keySignature
@@ -583,7 +585,7 @@ class GP3File(gp.GPFileBase):
         self.writeBool(self._tripletFeel)
         
         self.writeLyrics(song)
-        self.readPageSetup(song)        
+        self.writePageSetup(song)        
         
         self.writeInt(song.tempo)
         self.writeInt(song.key)
@@ -675,7 +677,9 @@ class GP3File(gp.GPFileBase):
         if previous is not None:
             if header.keySignature != previous.keySignature:
                 flags |= 0x40
-        elif header.number > 1 or header.keySignature != 0:
+        # elif header.number > 1 or header.keySignature != 0:
+        #     flags |= 0x40
+        elif header.keySignaturePresence:
             flags |= 0x40
         if header.hasDoubleBar:
             flags |= 0x80
@@ -785,7 +789,7 @@ class GP3File(gp.GPFileBase):
             beatType = 0x00 if voice.isEmpty else 0x02
             self.writeByte(beatType)
         
-        self.writeDuration(flags, voice.duration)
+        self.writeDuration(voice.duration, flags)
 
         if flags & 0x02 != 0:
             self.writeChord(beat.effect.chord)
@@ -817,7 +821,6 @@ class GP3File(gp.GPFileBase):
         # In GP3 NoteEffect doesn't have vibrato attribute
         noteEffect = copy.copy(note.effect)
         noteEffect.vibrato = False
-        noteEffect.wideVibrato = False
 
         flags = 0x00
         try:
@@ -906,8 +909,8 @@ class GP3File(gp.GPFileBase):
         self.writeInt(bend.value)
         self.writeInt(len(bend.points))
         for point in bend.points:
-            self.writeInt(round(point.position * gp.GPFileBase.BEND_POSITION / gp.BendEffect.MAX_POSITION))
-            self.writeInt(round(point.value * gp.GPFileBase.BEND_SEMITONE / gp.BendEffect.SEMITONE_LENGTH))
+            self.writeInt(round(point.position * self.BEND_POSITION / gp.BendEffect.MAX_POSITION))
+            self.writeInt(round(point.value * self.BEND_SEMITONE / gp.BendEffect.SEMITONE_LENGTH))
             self.writeBool(point.vibrato)
     
     def writeMixTableChange(self, tableChange):
@@ -1011,7 +1014,7 @@ class GP3File(gp.GPFileBase):
         #             chord.strings[i] = fret
         #     self.skip(36)
     
-    def writeDuration(self, flags, duration):
+    def writeDuration(self, duration, flags):
         value = round(math.log(duration.value, 2) - 2)
         self.writeSignedByte(value)
         if flags & 0x20 != 0:

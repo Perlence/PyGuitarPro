@@ -524,6 +524,7 @@ class MeasureHeader(GPObject):
         self.timeSignature = TimeSignature()
         self.keySignature = self.DEFAULT_KEY_SIGNATURE
         self.keySignatureType = 0
+        self.keySignaturePresence = False
         self.tempo = Tempo()
         self.marker = None
         self.tripletFeel = TripletFeel.None_
