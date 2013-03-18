@@ -550,10 +550,9 @@ class GP3File(gp.GPFileBase):
         song.instructions = self.readIntSizeCheckByteString()
         
         iNotes = self.readInt()
-        notice = []
+        song.notice = []
         for i in range(iNotes):
-            notice.append(self.readIntSizeCheckByteString())
-        song.notice = '\n'.join(notice)
+            song.notice.append(self.readIntSizeCheckByteString())
     
     def toKeySignature(self, p):
         return 7 + abs(p) if p < 0 else p
@@ -613,9 +612,8 @@ class GP3File(gp.GPFileBase):
         self.writeIntSizeCheckByteString(song.tab)
         self.writeIntSizeCheckByteString(song.instructions)
         
-        lines = song.notice.splitlines()
-        self.writeInt(len(lines))
-        for line in lines:
+        self.writeInt(len(song.notice))
+        for line in song.notice:
             self.writeIntSizeCheckByteString(line)
 
     def writeLyrics(self, song):

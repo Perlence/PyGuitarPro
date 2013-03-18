@@ -252,7 +252,7 @@ class Song(GPObject):
         self.copyright = ""
         self.tab = ""
         self.instructions = ""
-        self.notice = ""
+        self.notice = []
         self._currentRepeatGroup = RepeatGroup()
     
     def addMeasureHeader(self, header):
