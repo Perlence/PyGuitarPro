@@ -694,7 +694,7 @@ class GP3File(gp.GPFileBase):
             self.writeSignedByte(header.repeatClose + 1)
         
         if (flags & 0x10) != 0:
-            self.writeByte(self.packRepeatAlternative(song, header.number, header.repeatAlternative))
+            self.writeByte(self.packRepeatAlternative(header.repeatAlternative))
         
         if (flags & 0x20) != 0:
             self.writeMarker(header.marker)
@@ -703,7 +703,7 @@ class GP3File(gp.GPFileBase):
             self.writeSignedByte(self.fromKeySignature(header.keySignature))
             self.writeSignedByte(header.keySignatureType)
 
-    def packRepeatAlternative(self, song, measure, value):
+    def packRepeatAlternative(self, value):
         return value.bit_length()
 
     def writeMarker(self, marker):
