@@ -22,6 +22,8 @@ import base as gp
 import gp3
 
 class GP4File(gp3.GP3File):
+    '''A reader for GuitarPro 4 files. 
+    '''
     def __init__(self, *args, **kwargs):
         super(GP4File, self).__init__(*args, **kwargs)
         self.initVersions(['FICHIER GUITAR PRO v4.00', 'FICHIER GUITAR PRO v4.06', 'FICHIER GUITAR PRO L4.06'])
