@@ -479,7 +479,8 @@ class MidiChannel(GPObject):
                 'reverb',
                 'phaser',
                 'tremolo',
-                'instrument']
+                'instrument',
+                'bank']
 
     DEFAULT_PERCUSSION_CHANNEL = 9
     DEFAULT_INSTRUMENT = 24
@@ -489,6 +490,7 @@ class MidiChannel(GPObject):
     DEFAULT_REVERB = 0
     DEFAULT_PHASER = 0
     DEFAULT_TREMOLO = 0
+    DEFAULT_BANK = 0
     
     def __init__(self):
         self.channel = 0
@@ -500,9 +502,19 @@ class MidiChannel(GPObject):
         self.reverb = self.DEFAULT_REVERB
         self.phaser = self.DEFAULT_PHASER
         self.tremolo = self.DEFAULT_TREMOLO
+        self.bank = self.DEFAULT_BANK
     
     def isPercussionChannel(self):
         return self.channel % 16 == self.DEFAULT_PERCUSSION_CHANNEL
+
+
+class DirectionSign(GPObject):
+    '''A navigation sign like Coda or Segno
+    '''
+    __attr__ = ['name']
+
+    def __init__(self, name=''):
+        self.name = name
 
 
 class MeasureHeader(GPObject):
@@ -593,23 +605,56 @@ class Marker(GPObject):
         self.measureHeader = None
 
 
+class TrackSettings(GPObject):
+    '''Settings of the track
+    '''
+    __attr__ = ['tablature',
+                'notation',
+                'diagramsAreBelow',
+                'showRhythm',
+                'forceHorizontal',
+                'forceChannels',
+                'diagramList',
+                'diagramsInScore',
+                'autoLetRing',
+                'autoBrush',
+                'extendRhythmic']
+
+    def __init__(self):
+        self.tablature = True
+        self.notation = True
+        self.diagramsAreBelow = False
+        self.showRhythm = False
+        self.forceHorizontal = False
+        self.forceChannels = False
+        self.diagramList = True
+        self.diagramsInScore = False
+
+        self.autoLetRing = False
+        self.autoBrush = False
+        self.extendRhythmic = False
+
+
 class Track(GPObject):
     '''A track contains multiple measures
     '''
     __attr__ = ['fretCount',
                 'number',
                 'offset',
-                'isSolo',
-                'isMute',
                 'isPercussionTrack',
                 'is12StringedGuitarTrack',
                 'isBanjoTrack',
+                'isVisible',
+                'isSolo',
+                'isMute',
+                'indicateTuning',
                 'name',
                 'measures',
                 'strings',
                 'port',
                 'channel',
-                'color']
+                'color',
+                'settings']
 
     def stringCount(self):
         return len(self.strings)
@@ -622,11 +667,14 @@ class Track(GPObject):
         self.offset = 0
         self.isSolo = False
         self.isMute = False
+        self.isVisible = True
+        self.indicateTuning = True
         self.name = ""
         self.measures = []
         self.strings = []
         self.channel = MidiChannel()
         self.color = Color.fromRgb(255, 0, 0)
+        self.settings = None
     
     def addMeasure(self, measure):
         measure.track = self
@@ -757,12 +805,21 @@ class MeasureClef(object):
     Alto = 3
 
 
+class LineBreak(object):
+    '''A line break directive
+    '''
+    None_ = 0
+    Break = 1
+    Protect = 2
+
+
 class Measure(GPObject):
     '''A measure contains multiple beats
     '''
     __attr__ = ['clef',
                 'beats',
-                'header']
+                'header',
+                'lineBreak']
 
     DEFAULT_CLEF = MeasureClef.Treble
 
@@ -812,6 +869,7 @@ class Measure(GPObject):
         self.header = header
         self.clef = self.DEFAULT_CLEF
         self.beats = []
+        self.lineBreak = 0
     
     def addBeat(self, beat):
         beat.measure = self
