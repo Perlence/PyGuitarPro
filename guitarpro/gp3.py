@@ -395,8 +395,8 @@ class GP3File(gp.GPFileBase):
         return newBeat
     
     def readTracks(self, song, trackCount, channels):
-        for i in range(1, trackCount + 1):
-            song.addTrack(self.readTrack(i, channels))
+        for i in range(trackCount):
+            song.addTrack(self.readTrack(i + 1, channels))
         
     def readTrack(self, number, channels):
         flags = self.readByte()
@@ -597,7 +597,7 @@ class GP3File(gp.GPFileBase):
         self.writeInt(trackCount)
         
         self.writeMeasureHeaders(song)
-        self.writeTracks(song)
+        self.writeTracks(song.tracks)
         self.writeMeasures(song)
 
         self.writeInt(0)
@@ -719,8 +719,8 @@ class GP3File(gp.GPFileBase):
     def fromKeySignature(self, p):
         return -(p - 7) if p > 7 else p
 
-    def writeTracks(self, song):
-        for track in song.tracks:
+    def writeTracks(self, tracks):
+        for track in tracks:
             self.writeTrack(track)
         
     def writeTrack(self, track):
@@ -731,6 +731,7 @@ class GP3File(gp.GPFileBase):
             flags |= 0x02
         if track.isBanjoTrack:
             flags |= 0x04
+
         self.writeByte(flags)
 
         self.writeByteSizeString(track.name, 40)

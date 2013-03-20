@@ -29,6 +29,10 @@ class GP5File(gp4.GP4File):
         super(GP5File, self).__init__(*args, **kwargs)
         self.initVersions(['FICHIER GUITAR PRO v5.00', 'FICHIER GUITAR PRO v5.10'])
     
+    #################################################################
+    #### Reading
+    #################################################################
+
     def readSong(self) :
         if not self.readVersion():
             raise gp.GuitarProException("unsupported version '%s'" % self.version)
@@ -267,8 +271,8 @@ class GP5File(gp4.GP4File):
 
         self.skip(1)
         if not self.version.endswith('5.00'):
-            self.readIntSizeCheckByteString()
-            self.readIntSizeCheckByteString()
+            tableChange.skip1 = self.readIntSizeCheckByteString()
+            tableChange.skip2 = self.readIntSizeCheckByteString()
 
         return tableChange
     
@@ -299,6 +303,7 @@ class GP5File(gp4.GP4File):
         track.isPercussionTrack = (flags & 0x1) != 0
         track.is12StringedGuitarTrack = (flags & 0x02) != 0
         track.isBanjoTrack = (flags & 0x04) != 0
+        track.visible = (flags & 0x08) != 0
         track.number = number
         track.name = self.readByteSizeString(40)
         stringCount = self.readInt()
@@ -318,8 +323,8 @@ class GP5File(gp4.GP4File):
         track.color = self.readColor()
         self.skip(49 if not self.version.endswith('5.00') else 44)
         if not self.version.endswith('5.00'):
-            self.readIntSizeCheckByteString()
-            self.readIntSizeCheckByteString()
+            track.skip1 = self.readIntSizeCheckByteString()
+            track.skip2 = self.readIntSizeCheckByteString()
         return track
 
     def unpackTripletFeel(self, tripletFeel):
@@ -424,3 +429,494 @@ class GP5File(gp4.GP4File):
         song.notice = []
         for i in range(iNotes):
             song.notice.append(self.readIntSizeCheckByteString())
+
+    #################################################################
+    #### Writing
+    #################################################################
+
+    def writeSong(self, song) :
+        self.version = self._supportedVersions[1]
+        self.writeVersion(1)
+
+        self.writeInfo(song)
+        self.writeLyrics(song)
+        self.writePageSetup(song.pageSetup)
+
+        self.writeIntSizeCheckByteString(song.tempoName)
+        self.writeInt(song.tempo)
+                
+        if not self.version.endswith('5.00'):
+            self.writeBool(song.hideTempo)
+        
+        self.writeByte(song.key)
+        self.writeInt(song.octave)
+        
+        self.writeMidiChannels(song)
+        
+        self.placeholder(42, '\xff') # RSE info?
+
+        measureCount = len(song.tracks[0].measures)
+        trackCount = len(song.tracks)        
+        self.writeInt(measureCount)
+        self.writeInt(trackCount)
+        
+        self.writeMeasureHeaders(song)
+        self.writeTracks(song.tracks)
+        self.writeMeasures(song)
+
+    def writeInfo(self, song):
+        self.writeIntSizeCheckByteString(song.title)
+        self.writeIntSizeCheckByteString(song.subtitle)
+        self.writeIntSizeCheckByteString(song.artist)
+        self.writeIntSizeCheckByteString(song.album)
+        self.writeIntSizeCheckByteString(song.words)
+        self.writeIntSizeCheckByteString(song.music)
+        self.writeIntSizeCheckByteString(song.copyright)
+        self.writeIntSizeCheckByteString(song.tab)
+        self.writeIntSizeCheckByteString(song.instructions)
+        
+        self.writeInt(len(song.notice))
+        for line in song.notice:
+            self.writeIntSizeCheckByteString(line)
+
+    def writePageSetup(self, setup):
+        if not self.version.endswith('5.00'):
+            self.placeholder(19)
+        self.writeInt(setup.pageSize.x)
+        self.writeInt(setup.pageSize.y)
+        
+        self.writeInt(setup.pageMargin.left)
+        self.writeInt(setup.pageMargin.right)
+        self.writeInt(setup.pageMargin.top)
+        self.writeInt(setup.pageMargin.bottom)
+        self.writeInt(setup.scoreSizeProportion * 100)
+        
+        self.writeByte(setup.headerAndFooter & 0xff)
+        
+        flags2 = 0x00
+        if setup.headerAndFooter & gp.HeaderFooterElements.PAGE_NUMBER != 0:
+            flags2 |= 0x01
+        self.writeByte(flags2)
+        
+        self.writeIntSizeCheckByteString(setup.title)
+        self.writeIntSizeCheckByteString(setup.subtitle)
+        self.writeIntSizeCheckByteString(setup.artist)
+        self.writeIntSizeCheckByteString(setup.album)
+        self.writeIntSizeCheckByteString(setup.words)
+        self.writeIntSizeCheckByteString(setup.music)
+        self.writeIntSizeCheckByteString(setup.wordsAndMusic)
+        copyrighta, copyrightb = setup.copyright.split('\n', 1)
+        self.writeIntSizeCheckByteString(copyrighta)
+        self.writeIntSizeCheckByteString(copyrightb)
+        self.writeIntSizeCheckByteString(setup.pageNumber)
+
+    def packTripletFeel(self, tripletFeel):
+        if tripletFeel == gp.TripletFeel.None_:
+            return 0
+        elif tripletFeel == gp.TripletFeel.Eighth:
+            return 1
+        elif tripletFeel == gp.TripletFeel.Sixteenth:
+            return 2
+
+    def writeMeasureHeader(self, song, header, previous):
+        flags = 0x00
+        if previous is not None:
+            if header.timeSignature.numerator != previous.timeSignature.numerator:
+                flags |= 0x01
+            if header.timeSignature.denominator.value != previous.timeSignature.denominator.value:
+                flags |= 0x02
+        else:
+            flags |= 0x01
+            flags |= 0x02
+        if header.isRepeatOpen:
+            flags |= 0x04
+        if header.repeatClose > -1:
+            flags |= 0x08
+        if header.repeatAlternative != 0:
+            flags |= 0x10
+        if header.marker is not None:
+            flags |= 0x20
+        if previous is not None:
+            if header.keySignature != previous.keySignature:
+                flags |= 0x40
+        else:
+            flags |= 0x40
+        if header.hasDoubleBar:
+            flags |= 0x80
+
+        if header.number > 1:
+            self.placeholder(1)
+
+        self.writeByte(flags)
+                
+        if flags & 0x01 != 0:
+            self.writeByte(header.timeSignature.numerator)
+        if flags & 0x02 != 0:
+            self.writeByte(header.timeSignature.denominator.value)
+        
+        if flags & 0x08 != 0:
+            self.writeByte(header.repeatClose + 1)
+
+        if flags & 0x20 != 0:
+            self.writeMarker(header.marker)
+        
+        if flags & 0x10 != 0:
+            self.writeByte(header.repeatAlternative)
+        
+        if flags & 0x40 != 0:
+            self.writeSignedByte(self.fromKeySignature(header.keySignature))
+            self.writeByte(header.keySignatureType)
+
+        if flags & 0x01 != 0:
+            self.placeholder(4)
+
+        if flags & 0x10 == 0:
+            self.placeholder(1)
+        
+        self.writeByte(self.packTripletFeel(header.tripletFeel))
+
+    def writeTracks(self, tracks):
+        super(GP5File, self).writeTracks(tracks)
+        self.placeholder(2 if self.version.endswith('5.00') else 1)
+        
+    def writeTrack(self, track):
+        flags = 0x00
+        if track.isPercussionTrack:
+            flags |= 0x01
+        if track.is12StringedGuitarTrack:
+            flags |= 0x02
+        if track.isBanjoTrack:
+            flags |= 0x04
+        if track.visible:
+            flags |= 0x08
+
+        self.writeByte(flags)
+        if track.number == 1 or self.version.endswith('5.00'):
+            self.writeByte(8 | flags)
+            # self.placeholder(1)
+
+        self.writeByteSizeString(track.name, 40)
+        self.writeInt(track.stringCount())
+        for i in range(7):
+            if i < track.stringCount():
+                tuning = track.strings[i].value
+            else:
+                tuning = 0
+            self.writeInt(tuning)
+        self.writeInt(track.port)
+        self.writeChannel(track)
+        self.writeInt(track.fretCount)
+        self.writeInt(track.offset)
+        self.writeColor(track.color)
+
+        if self.version.endswith('5.00'):
+            self.data.write('\x43\x01\x00\x00\x00\x00\x00\x00'
+                            '\x00\x00\x00\x00\x00\x64\x00\x00'
+                            '\x00\x01\x02\x03\x04\x05\x06\x07'
+                            '\x08\x09\x0a\xff\x03\xff\xff\xff'
+                            '\xff\xff\xff\xff\xff\xff\xff\xff'
+                            '\xff\xff\xff\xff')
+        else:
+            self.data.write('\xc3\x00\x00\x00\x00\x0c\x00\x00'
+                            '\x00\x0c\x00\x00\x00\x64\x00\x00'
+                            '\x00\x01\x02\x03\x04\x05\x06\x0a'
+                            '\x07\x08\x09\xdf\x03\x1e\x00\x00'
+                            '\x00\x01\x00\x00\x00\x01\x00\x00'
+                            '\x00\x00\x00\x00\x00\x00\x00\x00'
+                            '\x00')
+        if not self.version.endswith('5.00'):
+            self.writeIntSizeCheckByteString(track.skip1)
+            self.writeIntSizeCheckByteString(track.skip2)
+
+    def writeMeasure(self, measure, track):
+        for voice in range(gp.Beat.MAX_VOICES):
+            beatCount = measure.beatCount(voice)
+            if beatCount == 0:
+                beatCount = 1
+            self.writeInt(beatCount)
+            # for beat in measure.beats:
+            for i in range(beatCount):
+                beat = measure.beats[i]
+                self.writeBeat(beat, measure, track, voice)
+        self.placeholder(1)
+
+    def writeBeat(self, beat, measure, track, voiceIndex=0):
+        voice = beat.voices[voiceIndex]
+
+        flags = 0x00
+        if voice.duration.isDotted:
+            flags |= 0x01
+        if beat.effect.isChord():
+            flags |= 0x02
+        if beat.text is not None:
+            flags |= 0x04
+        if not beat.effect.isDefault():
+            flags |= 0x08
+        if beat.effect.mixTableChange is not None:
+            flags |= 0x10
+        if voice.duration.tuplet != gp.Tuplet():
+            flags |= 0x20
+        if voice.isEmpty or voice.isRestVoice():
+            flags |= 0x40
+
+        self.writeByte(flags)
+                
+        if flags & 0x40 != 0:
+            beatType = 0x00 if voice.isEmpty else 0x02
+            self.writeByte(beatType)
+        
+        self.writeDuration(voice.duration, flags)
+
+        if flags & 0x02 != 0:
+            self.writeChord(beat.effect.chord)
+
+        if flags & 0x04 != 0:
+            self.writeText(beat.text)
+
+        if flags & 0x08 != 0:
+            self.writeBeatEffects(beat.effect, voice)
+
+        if flags & 0x10 != 0:
+            self.writeMixTableChange(beat.effect.mixTableChange)
+
+        stringFlags = 0x00
+        for note in voice.notes:
+            stringFlags |= 1 << (7 - note.string)
+        self.writeByte(stringFlags)
+
+        previous = None
+        for note in voice.notes:
+            self.writeNote(note, previous, track)
+            previous = note
+
+        self.placeholder(2)
+
+    def writeNote(self, note, previous, track):
+        flags = 0x00
+        try:
+            if note.duration is not None and note.tuplet is not None:
+                flags |= 0x01
+        except AttributeError:
+            pass
+        if note.durationPercent != 1.0:
+            flags |= 0x01
+        if note.effect.heavyAccentuatedNote:
+            flags |= 0x02
+        if note.effect.ghostNote:
+            flags |= 0x04
+        if not note.effect.isDefault() or note.effect.presence:
+            flags |= 0x08
+        # if previous is not None and note.velocity != previous.velocity:
+        if note.velocity != gp.Velocities.DEFAULT:
+            flags |= 0x10
+        # if note.isTiedNote or note.effect.deadNote:
+        flags |= 0x20
+        if note.effect.accentuatedNote:
+            flags |= 0x40
+        if note.effect.isFingering:
+            flags |= 0x80
+
+        self.writeByte(flags)
+
+        if flags & 0x20 != 0:
+            if note.isTiedNote:
+                noteType = 0x02
+            elif note.effect.deadNote:
+                noteType = 0x03
+            else:
+                noteType = 0x01
+            self.writeByte(noteType)
+        
+        if flags & 0x10 != 0:
+            value = self.packVelocity(note.velocity)
+            self.writeSignedByte(value)
+        
+        if flags & 0x20 != 0:
+            fret = note.value if not note.isTiedNote else 0
+            self.writeSignedByte(fret)
+        
+        if flags & 0x80 != 0:
+            self.writeSignedByte(note.effect.leftHandFinger)
+            self.writeSignedByte(note.effect.rightHandFinger)
+
+        if flags & 0x01 != 0:
+            self.writeDouble(note.durationPercent)
+        
+        flags2 = 0x00        
+        if note.swapAccidentals:
+            flags2 |= 0x02
+
+        self.writeByte(flags2)
+        
+        if flags & 0x08 != 0:
+            self.writeNoteEffects(note.effect)
+
+
+    def writeNoteEffects(self, noteEffect):
+        flags1 = 0x00
+        if noteEffect.isBend():
+            flags1 |= 0x01
+        if noteEffect.hammer:
+            flags1 |= 0x02
+        if noteEffect.letRing:
+            flags1 |= 0x08
+        if noteEffect.isGrace():
+            flags1 |= 0x10
+
+        self.writeByte(flags1)
+
+        flags2 = 0x00
+        if noteEffect.staccato:
+            flags2 |= 0x01
+        if noteEffect.palmMute:
+            flags2 |= 0x02
+        if noteEffect.isTremoloPicking():
+            flags2 |= 0x04
+        if noteEffect.slide:
+            flags2 |= 0x08
+        if noteEffect.isHarmonic():
+            flags2 |= 0x10
+        if noteEffect.isTrill():
+            flags2 |= 0x20
+        if noteEffect.vibrato:
+            flags2 |= 0x40
+
+        self.writeByte(flags2)
+
+        if flags1 & 0x01 != 0:
+            self.writeBend(noteEffect.bend)
+        if flags1 & 0x10 != 0:
+            self.writeGrace(noteEffect.grace)
+        if flags2 & 0x04 != 0:
+            self.writeTremoloPicking(noteEffect.tremoloPicking)
+        if flags2 & 0x08 != 0:
+            self.writeByte(self.toSlideType(noteEffect.slide))            
+        if flags2 & 0x10 != 0:
+            self.writeArtificialHarmonic(noteEffect.harmonic)
+        if flags2 & 0x20 != 0:
+            self.writeTrill(noteEffect.trill)
+
+    def toHarmonicType(self, harmonic):
+        if harmonic.type == gp.HarmonicType.Natural:
+            return 1
+        elif harmonic.type == gp.HarmonicType.Artificial:
+            self.skip(3) # Note?
+            return 2
+        elif harmonic.type == gp.HarmonicType.Tapped:
+            self.skip(1) # Key?
+            return 3
+        elif harmonic.type == gp.HarmonicType.Pinch:
+            return 4
+        elif harmonic.type == gp.HarmonicType.Semi:
+            return 5
+
+    def writeGrace(self, grace):
+        self.writeByte(grace.fret)
+        self.writeByte(self.packVelocity(grace.velocity))
+        self.writeByte(grace.transition)
+        self.writeByte(grace.duration)
+
+        flags = 0x00
+        if grace.isDead:
+            flags |= 0x01
+        if grace.isOnBeat:
+            flags |= 0x02
+
+        self.writeByte(flags)
+
+    def writeMixTableChange(self, tableChange):
+        # self.writeSignedByte(tableChange.instrument.value)
+        # self.placeholder(16, '\xff') # RSE info
+        # self.writeSignedByte(tableChange.volume.value)
+        # self.writeSignedByte(tableChange.balance.value)
+        # self.writeSignedByte(tableChange.chorus.value)
+        # self.writeSignedByte(tableChange.reverb.value)
+        # self.writeSignedByte(tableChange.phaser.value)
+        # self.writeSignedByte(tableChange.tremolo.value)
+        # self.writeIntSizeCheckByteString(tableChange.tempoName)
+        # self.writeInt(tableChange.tempo.value)
+        
+        items = [(tableChange.instrument, self.writeSignedByte),
+                 ((16, '\xff'), self.placeholder), # RSE info
+                 (tableChange.volume, self.writeSignedByte),
+                 (tableChange.balance, self.writeSignedByte),
+                 (tableChange.chorus, self.writeSignedByte),
+                 (tableChange.reverb, self.writeSignedByte),
+                 (tableChange.phaser, self.writeSignedByte),
+                 (tableChange.tremolo, self.writeSignedByte),
+                 (tableChange.tempoName, self.writeIntSizeCheckByteString),
+                 (tableChange.tempo, self.writeInt)]
+
+        for item, write in items:
+            if isinstance(item, tuple):
+                write(*item)
+            elif isinstance(item, str):
+                write(item)
+            elif isinstance(item, gp.MixTableItem):
+                write(item.value)
+            else:
+                write(-1)
+
+        # instrument change doesn't have duration
+        for item, write in items[2:]:
+            if isinstance(item, gp.MixTableItem):
+                write(item.duration)
+                if hasattr(item, 'hideTempo'):
+                    if tableChange.hideTempo and not self.version.endswith('5.00'):
+                        self.writeBool(tableChange.hideTempo)
+
+        allTracksFlags = 0x00
+        for i, item in enumerate(items):
+            if isinstance(item, gp.MixTableItem) and item.allTracks:
+                allTracksFlags |= 1 << i
+
+        self.writeByte(allTracksFlags)
+
+        self.placeholder(1)
+        if not self.version.endswith('5.00'):
+            self.writeIntSizeCheckByteString(tableChange.skip1)
+            self.writeIntSizeCheckByteString(tableChange.skip2)
+
+    def writeChord(self, chord):
+        self.placeholder(17)
+        self.writeByteSizeString(chord.name, 21)
+        self.placeholder(4)
+        self.writeInt(chord.firstFret)
+        for i in range(7):
+            fret = -1
+            if i < len(chord.strings):
+                fret = chord.strings[i]
+            self.writeInt(fret)
+        self.placeholder(32)
+
+    def writeMidiChannels(self, song):
+        def getTrackChannelByChannel(channel):
+            for track in song.tracks:
+                if channel in (track.channel.channel, track.channel.effectChannel):
+                    return track.channel
+            default = gp.MidiChannel()
+            default.channel = channel
+            default.effectChannel = channel
+            default.instrument = 0
+            default.volume = 0
+            default.balance = 0
+            default.chorus = 0
+            default.reverb = 0
+            default.phaser = 0
+            default.tremolo = 0
+            return default
+
+        for channel in map(getTrackChannelByChannel, range(64)):
+            # if channel.isPercussionChannel() and channel.instrument == 0:
+            #     self.writeInt(-1)
+            # else:
+            self.writeInt(channel.instrument)
+            
+            self.writeSignedByte(self.fromChannelShort(channel.volume))
+            self.writeSignedByte(self.fromChannelShort(channel.balance))
+            self.writeSignedByte(self.fromChannelShort(channel.chorus))
+            self.writeSignedByte(self.fromChannelShort(channel.reverb))
+            self.writeSignedByte(self.fromChannelShort(channel.phaser))
+            self.writeSignedByte(self.fromChannelShort(channel.tremolo))
+            # Backward compatibility with version 3.0
+            self.placeholder(2)

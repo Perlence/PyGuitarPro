@@ -109,8 +109,8 @@ class GPFileBase(object):
 
     # Writing
     # =======
-    def placeholder(self, count):
-        self.data.write('\x00' * count)
+    def placeholder(self, count, byte='\x00'):
+        self.data.write(byte * count)
 
     def writeByte(self, data):
         packed = struct.pack('B', data)
@@ -144,8 +144,7 @@ class GPFileBase(object):
         if size is None:
             size = len(data)
         self.data.write(data)
-        placeholder = '\x00' * (size - len(data))
-        self.data.write(placeholder)
+        self.placeholder(size - len(data))
 
     # def writeString(self, data, size, length=-2):
     #     if length == -2:
@@ -764,8 +763,11 @@ class Measure(GPObject):
 
     DEFAULT_CLEF = MeasureClef.Treble
 
-    def beatCount(self):
-        return len(self.beats)
+    def beatCount(self, voiceIndex=0):
+        result = 0
+        for beat in self.beats:
+            result += 1 if not beat.voices[voiceIndex].isEmpty else 0
+        return result
     
     def end(self):
         return self.start() + self.length()
@@ -1199,7 +1201,7 @@ class Note(GPObject):
                 'string',
                 'isTiedNote',
                 'effect',
-                # 'durationPercent',
+                'durationPercent',
                 'swapAccidentals']
 
     def realValue(self):
@@ -1217,7 +1219,7 @@ class Note(GPObject):
         self.effect = NoteEffect()
         # self.duration = 0
         # self.tuplet = 0
-        # self.durationPercent = 1
+        self.durationPercent = 1.0
 
 
 class Chord(GPObject):

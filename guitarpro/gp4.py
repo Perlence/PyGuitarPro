@@ -305,7 +305,7 @@ class GP4File(gp3.GP3File):
         self.writeInt(trackCount)
 
         self.writeMeasureHeaders(song)
-        self.writeTracks(song)
+        self.writeTracks(song.tracks)
         self.writeMeasures(song)
 
     def writeLyrics(self, song):
@@ -362,6 +362,59 @@ class GP4File(gp3.GP3File):
         for note in voice.notes:
             self.writeNote(note, previous, track)
             previous = note
+
+    def writeNote(self, note, previous, track):
+        flags = 0x00
+        try:
+            if note.duration is not None and note.tuplet is not None:
+                flags |= 0x01
+        except AttributeError:
+            pass
+        if note.effect.heavyAccentuatedNote:
+            flags |= 0x02
+        if note.effect.ghostNote:
+            flags |= 0x04
+        if not note.effect.isDefault() or note.effect.presence:
+            flags |= 0x08
+        # if previous is not None and note.velocity != previous.velocity:
+        if note.velocity != gp.Velocities.DEFAULT:
+            flags |= 0x10
+        # if note.isTiedNote or note.effect.deadNote:
+        flags |= 0x20
+        if note.effect.accentuatedNote:
+            flags |= 0x40
+        if note.effect.isFingering:
+            flags |= 0x80
+
+        self.writeByte(flags)
+
+        if flags & 0x20 != 0:
+            if note.isTiedNote:
+                noteType = 0x02
+            elif note.effect.deadNote:
+                noteType = 0x03
+            else:
+                noteType = 0x01
+            self.writeByte(noteType)
+        
+        if flags & 0x01 != 0:
+            self.writeSignedByte(note.duration)
+            self.writeSignedByte(note.tuplet)
+        
+        if flags & 0x10 != 0:
+            value = self.packVelocity(note.velocity)
+            self.writeSignedByte(value)
+        
+        if flags & 0x20 != 0:
+            fret = note.value if not note.isTiedNote else 0
+            self.writeSignedByte(fret)
+        
+        if flags & 0x80 != 0:
+            self.writeSignedByte(note.effect.leftHandFinger)
+            self.writeSignedByte(note.effect.rightHandFinger)
+        
+        if flags & 0x08 != 0:
+            self.writeNoteEffects(note.effect)
     
     def toSlideType(self, slide):
         if slide == gp.SlideType.ShiftSlideTo:
@@ -484,7 +537,7 @@ class GP4File(gp3.GP3File):
 
     def writeBeatEffects(self, beatEffect, voice):
         flags1 = 0x00
-        if beatEffect.vibrato: 
+        if beatEffect.vibrato:
             flags1 |= 0x02
         if beatEffect.fadeIn: 
             flags1 |= 0x10
