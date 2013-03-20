@@ -50,33 +50,36 @@ class GPFileBase(object):
     def skip(self, count):
         self.data.read(count)
 
-    def readByte(self):
-        result = struct.unpack('B', self.data.read(1))
-        return result[0]
+    def readSmth(self, fmt, count, default=None):
+        try:
+            result = struct.unpack(fmt, self.data.read(count))
+            return result[0]
+        except struct.error as e:
+            if default is not None:
+                return default
+            else:
+                raise e
 
-    def readSignedByte(self):
-        result = struct.unpack('b', self.data.read(1))
-        return result[0]
+    def readByte(self, default=None):
+        return self.readSmth('B', 1, default)
 
-    def readBool(self):
-        result = struct.unpack('?', self.data.read(1))
-        return result[0]
-    
-    def readShort(self): 
-        result = struct.unpack('<h', self.data.read(2))
-        return result[0]
-    
-    def readInt(self): 
-        result = struct.unpack('<i', self.data.read(4))
-        return result[0]
+    def readSignedByte(self, default=None):
+        return self.readSmth('b', 1, default)
 
-    def readFloat(self):
-        result = struct.unpack('<f', self.data.read(4))
-        return result[0]
+    def readBool(self, default=None):
+        return self.readSmth('?', 1, default)
     
-    def readDouble(self):
-        result = struct.unpack('<d', self.data.read(8))
-        return result[0]
+    def readShort(self, default=None): 
+        return self.readSmth('<h', 2, default)
+    
+    def readInt(self, default=None): 
+        return self.readSmth('<i', 4, default)
+
+    def readFloat(self, default=None):
+        return self.readSmth('<f', 4, default)
+    
+    def readDouble(self, default=None):
+        return self.readSmth('<d', 8, default)
 
     def readString(self, size, length=-2):
         if length == -2:
