@@ -532,7 +532,9 @@ class MeasureHeader(GPObject):
                 'isRepeatOpen',
                 'repeatAlternative',
                 'repeatClose',
-                'tripletFeel']
+                'tripletFeel',
+                'direction',
+                'fromDirection']
 
     DEFAULT_KEY_SIGNATURE = 0
     
@@ -556,6 +558,8 @@ class MeasureHeader(GPObject):
         self.repeatClose = -1
         self.repeatAlternative = 0
         self.realStart = -1
+        self.direction = None
+        self.fromDirection = None
 
 
 class Color(GPObject):
@@ -674,7 +678,7 @@ class Track(GPObject):
         self.strings = []
         self.channel = MidiChannel()
         self.color = Color.fromRgb(255, 0, 0)
-        self.settings = None
+        self.settings = TrackSettings()
     
     def addMeasure(self, measure):
         measure.track = self

@@ -21,7 +21,7 @@ import copy
 import base as gp
 import gp4
 
-# TODO: There must be a wah wah flag somewhere. 
+# TODO: There must be a wah wah flag somewhere.
 class GP5File(gp4.GP4File):
     '''A reader for GuitarPro 5 files. 
     '''
@@ -41,8 +41,8 @@ class GP5File(gp4.GP4File):
         self.readInfo(song)
         
         self.readLyrics(song)
-        
         self.readPageSetup(song)
+
         song.tempoName = self.readIntSizeCheckByteString()
         song.tempo = self.readInt()
                 
@@ -325,7 +325,7 @@ class GP5File(gp4.GP4File):
             song.addTrack(self.readTrack(i + 1, channels))
         self.skip(2 if self.version.endswith('5.00') else 1)
     
-    def readTrack(self, number, channels) :
+    def readTrack(self, number, channels):
         if number == 1 or self.version.endswith('5.00'):
             self.skip(1)
         flags1 = self.readByte()
@@ -395,9 +395,11 @@ class GP5File(gp4.GP4File):
         super(GP5File, self).readMeasureHeaders(song, measureCount)
         signs, fromSigns = directions
         for sign, number in signs.items():
-            song.measureHeaders[number - 1].directions = sign
+            if number > -1:
+                song.measureHeaders[number - 1].directions = sign
         for sign, number in fromSigns.items():
-            song.measureHeaders[number - 1].fromDirection = sign
+            if number > -1:
+                song.measureHeaders[number - 1].fromDirection = sign
 
     def readMeasureHeader(self, i, timeSignature, song):
         if i > 0:
@@ -508,7 +510,7 @@ class GP5File(gp4.GP4File):
 
         self.writeIntSizeCheckByteString(song.tempoName)
         self.writeInt(song.tempo)
-                
+        
         if not self.version.endswith('5.00'):
             self.writeBool(song.hideTempo)
         
@@ -517,7 +519,7 @@ class GP5File(gp4.GP4File):
         
         self.writeMidiChannels(song)
         
-        self.placeholder(42, '\xff') # RSE info?
+        self.writeDirections(song.measureHeaders)
 
         measureCount = len(song.tracks[0].measures)
         trackCount = len(song.tracks)        
@@ -527,6 +529,40 @@ class GP5File(gp4.GP4File):
         self.writeMeasureHeaders(song)
         self.writeTracks(song.tracks)
         self.writeMeasures(song)
+
+    def writeDirections(self, measureHeaders):
+        order = ['Coda',
+                 'Double Coda',
+                 'Segno',
+                 'Segno Segno',
+                 'Fine',
+                 'Da Capo',
+                 'Da Capo al Coda',
+                 'Da Capo al Double Coda',
+                 'Da Capo al Fine',
+                 'Da Segno',
+                 'Da Segno Segno al Coda',
+                 'Da Segno Segno',
+                 'Da Segno al Coda',
+                 'Da Segno Segno al Double Coda',
+                 'Da Segno al Fine',
+                 'Da Segno al Double Coda',
+                 'Da Segno Segno al Fine',
+                 'Da Coda',
+                 'Da Double Coda']
+        
+        signs = {}
+        for header in measureHeaders:
+            if header.direction is not None:
+                signs[header.direction.name] = header.number
+            if header.fromDirection is not None:
+                signs[header.fromDirection.name] = header.number
+
+
+        for name in order:
+            self.writeShort(signs.get(name, -1))
+
+        self.placeholder(4)
 
     def writeInfo(self, song):
         self.writeIntSizeCheckByteString(song.title)
@@ -644,20 +680,26 @@ class GP5File(gp4.GP4File):
         self.placeholder(2 if self.version.endswith('5.00') else 1)
         
     def writeTrack(self, track):
-        flags = 0x00
-        if track.isPercussionTrack:
-            flags |= 0x01
-        if track.is12StringedGuitarTrack:
-            flags |= 0x02
-        if track.isBanjoTrack:
-            flags |= 0x04
-        if track.visible:
-            flags |= 0x08
-
-        self.writeByte(flags)
         if track.number == 1 or self.version.endswith('5.00'):
-            self.writeByte(8 | flags)
-            # self.placeholder(1)
+            self.placeholder(1)
+
+        flags1 = 0x00
+        if track.isPercussionTrack:
+            flags1 |= 0x01
+        if track.is12StringedGuitarTrack:
+            flags1 |= 0x02
+        if track.isBanjoTrack:
+            flags1 |= 0x04
+        if track.isVisible:
+            flags1 |= 0x08
+        if track.isSolo:
+            flags1 |= 0x10
+        if track.isMute:
+            flags1 |= 0x20
+        if track.indicateTuning:
+            flags1 |= 0x80
+
+        self.writeByte(flags1)
 
         self.writeByteSizeString(track.name, 40)
         self.writeInt(track.stringCount())
@@ -673,36 +715,65 @@ class GP5File(gp4.GP4File):
         self.writeInt(track.offset)
         self.writeColor(track.color)
 
+        flags2 = 0x00
+        if track.settings.tablature:
+            flags2 |= 0x01
+        if track.settings.notation:
+            flags2 |= 0x02
+        if track.settings.diagramsAreBelow:
+            flags2 |= 0x04
+        if track.settings.showRhythm:
+            flags2 |= 0x08
+        if track.settings.forceHorizontal:
+            flags2 |= 0x10
+        if track.settings.forceChannels:
+            flags2 |= 0x20
+        if track.settings.diagramList:
+            flags2 |= 0x40
+        if track.settings.diagramsInScore:
+            flags2 |= 0x80
+
+        self.writeByte(flags2)
+
+        flags3 = 0x00
+        if track.settings.autoLetRing:
+            flags3 |= 0x02
+        if track.settings.autoBrush:
+            flags3 |= 0x04
+        if track.settings.extendRhythmic:
+            flags3 |= 0x08
+
+        self.writeByte(flags3)
+        self.placeholder(1)
+        self.writeByte(track.channel.bank)
+
         if self.version.endswith('5.00'):
-            self.data.write('\x43\x01\x00\x00\x00\x00\x00\x00'
-                            '\x00\x00\x00\x00\x00\x64\x00\x00'
-                            '\x00\x01\x02\x03\x04\x05\x06\x07'
-                            '\x08\x09\x0a\xff\x03\xff\xff\xff'
-                            '\xff\xff\xff\xff\xff\xff\xff\xff'
-                            '\xff\xff\xff\xff')
+            self.data.write('\x00\x00\x00\x00\x00\x00\x00\x00'
+                            '\x00\x64\x00\x00\x00\x01\x02\x03'
+                            '\x04\x05\x06\x07\x08\x09\x0a\xff'
+                            '\x03\xff\xff\xff\xff\xff\xff\xff'
+                            '\xff\xff\xff\xff\xff\xff\xff\xff')
         else:
-            self.data.write('\x43\x01\x00\x00\x00\x00\x00\x00'
-                            '\x00\x00\x00\x00\x00\x64\x00\x00'
-                            '\x00\x01\x02\x03\x04\x05\x06\x0a'
-                            '\x07\x08\x09\xdf\x03\xff\xff\xff'
+            self.data.write('\x00\x00\x00\x00\x00\x00\x00\x00'
+                            '\x00\x64\x00\x00\x00\x01\x02\x03'
+                            '\x04\x05\x06\x07\x08\x09\x0a\xff'
+                            '\x03\xff\xff\xff\xff\xff\xff\xff'
                             '\xff\xff\xff\xff\xff\xff\xff\xff'
-                            '\xff\xff\xff\xff\xff\xff\xff\xff'
-                            '\xff')
+                            '\xff\xff\xff\xff\xff')
+
         if not self.version.endswith('5.00'):
             self.writeIntSizeCheckByteString('')
             self.writeIntSizeCheckByteString('')
 
     def writeMeasure(self, measure, track):
+        sortedBeats = sorted(measure.beats, key=lambda y: y.start)
         for voice in range(gp.Beat.MAX_VOICES):
-            beatCount = measure.beatCount(voice)
-            if beatCount == 0:
-                beatCount = 1
+            beatsOfVoice = filter(lambda x: not x.voices[voice].isEmpty, sortedBeats)
+            beatCount = len(beatsOfVoice)
             self.writeInt(beatCount)
-            # for beat in measure.beats:
-            for i in range(beatCount):
-                beat = measure.beats[i]
+            for beat in beatsOfVoice:
                 self.writeBeat(beat, measure, track, voice)
-        self.placeholder(1)
+        self.writeByte(measure.lineBreak)
 
     def writeBeat(self, beat, measure, track, voiceIndex=0):
         voice = beat.voices[voiceIndex]
@@ -960,9 +1031,6 @@ class GP5File(gp4.GP4File):
             return default
 
         for channel in map(getTrackChannelByChannel, range(64)):
-            # if channel.isPercussionChannel() and channel.instrument == 0:
-            #     self.writeInt(-1)
-            # else:
             self.writeInt(channel.instrument)
             
             self.writeSignedByte(self.fromChannelShort(channel.volume))
