@@ -21,7 +21,6 @@ import copy
 import base as gp
 import gp4
 
-# TODO: There must be a wah wah flag somewhere.
 class GP5File(gp4.GP4File):
     '''A reader for GuitarPro 5 files. 
     '''
@@ -89,6 +88,9 @@ class GP5File(gp4.GP4File):
             gp.DirectionSign('Da Coda'): self.readShort(),
             gp.DirectionSign('Da Double Coda'): self.readShort()
         }
+        # Opeth - Baying of the Hounds.gp5: ffffffff
+        # Mastodon - Colony of Birchmen.gp5: 01000000
+        # Mostly 00000000
         self.skip(4) # ???
         return signs, fromSigns
         
@@ -101,26 +103,26 @@ class GP5File(gp4.GP4File):
         measure.lineBreak = self.readByte(default=gp.LineBreak.None_)
     
     def readBeat(self, start, measure, track, voiceIndex):
-        flags = self.readByte()
+        flags1 = self.readByte()
         
         beat = self.getBeat(measure, start)
         voice = beat.voices[voiceIndex]
         
-        if flags & 0x40 != 0:
+        if flags1 & 0x40 != 0:
             beatType = self.readByte()
             voice.isEmpty = (beatType & 0x02) == 0
         
-        duration = self.readDuration(flags)
-        if flags & 0x02 != 0:
+        duration = self.readDuration(flags1)
+        if flags1 & 0x02 != 0:
             self.readChord(track.stringCount(), beat)
 
-        if flags & 0x04 != 0:
+        if flags1 & 0x04 != 0:
             self.readText(beat)
 
-        if flags & 0x08 != 0:
+        if flags1 & 0x08 != 0:
             self.readBeatEffects(beat, None)
 
-        if flags & 0x10 != 0:
+        if flags1 & 0x10 != 0:
             mixTableChange = self.readMixTableChange(measure)
             beat.effect.mixTableChange = mixTableChange
 
@@ -135,18 +137,26 @@ class GP5File(gp4.GP4File):
             # duration.copy(voice.duration)
             voice.duration = copy.copy(duration)
         
-        # break beam with previous beat = 0x01
-        # invert beam = 0x02
-        # force beam with previous beat = 0x04
-        # 8va=0x10, 8vb=0x20, 15ma=0x40, 
-        if hex(self.data.tell()).startswith('0x78'):
-            import ipdb; ipdb.set_trace()
-        self.skip(1)
+        # 0x01: break beam with previous beat
+        # 0x02: beam is down
+        # 0x04: force beam with previous beat
+        # 0x08: beam is up
+        # 0x10: 8va
+        # 0x20: 8vb
+        # 0x40: 15ma
+        flags2 = self.readByte()
         
-        # 15mb=0x01
-        read = self.readByte()
-        if read == 8 or read == 10:
-            self.skip(1)
+        # 0x01: 15mb
+        # 0x02: tuplet bracket start 
+        # 0x04: tuplet bracket end
+        # 0x08: break secondary beams
+        # 0x10: break secondary beams in tuplet
+        # 0x20: force tuplet bracket
+        flags3 = self.readByte()
+        
+        if flags3 & 0x08 != 0:
+            # how many secondary beams to break
+            self.readByte()
 
         return duration.time() if not voice.isEmpty else 0
     
@@ -214,10 +224,15 @@ class GP5File(gp4.GP4File):
         if harmonicType == 1:
             return (0, gp.HarmonicType.Natural)
         elif harmonicType == 2:
-            self.skip(3) # Note?
+            # C = 0, D = 2, E = 4, F = 5...
+            # b = -1, # = 1
+            # loco = 0, 8va = 1, 15ma = 2
+            semitone = self.readByte()
+            accidental = self.readSignedByte()
+            octave = self.readByte()
             return (0, gp.HarmonicType.Artificial)
         elif harmonicType == 3:
-            self.skip(1) # Key?
+            fret = self.readByte()
             return (0, gp.HarmonicType.Tapped)
         elif harmonicType == 4:
             return (0, gp.HarmonicType.Pinch)
@@ -304,7 +319,12 @@ class GP5File(gp4.GP4File):
         if tableChange.tempo is not None:
             tableChange.tempo.allTracks = True
 
-        self.skip(1)
+        # Wah-Wah flag
+        # 0x00: Open
+        # 0x64: Close
+        # 0xfe: Off
+        # 0xff: No Wah
+        self.readByte()
         if not self.version.endswith('5.00'):
             self.readIntSizeCheckByteString()
             self.readIntSizeCheckByteString()
@@ -328,10 +348,12 @@ class GP5File(gp4.GP4File):
     def readTracks(self, song, trackCount, channels):
         for i in range(trackCount):
             song.addTrack(self.readTrack(i + 1, channels))
+        # Always 0
         self.skip(2 if self.version.endswith('5.00') else 1)
     
     def readTrack(self, number, channels):
         if number == 1 or self.version.endswith('5.00'):
+            # Always 0
             self.skip(1)
         flags1 = self.readByte()
         track = gp.Track()
@@ -372,13 +394,15 @@ class GP5File(gp4.GP4File):
         trackSettings.diagramList = (flags2 & 0x40) != 0
         trackSettings.diagramsInScore = (flags2 & 0x80) != 0
 
+        # 0x01: ???
         trackSettings.autoLetRing = (flags3 & 0x02) != 0
         trackSettings.autoBrush = (flags3 & 0x04) != 0
         trackSettings.extendRhythmic = (flags3 & 0x08) != 0
         track.settings = trackSettings
 
+        # Always 0
         self.skip(1)
-        
+
         bank = self.readByte()
         track.channel.bank = bank
         
@@ -408,8 +432,9 @@ class GP5File(gp4.GP4File):
 
     def readMeasureHeader(self, i, timeSignature, song):
         if i > 0:
+            # Always 0
             self.skip(1)
-        
+
         flags = self.readByte()
         
         header = gp.MeasureHeader()
@@ -445,10 +470,16 @@ class GP5File(gp4.GP4File):
 
         header.hasDoubleBar = (flags & 0x80) != 0
 
-        if flags & 0x01 != 0:
-            self.skip(4)
+        # Signature changed
+        if flags & 0x03 != 0:
+            # Beam eight notes by
+            self.readByte()
+            self.readByte()
+            self.readByte()
+            self.readByte()
 
         if flags & 0x10 == 0:
+            # Always 0
             self.skip(1)
         
         header.tripletFeel = self.unpackTripletFeel(self.readByte())
@@ -458,6 +489,7 @@ class GP5File(gp4.GP4File):
     def readPageSetup(self, song):
         setup = gp.PageSetup()
         if not self.version.endswith('5.00'):
+            # Master RSE info
             self.skip(19)
         setup.pageSize = gp.Point(self.readInt(), self.readInt())
         
@@ -833,12 +865,7 @@ class GP5File(gp4.GP4File):
 
     def writeNote(self, note, previous):
         flags = 0x00
-        try:
-            if note.duration is not None and note.tuplet is not None:
-                flags |= 0x01
-        except AttributeError:
-            pass
-        if note.durationPercent != 1.0:
+        if abs(note.durationPercent - 1.0) >= 1e-2:
             flags |= 0x01
         if note.effect.heavyAccentuatedNote:
             flags |= 0x02
@@ -940,10 +967,10 @@ class GP5File(gp4.GP4File):
         if harmonic.type == gp.HarmonicType.Natural:
             return 1
         elif harmonic.type == gp.HarmonicType.Artificial:
-            self.skip(3) # Note?
+            self.placeholder(3) # Note?
             return 2
         elif harmonic.type == gp.HarmonicType.Tapped:
-            self.skip(1) # Key?
+            self.placeholder(1) # Key?
             return 3
         elif harmonic.type == gp.HarmonicType.Pinch:
             return 4
