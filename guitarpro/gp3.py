@@ -29,6 +29,10 @@ class GP3File(gp.GPFileBase):
         super(GP3File, self).__init__(*args, **kwargs)
         self.initVersions(['FICHIER GUITAR PRO v3.00'])
     
+    #################################################################
+    ### Reading
+    #################################################################
+
     def readSong(self):
         '''Reads the song
 
@@ -573,8 +577,10 @@ class GP3File(gp.GPFileBase):
         else:
             return gp.Duration.SIXTY_FOURTH
 
-    # Writing
-    # =======
+    #################################################################
+    ### Writing
+    #################################################################
+
     def writeSong(self, song):
         '''Writes the song
         '''
@@ -584,8 +590,8 @@ class GP3File(gp.GPFileBase):
         self._tripletFeel = song.tracks[0].measures[0].tripletFeel()
         self.writeBool(self._tripletFeel)
         
-        self.writeLyrics(song)
-        self.writePageSetup(song)        
+        self.writeLyrics(None)
+        self.writePageSetup(None)
         
         self.writeInt(song.tempo)
         self.writeInt(song.key)
@@ -596,7 +602,7 @@ class GP3File(gp.GPFileBase):
         self.writeInt(measureCount)
         self.writeInt(trackCount)
         
-        self.writeMeasureHeaders(song)
+        self.writeMeasureHeaders(song.measureHeaders)
         self.writeTracks(song.tracks)
         self.writeMeasures(song)
 
@@ -616,10 +622,10 @@ class GP3File(gp.GPFileBase):
         for line in song.notice:
             self.writeIntSizeCheckByteString(line)
 
-    def writeLyrics(self, song):
+    def writeLyrics(self, lyrics):
         pass
 
-    def writePageSetup(self, song):
+    def writePageSetup(self, setup):
         pass
 
     def writeMidiChannels(self, song):
@@ -649,13 +655,13 @@ class GP3File(gp.GPFileBase):
             # Backward compatibility with version 3.0
             self.placeholder(2)
 
-    def writeMeasureHeaders(self, song):
+    def writeMeasureHeaders(self, measureHeaders):
         previous = None
-        for header in song.measureHeaders:
-            self.writeMeasureHeader(song, header, previous)
+        for header in measureHeaders:
+            self.writeMeasureHeader(header, previous)
             previous = header
     
-    def writeMeasureHeader(self, song, header, previous):
+    def writeMeasureHeader(self, header, previous):
         flags = 0x00
         if previous is not None:
             if header.timeSignature.numerator != previous.timeSignature.numerator:
@@ -756,14 +762,14 @@ class GP3File(gp.GPFileBase):
         for header in song.measureHeaders:
             for track in song.tracks:
                 measure = track.measures[header.number - 1]
-                self.writeMeasure(measure, track)
+                self.writeMeasure(measure)
     
-    def writeMeasure(self, measure, track):
+    def writeMeasure(self, measure):
         self.writeInt(measure.beatCount())
         for beat in measure.beats:
-            self.writeBeat(beat, measure, track)
+            self.writeBeat(beat)
     
-    def writeBeat(self, beat, measure, track, voiceIndex=0):
+    def writeBeat(self, beat, voiceIndex=0):
         voice = beat.voices[voiceIndex]
 
         flags = 0x00
@@ -814,10 +820,10 @@ class GP3File(gp.GPFileBase):
 
         previous = None
         for note in voice.notes:
-            self.writeNote(note, previous, track)
+            self.writeNote(note, previous)
             previous = note
         
-    def writeNote(self, note, previous, track):
+    def writeNote(self, note, previous):
         # In GP3 NoteEffect doesn't have vibrato attribute
         noteEffect = copy.copy(note.effect)
         noteEffect.vibrato = False

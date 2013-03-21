@@ -28,8 +28,10 @@ class GP4File(gp3.GP3File):
         super(GP4File, self).__init__(*args, **kwargs)
         self.initVersions(['FICHIER GUITAR PRO v4.00', 'FICHIER GUITAR PRO v4.06', 'FICHIER GUITAR PRO L4.06'])
     
-    # Reading
-    # =======
+    #################################################################
+    ### Reading
+    #################################################################
+
     def readSong(self):
         if not self.readVersion():
             raise gp.GuitarProException("unsupported version '%s'" % self.version)
@@ -281,8 +283,10 @@ class GP4File(gp3.GP3File):
         if chord.noteCount() > 0:
             beat.setChord(chord)
 
-    # Writing
-    # =======
+    #################################################################
+    ### Writing
+    #################################################################
+
     def writeSong(self, song):
         self.writeVersion(1)
         self.writeInfo(song)
@@ -290,8 +294,8 @@ class GP4File(gp3.GP3File):
         self._tripletFeel = song.tracks[0].measures[0].tripletFeel()
         self.writeBool(self._tripletFeel)
         
-        self.writeLyrics(song)        
-        self.writePageSetup(song)
+        self.writeLyrics(song.lyrics)
+        self.writePageSetup(None)
         
         self.writeInt(song.tempo)
         self.writeInt(song.key)
@@ -304,17 +308,17 @@ class GP4File(gp3.GP3File):
         self.writeInt(measureCount)
         self.writeInt(trackCount)
 
-        self.writeMeasureHeaders(song)
+        self.writeMeasureHeaders(song.measureHeaders)
         self.writeTracks(song.tracks)
         self.writeMeasures(song)
 
-    def writeLyrics(self, song):
-        self.writeInt(song.lyrics.trackChoice)
-        for line in song.lyrics.lines:
+    def writeLyrics(self, lyrics):
+        self.writeInt(lyrics.trackChoice)
+        for line in lyrics.lines:
             self.writeInt(line.startingMeasure)
             self.writeIntSizeString(line.lyrics)
 
-    def writeBeat(self, beat, measure, track, voiceIndex=0):
+    def writeBeat(self, beat, voiceIndex=0):
         voice = beat.voices[voiceIndex]
 
         flags = 0x00
@@ -348,7 +352,7 @@ class GP4File(gp3.GP3File):
             self.writeText(beat.text)
 
         if flags & 0x08 != 0:
-            self.writeBeatEffects(beat.effect, None)
+            self.writeBeatEffects(beat.effect)
 
         if flags & 0x10 != 0:
             self.writeMixTableChange(beat.effect.mixTableChange)
@@ -360,10 +364,10 @@ class GP4File(gp3.GP3File):
 
         previous = None
         for note in voice.notes:
-            self.writeNote(note, previous, track)
+            self.writeNote(note, previous)
             previous = note
 
-    def writeNote(self, note, previous, track):
+    def writeNote(self, note, previous):
         flags = 0x00
         try:
             if note.duration is not None and note.tuplet is not None:
@@ -535,7 +539,7 @@ class GP4File(gp3.GP3File):
 
         self.writeSignedByte(allTracksFlags)
 
-    def writeBeatEffects(self, beatEffect, voice):
+    def writeBeatEffects(self, beatEffect, voice=None):
         flags1 = 0x00
         if beatEffect.vibrato:
             flags1 |= 0x02

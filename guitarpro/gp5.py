@@ -320,7 +320,7 @@ class GP5File(gp4.GP4File):
         if chord.noteCount() > 0:
             beat.setChord(chord)
     
-    def readTracks(self, song, trackCount, channels) :
+    def readTracks(self, song, trackCount, channels):
         for i in range(trackCount):
             song.addTrack(self.readTrack(i + 1, channels))
         self.skip(2 if self.version.endswith('5.00') else 1)
@@ -500,12 +500,12 @@ class GP5File(gp4.GP4File):
     #### Writing
     #################################################################
 
-    def writeSong(self, song) :
+    def writeSong(self, song):
         self.version = self._supportedVersions[1]
         self.writeVersion(1)
 
         self.writeInfo(song)
-        self.writeLyrics(song)
+        self.writeLyrics(song.lyrics)
         self.writePageSetup(song.pageSetup)
 
         self.writeIntSizeCheckByteString(song.tempoName)
@@ -517,7 +517,7 @@ class GP5File(gp4.GP4File):
         self.writeByte(song.key)
         self.writeInt(song.octave)
         
-        self.writeMidiChannels(song)
+        self.writeMidiChannels(song.tracks)
         
         self.writeDirections(song.measureHeaders)
 
@@ -526,7 +526,7 @@ class GP5File(gp4.GP4File):
         self.writeInt(measureCount)
         self.writeInt(trackCount)
         
-        self.writeMeasureHeaders(song)
+        self.writeMeasureHeaders(song.measureHeaders)
         self.writeTracks(song.tracks)
         self.writeMeasures(song)
 
@@ -618,7 +618,7 @@ class GP5File(gp4.GP4File):
         elif tripletFeel == gp.TripletFeel.Sixteenth:
             return 2
 
-    def writeMeasureHeader(self, song, header, previous):
+    def writeMeasureHeader(self, header, previous):
         flags = 0x00
         if previous is not None:
             if header.timeSignature.numerator != previous.timeSignature.numerator:
@@ -765,17 +765,17 @@ class GP5File(gp4.GP4File):
             self.writeIntSizeCheckByteString('')
             self.writeIntSizeCheckByteString('')
 
-    def writeMeasure(self, measure, track):
+    def writeMeasure(self, measure):
         sortedBeats = sorted(measure.beats, key=lambda y: y.start)
         for voice in range(gp.Beat.MAX_VOICES):
             beatsOfVoice = filter(lambda x: not x.voices[voice].isEmpty, sortedBeats)
             beatCount = len(beatsOfVoice)
             self.writeInt(beatCount)
             for beat in beatsOfVoice:
-                self.writeBeat(beat, measure, track, voice)
+                self.writeBeat(beat, voice)
         self.writeByte(measure.lineBreak)
 
-    def writeBeat(self, beat, measure, track, voiceIndex=0):
+    def writeBeat(self, beat, voiceIndex=0):
         voice = beat.voices[voiceIndex]
 
         flags = 0x00
@@ -809,7 +809,7 @@ class GP5File(gp4.GP4File):
             self.writeText(beat.text)
 
         if flags & 0x08 != 0:
-            self.writeBeatEffects(beat.effect, voice)
+            self.writeBeatEffects(beat.effect)
 
         if flags & 0x10 != 0:
             self.writeMixTableChange(beat.effect.mixTableChange)
@@ -821,12 +821,12 @@ class GP5File(gp4.GP4File):
 
         previous = None
         for note in voice.notes:
-            self.writeNote(note, previous, track)
+            self.writeNote(note, previous)
             previous = note
 
         self.placeholder(2)
 
-    def writeNote(self, note, previous, track):
+    def writeNote(self, note, previous):
         flags = 0x00
         try:
             if note.duration is not None and note.tuplet is not None:
@@ -1013,9 +1013,9 @@ class GP5File(gp4.GP4File):
             self.writeInt(fret)
         self.placeholder(32)
 
-    def writeMidiChannels(self, song):
+    def writeMidiChannels(self, tracks):
         def getTrackChannelByChannel(channel):
-            for track in song.tracks:
+            for track in tracks:
                 if channel in (track.channel.channel, track.channel.effectChannel):
                     return track.channel
             default = gp.MidiChannel()
