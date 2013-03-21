@@ -135,7 +135,12 @@ class GP5File(gp4.GP4File):
             # duration.copy(voice.duration)
             voice.duration = copy.copy(duration)
         
-        # 8va=0x10, 8vb=0x20, 15ma=0x40, beams
+        # break beam with previous beat = 0x01
+        # invert beam = 0x02
+        # force beam with previous beat = 0x04
+        # 8va=0x10, 8vb=0x20, 15ma=0x40, 
+        if hex(self.data.tell()).startswith('0x78'):
+            import ipdb; ipdb.set_trace()
         self.skip(1)
         
         # 15mb=0x01
