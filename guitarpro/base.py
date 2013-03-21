@@ -824,10 +824,7 @@ class Measure(GPObject):
     DEFAULT_CLEF = MeasureClef.Treble
 
     def beatCount(self, voiceIndex=0):
-        result = 0
-        for beat in self.beats:
-            result += 1 if not beat.voices[voiceIndex].isEmpty else 0
-        return result
+        return len(self.beats)
     
     def end(self):
         return self.start() + self.length()
