@@ -301,7 +301,7 @@ class GP4File(gp3.GP3File):
         self.writeInt(song.key)
         self.writeSignedByte(song.octave)
         
-        self.writeMidiChannels(song)
+        self.writeMidiChannels(song.tracks)
         
         measureCount = len(song.tracks[0].measures)
         trackCount = len(song.tracks)

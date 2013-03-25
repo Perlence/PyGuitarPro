@@ -595,7 +595,7 @@ class GP3File(gp.GPFileBase):
         
         self.writeInt(song.tempo)
         self.writeInt(song.key)
-        self.writeMidiChannels(song)
+        self.writeMidiChannels(song.tracks)
         
         measureCount = len(song.tracks[0].measures)
         trackCount = len(song.tracks)
@@ -628,9 +628,9 @@ class GP3File(gp.GPFileBase):
     def writePageSetup(self, setup):
         pass
 
-    def writeMidiChannels(self, song):
+    def writeMidiChannels(self, tracks):
         def getTrackChannelByChannel(channel):
-            for track in song.tracks:
+            for track in tracks:
                 if channel in (track.channel.channel, track.channel.effectChannel):
                     return track.channel
             default = gp.MidiChannel()
