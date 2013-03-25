@@ -1056,32 +1056,32 @@ class GP5File(gp4.GP4File):
         self.writeByte(flags)
 
     def writeMixTableChange(self, tableChange):      
-        items = [(tableChange.instrument, self.writeSignedByte),
-                 ((16, '\xff'), self.placeholder), # RSE info
-                 (tableChange.volume, self.writeSignedByte),
-                 (tableChange.balance, self.writeSignedByte),
-                 (tableChange.chorus, self.writeSignedByte),
-                 (tableChange.reverb, self.writeSignedByte),
-                 (tableChange.phaser, self.writeSignedByte),
-                 (tableChange.tremolo, self.writeSignedByte),
-                 (tableChange.tempoName, self.writeIntSizeCheckByteString),
-                 (tableChange.tempo, self.writeInt)]
+        items = [('instrument', tableChange.instrument, self.writeSignedByte),
+                 ('rse', (16, '\xff'), self.placeholder), # RSE info
+                 ('volume', tableChange.volume, self.writeSignedByte),
+                 ('balance', tableChange.balance, self.writeSignedByte),
+                 ('chorus', tableChange.chorus, self.writeSignedByte),
+                 ('reverb', tableChange.reverb, self.writeSignedByte),
+                 ('phaser', tableChange.phaser, self.writeSignedByte),
+                 ('tremolo', tableChange.tremolo, self.writeSignedByte),
+                 ('tempoName', tableChange.tempoName, self.writeIntSizeCheckByteString),
+                 ('tempo', tableChange.tempo, self.writeInt)]
 
-        for item, write in items:
-            if isinstance(item, tuple):
+        for _, item, write in items:
+            if item is None:
+                write(-1)
+            elif isinstance(item, tuple):
                 write(*item)
-            elif isinstance(item, str):
-                write(item)
             elif isinstance(item, gp.MixTableItem):
                 write(item.value)
             else:
-                write(-1)
+                write(item)
 
         # instrument change doesn't have duration
-        for item, write in items[2:]:
+        for name, item, _ in items[2:]:
             if isinstance(item, gp.MixTableItem):
-                write(item.duration)
-                if hasattr(item, 'hideTempo'):
+                self.writeSignedByte(item.duration)
+                if name == 'tempo':
                     if tableChange.hideTempo and not self.version.endswith('5.00'):
                         self.writeBool(tableChange.hideTempo)
 
