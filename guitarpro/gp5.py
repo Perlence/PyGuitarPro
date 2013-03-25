@@ -328,13 +328,24 @@ class GP5File(gp4.GP4File):
             tableChange.tremolo.allTracks = (allTracksFlags & 0x20) != 0
         if tableChange.tempo is not None:
             tableChange.tempo.allTracks = True
+        if allTracksFlags & 0x80 != 0:
+            tableChange.wah.display = True
 
         # Wah-Wah flag
-        # 0x00: Open
-        # 0x64: Close
-        # 0xfe: Off
-        # 0xff: No Wah
-        self.readByte()
+        #  0: Open
+        # 64: Close
+        # -2: Off
+        # -1: No wah info
+        wahValue = self.readSignedByte()
+        if wahValue > -1:
+            tableChange.wah.value = wahValue
+            tableChange.wah.enabled = True
+        elif wahValue == -2:
+            tableChange.wah.value = 0
+            tableChange.wah.enabled = False
+        else:
+            tableChange.wah = None
+
         if not self.version.endswith('5.00'):
             self.readIntSizeCheckByteString()
             self.readIntSizeCheckByteString()
@@ -1079,9 +1090,19 @@ class GP5File(gp4.GP4File):
             if isinstance(item, gp.MixTableItem) and item.allTracks:
                 allTracksFlags |= 1 << i
 
+        if tableChange.wah is not None and tableChange.wah.display:
+            allTracksFlags |= 0x80
+
         self.writeByte(allTracksFlags)
 
-        self.placeholder(1)
+        if tableChange.wah is not None:
+            if tableChange.wah.enabled:
+                self.writeSignedByte(tableChange.wah.value)
+            else:
+                self.writeSignedByte(-2)
+        else:
+            self.writeSignedByte(-1)
+
         if not self.version.endswith('5.00'):
             self.writeIntSizeCheckByteString('')
             self.writeIntSizeCheckByteString('')

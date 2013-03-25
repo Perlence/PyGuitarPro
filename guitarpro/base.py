@@ -1374,19 +1374,31 @@ class MixTableItem(GPObject):
         self.allTracks = False
 
 
+class WahEffect(GPObject):
+    __attr__ = ['value',
+                'enabled',
+                'display']
+
+    def __init__(self):
+        self.value = 0
+        self.enabled = False
+        self.display = False
+
+
 class MixTableChange(GPObject):
     '''A mixtablechange describes several track changes. 
     '''
-    __attr__ = ['volume',
+    __attr__ = ['instrument',
+                'volume',
                 'balance',
                 'chorus',
                 'reverb',
                 'phaser',
                 'tremolo',
-                'instrument',
                 'tempoName',
                 'tempo',
-                'hideTempo']
+                'hideTempo',
+                'wah']
 
     def __init__(self):
         self.volume = MixTableItem()
@@ -1398,6 +1410,7 @@ class MixTableChange(GPObject):
         self.instrument = MixTableItem()
         self.tempo = MixTableItem()
         self.hideTempo = True
+        self.wah = WahEffect()
 
 
 class BendTypes(object):
