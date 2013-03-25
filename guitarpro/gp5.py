@@ -113,6 +113,7 @@ class GP5File(gp4.GP4File):
             voice.isEmpty = (beatType & 0x02) == 0
         
         duration = self.readDuration(flags1)
+
         if flags1 & 0x02 != 0:
             self.readChord(track.stringCount(), beat)
 
@@ -137,26 +138,35 @@ class GP5File(gp4.GP4File):
             # duration.copy(voice.duration)
             voice.duration = copy.copy(duration)
         
-        # 0x01: break beam with previous beat
-        # 0x02: beam is down
-        # 0x04: force beam with previous beat
-        # 0x08: beam is up
-        # 0x10: 8va
-        # 0x20: 8vb
-        # 0x40: 15ma
         flags2 = self.readByte()
-        
-        # 0x01: 15mb
-        # 0x02: tuplet bracket start 
-        # 0x04: tuplet bracket end
-        # 0x08: break secondary beams
-        # 0x10: break secondary beams in tuplet
-        # 0x20: force tuplet bracket
         flags3 = self.readByte()
-        
+
+        if flags2 & 0x10 != 0:
+            beat.octave = gp.Octave.Ottava
+        if flags2 & 0x20 != 0:
+            beat.octave = gp.Octave.OttavaBassa
+        if flags2 & 0x40 != 0:
+            beat.octave = gp.Octave.Quindicesima
+        if flags3 & 0x01 != 0:
+            beat.octave = gp.Octave.QuindicesimaBassa
+
+        display = gp.BeatDisplay()
+        display.breakBeam = (flags2 & 0x01) != 0
+        display.forceBeam = (flags2 & 0x04) != 0
+        display.forceBracket = (flags3 & 0x20) != 0
+        display.breakSecondaryTuplet = (flags3 & 0x10) != 0
+        if flags2 & 0x02 != 0:
+            display.beamDirection = gp.VoiceDirection.Down
+        if flags2 & 0x08 != 0:
+            display.beamDirection = gp.VoiceDirection.Up
+        if flags3 & 0x02 != 0:
+            display.tupletBracket = gp.TupletBracket.Start
+        if flags3 & 0x04 != 0:
+            display.tupletBracket = gp.TupletBracket.End
         if flags3 & 0x08 != 0:
-            # how many secondary beams to break
-            self.readByte()
+            display.breakSecondary = self.readByte()
+
+        beat.display = display
 
         return duration.time() if not voice.isEmpty else 0
     
@@ -815,40 +825,40 @@ class GP5File(gp4.GP4File):
     def writeBeat(self, beat, voiceIndex=0):
         voice = beat.voices[voiceIndex]
 
-        flags = 0x00
+        flags1 = 0x00
         if voice.duration.isDotted:
-            flags |= 0x01
+            flags1 |= 0x01
         if beat.effect.isChord():
-            flags |= 0x02
+            flags1 |= 0x02
         if beat.text is not None:
-            flags |= 0x04
+            flags1 |= 0x04
         if not beat.effect.isDefault():
-            flags |= 0x08
+            flags1 |= 0x08
         if beat.effect.mixTableChange is not None:
-            flags |= 0x10
+            flags1 |= 0x10
         if voice.duration.tuplet != gp.Tuplet():
-            flags |= 0x20
+            flags1 |= 0x20
         if voice.isEmpty or voice.isRestVoice():
-            flags |= 0x40
+            flags1 |= 0x40
 
-        self.writeByte(flags)
+        self.writeByte(flags1)
                 
-        if flags & 0x40 != 0:
+        if flags1 & 0x40 != 0:
             beatType = 0x00 if voice.isEmpty else 0x02
             self.writeByte(beatType)
         
-        self.writeDuration(voice.duration, flags)
+        self.writeDuration(voice.duration, flags1)
 
-        if flags & 0x02 != 0:
+        if flags1 & 0x02 != 0:
             self.writeChord(beat.effect.chord)
 
-        if flags & 0x04 != 0:
+        if flags1 & 0x04 != 0:
             self.writeText(beat.text)
 
-        if flags & 0x08 != 0:
+        if flags1 & 0x08 != 0:
             self.writeBeatEffects(beat.effect)
 
-        if flags & 0x10 != 0:
+        if flags1 & 0x10 != 0:
             self.writeMixTableChange(beat.effect.mixTableChange)
 
         stringFlags = 0x00
@@ -861,7 +871,42 @@ class GP5File(gp4.GP4File):
             self.writeNote(note, previous)
             previous = note
 
-        self.placeholder(2)
+        flags2 = 0x00
+        if beat.display.breakBeam:
+            flags2 |= 0x01
+        if beat.display.beamDirection == gp.VoiceDirection.Down:
+            flags2 |= 0x02
+        if beat.display.forceBeam:
+            flags2 |= 0x04
+        if beat.display.beamDirection == gp.VoiceDirection.Up:
+            flags2 |= 0x08
+        if beat.octave == gp.Octave.Ottava:
+            flags2 |= 0x10
+        if beat.octave == gp.Octave.OttavaBassa:
+            flags2 |= 0x20
+        if beat.octave == gp.Octave.Quindicesima:
+            flags2 |= 0x40
+
+        self.writeByte(flags2)
+        
+        flags3 = 0x00
+        if beat.octave == gp.Octave.QuindicesimaBassa:
+            flags3 |= 0x01
+        if beat.display.tupletBracket == gp.TupletBracket.Start:
+            flags3 |= 0x02
+        if beat.display.tupletBracket == gp.TupletBracket.End:
+            flags3 |= 0x04
+        if beat.display.breakSecondary:
+            flags3 |= 0x08
+        if beat.display.breakSecondaryTuplet:
+            flags3 |= 0x10
+        if beat.display.forceBracket:
+            flags3 |= 0x20
+
+        self.writeByte(flags3)
+
+        if flags3 & 0x08 != 0:
+            self.writeByte(beat.display.breakSecondary)
 
     def writeNote(self, note, previous):
         flags = 0x00

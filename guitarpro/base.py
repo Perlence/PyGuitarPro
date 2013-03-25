@@ -1011,6 +1011,54 @@ class BeatEffect(GPObject):
         self.presence = False
 
 
+class TupletBracket(object):
+    ''''''
+    None_ = 0
+    Start = 1
+    End = 2
+
+
+class BeatDisplay(GPObject):
+    '''Parameters of beat display
+    '''
+    __attr__ = ['breakBeam',
+                'forceBeam',
+                'beamDirection',
+                'tupletBracket',
+                'breakSecondary',
+                'breakSecondaryTuplet',
+                'forceBracket']
+    # 0x01: break beam with previous beat
+    # 0x04: force beam with previous beat
+    # 0x02: beam is down
+    # 0x08: beam is up
+
+    # 0x02: tuplet bracket start 
+    # 0x04: tuplet bracket end
+    # 0x08: break secondary beams
+    # 0x10: break secondary beams in tuplet
+    # 0x20: force tuplet bracket
+
+    def __init__(self):
+        self.breakBeam = False
+        self.forceBeam = False
+        self.beamDirection = VoiceDirection.None_
+        self.tupletBracket = TupletBracket.None_
+        self.breakSecondary = 0
+        self.breakSecondaryTuplet = False
+        self.forceBracket = False
+
+
+class Octave(object):
+    '''Octave signs
+    '''
+    None_ = 0
+    Ottava = 1
+    OttavaBassa = 2
+    Quindicesima = 3
+    QuindicesimaBassa = 4
+
+
 class Beat(GPObject):
     '''A beat contains multiple voices. 
     '''
@@ -1018,7 +1066,9 @@ class Beat(GPObject):
                 'text',
                 'start',
                 'effect',
-                'index']
+                'index',
+                'octave',
+                'display']
 
     MAX_VOICES = 2
     
@@ -1058,6 +1108,8 @@ class Beat(GPObject):
         self.start = Duration.QUARTER_TIME
         self.effect = BeatEffect()
         self.text = None
+        self.octave = Octave.None_
+        self.display = BeatDisplay()
         self.voices = []
         for i in range(Beat.MAX_VOICES):
             voice = Voice(i)
@@ -1068,17 +1120,11 @@ class Beat(GPObject):
 class HarmonicType(object):
     '''All harmonic effect types
     '''
-    # No harmonic
     None_ = 0
-    # Natural harmonic
     Natural = 1
-    # Artificial harmonic
     Artificial = 2
-    # Tapped harmonic
     Tapped = 3
-    # Pinch harmonic
     Pinch = 4
-    # Semi harmonic
     Semi = 5
 
 
