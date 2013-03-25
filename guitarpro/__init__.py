@@ -29,7 +29,7 @@ def findFormatExtFile(path):
     if ext in ('gp3', 'gp4', 'gp5'):
         return ext
     else:
-        return 'gp3'
+        return 'gp5'
 
 def open(filename, mode='rb', format=None):
     '''Open a GP file path for reading or writing.

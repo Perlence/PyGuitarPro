@@ -520,12 +520,12 @@ class DirectionSign(GPObject):
 class MeasureHeader(GPObject):
     '''A measure header contains metadata for measures over multiple tracks. 
     '''
-    __attr__ = ['number',
-                'hasDoubleBar',
+    __attr__ = ['hasDoubleBar',
                 'keySignature',
                 'keySignatureType',
-                'start',
-                'realStart',
+                # 'number',
+                # 'start',
+                # 'realStart',
                 'timeSignature',
                 'tempo',
                 'marker',
@@ -643,7 +643,7 @@ class Track(GPObject):
     '''A track contains multiple measures
     '''
     __attr__ = ['fretCount',
-                'number',
+                # 'number',
                 'offset',
                 'isPercussionTrack',
                 'is12StringedGuitarTrack',
