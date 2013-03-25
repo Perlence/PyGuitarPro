@@ -169,6 +169,8 @@ class GP3File(gp.GPFileBase):
         
         if flags & 0x08 != 0:
             self.readNoteEffects(note.effect)
+            if note.effect.isHarmonic() and note.effect.harmonic.type == gp.HarmonicType.Tapped:
+                note.effect.harmonic.data = note.value + 12
             # as with BeatEffects, some effects like 'slide into' are not supported in GP3, 
             # but effect flag is still 1
             note.effect.presence = True

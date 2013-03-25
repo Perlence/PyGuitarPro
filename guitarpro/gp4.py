@@ -166,18 +166,20 @@ class GP4File(gp3.GP3File):
         if harmonicType == 1:
             return (0, gp.HarmonicType.Natural)
         elif harmonicType == 3:
-            self.skip(1) # Key?
             return (0, gp.HarmonicType.Tapped)
         elif harmonicType == 4:
             return (0, gp.HarmonicType.Pinch)
         elif harmonicType == 5:
             return (0, gp.HarmonicType.Semi)
         elif harmonicType == 15:
-            return (2, gp.HarmonicType.Artificial)
+            data = 0, 0, 1
+            return (data, gp.HarmonicType.Artificial)
         elif harmonicType == 17:
-            return (3, gp.HarmonicType.Artificial)
+            data = 7, 0, 1
+            return (data, gp.HarmonicType.Artificial)
         elif harmonicType == 22:
-            return (0, gp.HarmonicType.Artificial)
+            data = 0, 0, 0
+            return (data, gp.HarmonicType.Artificial)
 
     def readArtificialHarmonic(self, noteEffect):
         harmonicType = self.readSignedByte()
@@ -494,18 +496,17 @@ class GP4File(gp3.GP3File):
         if harmonic.type == gp.HarmonicType.Natural:
             return 1
         elif harmonic.type == gp.HarmonicType.Tapped:
-            self.placeholder(1) # Key?
             return 3
         elif harmonic.type == gp.HarmonicType.Pinch:
             return 4
         elif harmonic.type == gp.HarmonicType.Semi:
             return 5
         elif harmonic.type == gp.HarmonicType.Artificial:
-            if harmonic.data == 2: 
+            if harmonic.data == (0, 0, 1):
                 return 15
-            elif harmonic.data == 3: 
+            elif harmonic.data == (7, 0, 1):
                 return 17
-            elif harmonic.data == 0: 
+            else:
                 return 22
 
     def writeArtificialHarmonic(self, harmonic):

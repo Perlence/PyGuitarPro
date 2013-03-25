@@ -240,10 +240,10 @@ class GP5File(gp4.GP4File):
             semitone = self.readByte()
             accidental = self.readSignedByte()
             octave = self.readByte()
-            return (0, gp.HarmonicType.Artificial)
+            return ((semitone, accidental, octave), gp.HarmonicType.Artificial)
         elif harmonicType == 3:
             fret = self.readByte()
-            return (0, gp.HarmonicType.Tapped)
+            return (fret, gp.HarmonicType.Tapped)
         elif harmonicType == 4:
             return (0, gp.HarmonicType.Pinch)
         elif harmonicType == 5:
@@ -1012,15 +1012,23 @@ class GP5File(gp4.GP4File):
         if harmonic.type == gp.HarmonicType.Natural:
             return 1
         elif harmonic.type == gp.HarmonicType.Artificial:
-            self.placeholder(3) # Note?
             return 2
         elif harmonic.type == gp.HarmonicType.Tapped:
-            self.placeholder(1) # Key?
             return 3
         elif harmonic.type == gp.HarmonicType.Pinch:
             return 4
         elif harmonic.type == gp.HarmonicType.Semi:
             return 5
+
+    def writeArtificialHarmonic(self, harmonic):
+        self.writeSignedByte(self.toHarmonicType(harmonic))
+        if harmonic.type == gp.HarmonicType.Artificial:
+            semitone, accidental, octave = harmonic.data
+            self.writeByte(semitone)
+            self.writeSignedByte(accidental)
+            self.writeByte(octave)
+        elif harmonic.type == gp.HarmonicType.Tapped:
+            self.writeByte(harmonic.data)
 
     def writeGrace(self, grace):
         self.writeByte(grace.fret)
