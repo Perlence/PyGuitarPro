@@ -541,6 +541,11 @@ class GP3File(gp.GPFileBase):
     
     def readLyrics(self, song):
         song.lyrics = gp.Lyrics()
+        for i in range(gp.Lyrics.MAX_LINE_COUNT):
+            line = gp.LyricLine()            
+            line.startingMeasure = 1
+            line.lyrics = ''
+            song.lyrics.lines.append(line)
     
     def readInfo(self, song):
         song.title = self.readIntSizeCheckByteString()
