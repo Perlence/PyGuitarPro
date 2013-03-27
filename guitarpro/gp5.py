@@ -493,13 +493,8 @@ class GP5File(gp4.GP4File):
 
         header.hasDoubleBar = (flags & 0x80) != 0
 
-        # Signature changed
         if flags & 0x03 != 0:
-            # Beam eight notes by
-            self.readByte()
-            self.readByte()
-            self.readByte()
-            self.readByte()
+            header.timeSignature.beams = [self.readByte() for i in range(4)]
 
         if flags & 0x10 == 0:
             # Always 0
@@ -728,7 +723,8 @@ class GP5File(gp4.GP4File):
             self.writeByte(header.keySignatureType)
 
         if flags & 0x01 != 0:
-            self.placeholder(4)
+            for beam in header.timeSignature.beams:
+                self.writeByte(beam)
 
         if flags & 0x10 == 0:
             self.placeholder(1)

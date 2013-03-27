@@ -1518,11 +1518,13 @@ class TimeSignature(GPObject):
     '''A time signature.
     '''
     __attr__ = ['numerator',
-                'denominator']
+                'denominator',
+                'beams']
 
     def __init__(self):
         self.numerator = 4
         self.denominator = Duration()
+        self.beams = [0, 0, 0, 0]
 
 
 class Velocities(object):
