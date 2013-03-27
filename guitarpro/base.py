@@ -342,15 +342,15 @@ class Lyrics(GPObject):
         self.trackChoice = trackChoice
         self.lines = []
     
-    def lyricsBeats(self):
+    def __str__(self):
         full = ''
         for line in self.lines:
             if line is not None:
                 full += line.lyrics + '\n'
-        ret = full.trim()
+        ret = full.strip()
         ret = ret.replace('\n', ' ')
         ret = ret.replace('\r', ' ')
-        return ret.split(' ')
+        return ret
 
 
 class Point(GPObject):
@@ -361,6 +361,9 @@ class Point(GPObject):
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
+    def __str__(self):
+        return 'Point(x={x}, y={y})'.format(**vars(self))
 
 
 class Padding(GPObject):
@@ -376,6 +379,9 @@ class Padding(GPObject):
         self.top = top
         self.left = left
         self.bottom = bottom
+
+    def __str__(self):
+        return 'Padding(right={right}, top={top}, left={left}, bottom={bottom})'.format(**vars(self))
     
     def getHorizontal(self):
         return self.left + self.right
@@ -462,6 +468,9 @@ class Tempo(GPObject):
     
     # def copy(self, tempo):
     #     self.value = tempo.value
+
+    def __str__(self):
+        return '{value}bpm'.format(**vars(self))
     
     def tempoToUsq(self, tempo):
         # BPM to microseconds per quarternote
@@ -473,13 +482,13 @@ class MidiChannel(GPObject):
     '''
     __attr__ = ['channel',
                 'effectChannel',
+                'instrument',
                 'volume',
                 'balance',
                 'chorus',
                 'reverb',
                 'phaser',
                 'tremolo',
-                'instrument',
                 'bank']
 
     DEFAULT_PERCUSSION_CHANNEL = 9
@@ -576,11 +585,11 @@ class Color(GPObject):
         self.b = b
         self.a = a
     
-    def asRgbString(self):
+    def __str__(self):
         if self.a == 1:
-            return "rgb(%d,%d,%d)" % (r, g, b)
+            return 'rgb({r}, {g}, {b})'.format(**vars(self))
         else:
-            return "rgba(%d,%d,%d,%d)" % (r, g, b, a)
+            return 'rgb({r}, {g}, {b}, {a})'.format(**vars(self))
 
     @staticmethod
     def fromRgb(r, g, b):
@@ -685,7 +694,7 @@ class Track(GPObject):
         self.measures.append(measure)
 
     def __str__(self):
-        return '<guitarpro.base.Track %d>' % (self.number)
+        return '<guitarpro.base.Track {}>'.format(self.number)
 
 
 class GuitarString(GPObject):
@@ -697,6 +706,11 @@ class GuitarString(GPObject):
     def __init__(self):
         self.number = 0
         self.value = 0
+
+    def __str__(self):
+        notes = 'C C# D D# E F F# G G# A A# B'.split()
+        octave, semitone = divmod(self.value, 12)
+        return '{note}{octave}'.format(note=notes[semitone], octave=octave)
     
     # def clone(self):
     #     pass
@@ -880,7 +894,7 @@ class Measure(GPObject):
     def __str__(self):
         measure = self.number()
         track = self.track.number
-        return '<guitarpro.base.Measure %d on Track %d>' % (measure, track)
+        return '<guitarpro.base.Measure {} on Track {}>'.format(measure, track)
 
 
 class VoiceDirection(object):
