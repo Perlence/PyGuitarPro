@@ -47,6 +47,8 @@ class GP5File(gp4.GP4File):
                 
         if not self.version.endswith('5.00'):
             song.hideTempo = self.readBool()
+        else:
+            song.hideTempo = False
         
         song.key = self.readByte()
         song.octave = self.readInt()
