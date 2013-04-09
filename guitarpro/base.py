@@ -230,6 +230,11 @@ class GPObject(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __repr__(self):
+        return "<{}.{} object {}>".format(self.__module__, 
+                                          self.__class__.__name__, 
+                                          hex(hash(self)))
+
 
 class RepeatGroup(object):
     '''This class can store the information about a group of measures which are repeated
@@ -893,6 +898,12 @@ class Measure(GPObject):
         beat.measure = self
         beat.index = len(self.beats)
         self.beats.append(beat)
+
+    def __repr__(self):
+        return "<{}.{} object {} isEmpty={}>".format(self.__module__,
+                                                     self.__class__.__name__,
+                                                     hex(hash(self)),
+                                                     self.isEmpty())
 
     def __str__(self):
         measure = self.number()
