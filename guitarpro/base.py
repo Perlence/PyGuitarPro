@@ -778,12 +778,14 @@ class Duration(GPObject):
         self.isDoubleDotted = False
         self.tuplet = Tuplet()
     
-    @staticmethod
-    def fromTime(time, minimum, diff):
+    @classmethod
+    def fromTime(cls, time, minimum=None, diff=0):
         # duration = minimum.clone(factory)
-        duration = copy.deecopy(minimum)
+        if minimum is None:
+            minimum = Duration()
+        duration = copy.deepcopy(minimum)
         tmp = Duration()
-        tmp.value = WHOLE
+        tmp.value = cls.WHOLE
         tmp.isDotted = True
         while True:
             tmpTime = tmp.time()
@@ -801,7 +803,7 @@ class Duration(GPObject):
                 tmp.isDotted = True
                 tmp.tuplet.enters = 1
                 tmp.tuplet.times = 1
-            if tmp.value > self.SIXTY_FOURTH:
+            if tmp.value > cls.SIXTY_FOURTH:
                 break
         return duration
     
