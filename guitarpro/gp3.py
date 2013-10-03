@@ -23,11 +23,11 @@ import base as gp
 class GP3File(gp.GPFileBase):
     '''A reader for GuitarPro 3 files. 
     '''
+    _supportedVersions = ['FICHIER GUITAR PRO v3.00']
     _tripletFeel = gp.TripletFeel.None_
 
     def __init__(self, *args, **kwargs):
         super(GP3File, self).__init__(*args, **kwargs)
-        self.initVersions(['FICHIER GUITAR PRO v3.00'])
     
     #################################################################
     ### Reading

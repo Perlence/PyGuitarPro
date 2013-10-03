@@ -24,9 +24,10 @@ import gp4
 class GP5File(gp4.GP4File):
     '''A reader for GuitarPro 5 files. 
     '''
+    _supportedVersions = ['FICHIER GUITAR PRO v5.00', 'FICHIER GUITAR PRO v5.10']
+    
     def __init__(self, *args, **kwargs):
         super(GP5File, self).__init__(*args, **kwargs)
-        self.initVersions(['FICHIER GUITAR PRO v5.00', 'FICHIER GUITAR PRO v5.10'])
     
     #################################################################
     #### Reading

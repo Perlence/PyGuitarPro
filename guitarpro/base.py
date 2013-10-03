@@ -36,9 +36,6 @@ class GPFileBase(object):
     def close(self):
         self.data.close()
     
-    def initVersions(self, supportedVersions):
-        self._supportedVersions = supportedVersions
-
     def __enter__(self):
         return self
 
