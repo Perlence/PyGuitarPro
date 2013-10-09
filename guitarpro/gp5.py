@@ -454,7 +454,7 @@ class GP5File(gp4.GP4File):
             if number > -1:
                 song.measureHeaders[number - 1].fromDirection = sign
 
-    def readMeasureHeader(self, i, timeSignature, song):
+    def readMeasureHeader(self, i, song, previous=None):
         if i > 0:
             # Always 0
             self.skip(1)
@@ -467,14 +467,15 @@ class GP5File(gp4.GP4File):
         header.tempo.value = song.tempo
         
         if flags & 0x01 != 0:
-            timeSignature.numerator = self.readByte()
+            header.timeSignature.numerator = self.readByte()
+        else:
+            header.timeSignature.numerator = previous.timeSignature.numerator
         if flags & 0x02 != 0:
-            timeSignature.denominator.value = self.readByte()
+            header.timeSignature.denominator.value = self.readByte()
+        else:
+            header.timeSignature.denominator.value = previous.timeSignature.denominator.value
         
         header.isRepeatOpen = (flags & 0x04) != 0
-        
-        # timeSignature.copy(header.timeSignature)
-        header.timeSignature = copy.deepcopy(timeSignature)
         
         if flags & 0x08 != 0:
             header.repeatClose = self.readByte() - 1
@@ -489,8 +490,8 @@ class GP5File(gp4.GP4File):
             header.keySignature = self.toKeySignature(self.readSignedByte())
             header.keySignatureType = self.readByte()
         elif header.number > 1:
-            header.keySignature = song.measureHeaders[i - 1].keySignature
-            header.keySignatureType = song.measureHeaders[i - 1].keySignatureType
+            header.keySignature = previous.keySignature
+            header.keySignatureType = previous.keySignatureType
 
         header.hasDoubleBar = (flags & 0x80) != 0
 

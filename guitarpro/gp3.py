@@ -442,11 +442,13 @@ class GP3File(gp.GPFileBase):
                 track.channel.effectChannel = effectChannel
     
     def readMeasureHeaders(self, song, measureCount):
-        timeSignature = gp.TimeSignature()
+        previous = None
         for i in range(measureCount):
-            song.addMeasureHeader(self.readMeasureHeader(i, timeSignature, song))
+            header = self.readMeasureHeader(i, song, previous)
+            song.addMeasureHeader(header)
+            previous = header
     
-    def readMeasureHeader(self, i, timeSignature, song):
+    def readMeasureHeader(self, i, song, previous=None):
         flags = self.readByte()
         
         header = gp.MeasureHeader()
@@ -456,14 +458,15 @@ class GP3File(gp.GPFileBase):
         header.tripletFeel = self._tripletFeel
         
         if (flags & 0x01) != 0:
-            timeSignature.numerator = self.readSignedByte()
+            header.timeSignature.numerator = self.readSignedByte()
+        else:
+            header.timeSignature.numerator = previous.timeSignature.numerator
         if (flags & 0x02) != 0:
-            timeSignature.denominator.value = self.readSignedByte()
+            header.timeSignature.denominator.value = self.readSignedByte()
+        else:
+            header.timeSignature.denominator.value = previous.timeSignature.denominator.value
         
         header.isRepeatOpen = ((flags & 0x04) != 0)
-        
-        # timeSignature.copy(header.timeSignature)
-        header.timeSignature = copy.deepcopy(timeSignature)
         
         if (flags & 0x08) != 0:
             header.repeatClose = (self.readSignedByte() - 1)
@@ -480,8 +483,8 @@ class GP3File(gp.GPFileBase):
             header.keySignaturePresence = True
         
         elif header.number > 1:
-            header.keySignature = song.measureHeaders[i - 1].keySignature
-            header.keySignatureType = song.measureHeaders[i - 1].keySignatureType
+            header.keySignature = previous.keySignature
+            header.keySignatureType = previous.keySignatureType
 
         header.hasDoubleBar = (flags & 0x80) != 0
        
