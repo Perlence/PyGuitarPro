@@ -609,9 +609,9 @@ class GP3File(gp.GPFileBase):
         self.writeInt(measureCount)
         self.writeInt(trackCount)
         
-        self.writeMeasureHeaders(song.measureHeaders)
+        self.writeMeasureHeaders(song.tracks[0].measures)
         self.writeTracks(song.tracks)
-        self.writeMeasures(song)
+        self.writeMeasures(song.tracks)
 
         self.writeInt(0)
 
@@ -662,13 +662,13 @@ class GP3File(gp.GPFileBase):
             # Backward compatibility with version 3.0
             self.placeholder(2)
 
-    def writeMeasureHeaders(self, measureHeaders):
+    def writeMeasureHeaders(self, measures):
         previous = None
-        for header in measureHeaders:
-            self.writeMeasureHeader(header, previous)
-            previous = header
+        for measure in measures:
+            self.writeMeasureHeader(measure.header, previous)
+            previous = measure.header
     
-    def writeMeasureHeader(self, header, previous):
+    def writeMeasureHeader(self, header, previous=None):
         flags = 0x00
         if previous is not None:
             if header.timeSignature.numerator != previous.timeSignature.numerator:
@@ -765,10 +765,14 @@ class GP3File(gp.GPFileBase):
         self.writeInt(track.channel.channel + 1)
         self.writeInt(track.channel.effectChannel + 1)
 
-    def writeMeasures(self, song):
-        for header in song.measureHeaders:
-            for track in song.tracks:
-                measure = track.measures[header.number - 1]
+    def writeMeasures(self, tracks):
+        # for header in song.measureHeaders:
+        #     for track in song.tracks:
+        #         measure = track.measures[header.number - 1]
+        #         self.writeMeasure(measure)
+        partwiseMeasures = [track.measures for track in tracks]
+        for timewiseMeasures in zip(*partwiseMeasures):
+            for measure in timewiseMeasures:
                 self.writeMeasure(measure)
     
     def writeMeasure(self, measure):

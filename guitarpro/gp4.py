@@ -311,9 +311,9 @@ class GP4File(gp3.GP3File):
         self.writeInt(measureCount)
         self.writeInt(trackCount)
 
-        self.writeMeasureHeaders(song.measureHeaders)
+        self.writeMeasureHeaders(song.tracks[0].measures)
         self.writeTracks(song.tracks)
-        self.writeMeasures(song)
+        self.writeMeasures(song.tracks)
 
     def writeLyrics(self, lyrics):
         self.writeInt(lyrics.trackChoice)

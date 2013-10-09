@@ -582,9 +582,9 @@ class GP5File(gp4.GP4File):
         self.writeInt(measureCount)
         self.writeInt(trackCount)
         
-        self.writeMeasureHeaders(song.measureHeaders)
+        self.writeMeasureHeaders(song.tracks[0].measures)
         self.writeTracks(song.tracks)
-        self.writeMeasures(song)
+        self.writeMeasures(song.tracks)
 
     def writeDirections(self, measureHeaders):
         order = ['Coda',
@@ -674,7 +674,7 @@ class GP5File(gp4.GP4File):
         elif tripletFeel == gp.TripletFeel.Sixteenth:
             return 2
 
-    def writeMeasureHeader(self, header, previous):
+    def writeMeasureHeader(self, header, previous=None):
         flags = 0x00
         if previous is not None:
             if header.timeSignature.numerator != previous.timeSignature.numerator:
