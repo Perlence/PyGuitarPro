@@ -1081,7 +1081,7 @@ class GP5File(gp4.GP4File):
             if isinstance(item, gp.MixTableItem):
                 self.writeSignedByte(item.duration)
                 if name == 'tempo':
-                    if tableChange.hideTempo and not self.version.endswith('5.00'):
+                    if not self.version.endswith('5.00'):
                         self.writeBool(tableChange.hideTempo)
 
         allTracksFlags = 0x00

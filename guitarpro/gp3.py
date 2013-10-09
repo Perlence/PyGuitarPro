@@ -766,10 +766,6 @@ class GP3File(gp.GPFileBase):
         self.writeInt(track.channel.effectChannel + 1)
 
     def writeMeasures(self, tracks):
-        # for header in song.measureHeaders:
-        #     for track in song.tracks:
-        #         measure = track.measures[header.number - 1]
-        #         self.writeMeasure(measure)
         partwiseMeasures = [track.measures for track in tracks]
         for timewiseMeasures in zip(*partwiseMeasures):
             for measure in timewiseMeasures:
