@@ -443,16 +443,16 @@ class GP3File(gp.GPFileBase):
     
     def readMeasureHeaders(self, song, measureCount):
         previous = None
-        for i in range(measureCount):
-            header = self.readMeasureHeader(i, song, previous)
+        for number in range(1, measureCount + 1):
+            header = self.readMeasureHeader(number, song, previous)
             song.addMeasureHeader(header)
             previous = header
     
-    def readMeasureHeader(self, i, song, previous=None):
+    def readMeasureHeader(self, number, song, previous=None):
         flags = self.readByte()
         
         header = gp.MeasureHeader()
-        header.number = i + 1
+        header.number = number
         header.start = 0
         header.tempo.value = song.tempo
         header.tripletFeel = self._tripletFeel

@@ -454,15 +454,15 @@ class GP5File(gp4.GP4File):
             if number > -1:
                 song.measureHeaders[number - 1].fromDirection = sign
 
-    def readMeasureHeader(self, i, song, previous=None):
-        if i > 0:
+    def readMeasureHeader(self, number, song, previous=None):
+        if previous is not None:
             # Always 0
             self.skip(1)
 
         flags = self.readByte()
         
         header = gp.MeasureHeader()
-        header.number = i + 1
+        header.number = number
         header.start = 0
         header.tempo.value = song.tempo
         
@@ -489,7 +489,7 @@ class GP5File(gp4.GP4File):
         if flags & 0x40 != 0:
             header.keySignature = self.toKeySignature(self.readSignedByte())
             header.keySignatureType = self.readByte()
-        elif header.number > 1:
+        elif previous is not None:
             header.keySignature = previous.keySignature
             header.keySignatureType = previous.keySignatureType
 
@@ -497,6 +497,8 @@ class GP5File(gp4.GP4File):
 
         if flags & 0x03 != 0:
             header.timeSignature.beams = [self.readByte() for i in range(4)]
+        else:
+            header.timeSignature.beams = previous.timeSignature.beams
 
         if flags & 0x10 == 0:
             # Always 0
@@ -609,11 +611,11 @@ class GP5File(gp4.GP4File):
                  'Da Double Coda']
         
         signs = {}
-        for header in measureHeaders:
+        for number, header in enumerate(measureHeaders, start=1):
             if header.direction is not None:
-                signs[header.direction.name] = header.number
+                signs[header.direction.name] = number
             if header.fromDirection is not None:
-                signs[header.fromDirection.name] = header.number
+                signs[header.fromDirection.name] = number
 
 
         for name in order:
@@ -701,7 +703,7 @@ class GP5File(gp4.GP4File):
         if header.hasDoubleBar:
             flags |= 0x80
 
-        if header.number > 1:
+        if previous is not None:
             self.placeholder(1)
 
         self.writeByte(flags)
