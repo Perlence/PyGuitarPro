@@ -47,7 +47,7 @@ class GPFileBase(object):
     def skip(self, count):
         self.data.read(count)
 
-    def readSmth(self, fmt, count, default=None):
+    def read(self, fmt, count, default=None):
         try:
             result = struct.unpack(fmt, self.data.read(count))
             return result[0]
@@ -58,25 +58,25 @@ class GPFileBase(object):
                 raise e
 
     def readByte(self, default=None):
-        return self.readSmth('B', 1, default)
+        return self.read('B', 1, default)
 
     def readSignedByte(self, default=None):
-        return self.readSmth('b', 1, default)
+        return self.read('b', 1, default)
 
     def readBool(self, default=None):
-        return self.readSmth('?', 1, default)
+        return self.read('?', 1, default)
     
     def readShort(self, default=None): 
-        return self.readSmth('<h', 2, default)
+        return self.read('<h', 2, default)
     
     def readInt(self, default=None): 
-        return self.readSmth('<i', 4, default)
+        return self.read('<i', 4, default)
 
     def readFloat(self, default=None):
-        return self.readSmth('<f', 4, default)
+        return self.read('<f', 4, default)
     
     def readDouble(self, default=None):
-        return self.readSmth('<d', 8, default)
+        return self.read('<d', 8, default)
 
     def readString(self, size, length=-2):
         if length == -2:
