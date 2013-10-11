@@ -1108,7 +1108,7 @@ class GP5File(gp4.GP4File):
             self.writeIntSizeCheckByteString('')
 
     def writeChord(self, chord):
-        self.placeholder(17)
+        self.data.write('01010000000c0000ffffffff0000000000'.decode('hex'))
         self.writeByteSizeString(chord.name, 21)
         self.placeholder(4)
         self.writeInt(chord.firstFret)

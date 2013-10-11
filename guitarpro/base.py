@@ -146,13 +146,6 @@ class GPFileBase(object):
         self.data.write(data)
         self.placeholder(size - len(data))
 
-    # def writeString(self, data, size, length=-2):
-    #     if length == -2:
-    #         length = size
-    #     count = size if size > 0 else length
-    #     s = self.data.read(count)
-    #     return s[:(length if length >= 0 else size)]
-
     def writeByteSizeString(self, data, size=None):
         if size is None:
             size = len(data)
