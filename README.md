@@ -16,11 +16,13 @@ This package helps you achieve several goals you might find yourself yearning to
 
 Reading `.gp*` files is as easy as:
 
+    :::python
     import guitarpro
     curl = guitarpro.parse('Mastodon - Curl of the Burl.gp5')
 
 Writing `.gp*` files isn't that hard as well:
 
+    :::python
     guitarpro.write(curl, 'Mastodon - Curl of the Burl 2.gp5')
 
 All objects representing GP entities are *hashable*, so they can be easily stored in a `dict` and *compared*. This gives us the great opportunity to apply *diff* algorithm to tabs, or even *diff3* algorithm to merge tablatures.
