@@ -32,10 +32,10 @@ Installation
 
 To install PyGuitarPro download the repository and install manually by doing:
 
-    :::bash
-        hg clone ssh://hg@bitbucket.org/Perlence/pyguitarpro
-        cd pyguitarpro
-        python setup.py install
+:::bash
+    hg clone ssh://hg@bitbucket.org/Perlence/pyguitarpro
+    cd pyguitarpro
+    python setup.py install
 
 Licensing
 ---------
