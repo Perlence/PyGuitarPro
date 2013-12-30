@@ -15,7 +15,7 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
-        'Intended Audience :: Developers'.
+        'Intended Audience :: Developers',
         'License :: OSI Approved :: zlib/libpng License',
         'Natural Language :: English',
         'Operating System :: Microsoft :: Windows',
