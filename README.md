@@ -29,6 +29,17 @@ All objects representing GP entities are *hashable*, so they can be easily store
 
 To anyone wanting to create their the best guitar tablature editor in Python this package will be the good thing to start with.
 
+Examples
+--------
+
+Several usage examples are included in the `/examples` folder. Please feel free to add your own examples, or improve on some of the existing ones, and then submit them via Bitbucket as a pull-request.
+
+To run one of the examples in your local environment, simply:
+
+    :::bash
+    cd pyguitarpro
+    python examples/transpose.py --help
+
 Installation
 ------------
 
