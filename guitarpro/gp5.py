@@ -106,7 +106,7 @@ class GP5File(gp4.GP4File):
         for voice in range(gp.Beat.MAX_VOICES):
             start = measure.start()
             beats = self.readInt()
-            for beat in range(beats):
+            for __ in range(beats):
                 start += self.readBeat(start, measure, track, voice)
         measure.lineBreak = self.readByte(default=gp.LineBreak.None_)
 
@@ -503,7 +503,7 @@ class GP5File(gp4.GP4File):
         header.hasDoubleBar = (flags & 0x80) != 0
 
         if flags & 0x03 != 0:
-            header.timeSignature.beams = [self.readByte() for i in range(4)]
+            header.timeSignature.beams = [self.readByte() for __ in range(4)]
         else:
             header.timeSignature.beams = previous.timeSignature.beams
 
@@ -560,7 +560,7 @@ class GP5File(gp4.GP4File):
 
         iNotes = self.readInt()
         song.notice = []
-        for i in range(iNotes):
+        for __ in range(iNotes):
             song.notice.append(self.readIntSizeCheckByteString())
 
     #

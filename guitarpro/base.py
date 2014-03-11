@@ -296,6 +296,12 @@ class Song(GPObject):
         self.instructions = ''
         self.notice = []
         self._currentRepeatGroup = RepeatGroup()
+        self.hideTempo = False
+        self.tempoName = ''
+        self.tempo = None
+        self.key = None
+        self.octave = 0
+
 
     def addMeasureHeader(self, header):
         '''Adds a new measure header to the song.
@@ -583,6 +589,7 @@ class MeasureHeader(GPObject):
         self.realStart = -1
         self.direction = None
         self.fromDirection = None
+        self.hasDoubleBar = False
 
 
 class Color(GPObject):
@@ -706,6 +713,11 @@ class Track(GPObject):
         self.channel = MidiChannel()
         self.color = Color.fromRgb(255, 0, 0)
         self.settings = TrackSettings()
+        self.fretCount = None
+        self.port = 0
+        self.isPercussionTrack = False
+        self.isBanjoTrack = False
+        self.is12StringedGuitarTrack = False
 
     def addMeasure(self, measure):
         measure.track = self
@@ -906,6 +918,7 @@ class Measure(GPObject):
         self.clef = self.DEFAULT_CLEF
         self.beats = []
         self.lineBreak = 0
+        self.track = None
 
     def addBeat(self, beat):
         beat.measure = self
@@ -988,6 +1001,7 @@ class BeatStroke(GPObject):
 
     def __init__(self):
         self.direction = BeatStrokeDirection.None_
+        self.value = 0
 
     def getIncrementTime(self, beat):
         duration = 0
@@ -1161,6 +1175,7 @@ class Beat(GPObject):
         self.octave = Octave.None_
         self.display = BeatDisplay()
         self.voices = []
+        self.measure = None
         for i in range(Beat.MAX_VOICES):
             voice = Voice(i)
             voice.beat = self
@@ -1191,6 +1206,10 @@ class HarmonicEffect(GPObject):
     # [i][1] -> The according harmonic note to [i][0]
     NATURAL_FREQUENCIES = [[12, 12], [9, 28],
                            [5, 28], [7, 19], [4, 28], [3, 31]]
+
+    def __init__(self, type_, data):
+        self.type = type_
+        self.data = data
 
 
 class GraceEffectTransition(object):
@@ -1374,9 +1393,10 @@ class Note(GPObject):
         self.isTiedNote = False
         self.swapAccidentals = False
         self.effect = NoteEffect()
-        # self.duration = 0
-        # self.tuplet = 0
+        self.duration = None
+        self.tuplet = None
         self.durationPercent = 1.0
+        self.voice = None
 
 
 class Chord(GPObject):
@@ -1398,7 +1418,9 @@ class Chord(GPObject):
         return count
 
     def __init__(self, length):
+        self.firstFret = None
         self.strings = [-1] * length
+        self.name = ''
 
 
 class BeatText(GPObject):
@@ -1454,13 +1476,14 @@ class MixTableChange(GPObject):
                 'wah']
 
     def __init__(self):
+        self.instrument = MixTableItem()
         self.volume = MixTableItem()
         self.balance = MixTableItem()
         self.chorus = MixTableItem()
         self.reverb = MixTableItem()
         self.phaser = MixTableItem()
         self.tremolo = MixTableItem()
-        self.instrument = MixTableItem()
+        self.tempoName = ''
         self.tempo = MixTableItem()
         self.hideTempo = True
         self.wah = WahEffect()

@@ -189,9 +189,8 @@ class GP4File(gp3.GP3File):
 
     def readArtificialHarmonic(self, noteEffect):
         harmonicType = self.readSignedByte()
-        oHarmonic = gp.HarmonicEffect()
-        oHarmonic.data, oHarmonic.type = self.fromHarmonicType(harmonicType)
-        noteEffect.harmonic = oHarmonic
+        data, type_ = self.fromHarmonicType(harmonicType)
+        noteEffect.harmonic = gp.HarmonicEffect(type_, data)
 
     def fromTremoloValue(self, value):
         if value == 1:
