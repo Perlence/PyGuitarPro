@@ -6,6 +6,9 @@ from gp3 import GP3File
 from gp4 import GP4File
 from gp5 import GP5File
 
+
+__version__ = '0.1'
+
 GPFILES = {
     'FICHIER GUITAR PRO v3.00': GP3File,
     'FICHIER GUITAR PRO v4.00': GP4File,
