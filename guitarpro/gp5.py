@@ -81,12 +81,12 @@ class GP5File(gp4.GP4File):
             gp.DirectionSign('Da Capo al Double Coda'): self.readShort(),
             gp.DirectionSign('Da Capo al Fine'): self.readShort(),
             gp.DirectionSign('Da Segno'): self.readShort(),
-            gp.DirectionSign('Da Segno Segno al Coda'): self.readShort(),
-            gp.DirectionSign('Da Segno Segno'): self.readShort(),
             gp.DirectionSign('Da Segno al Coda'): self.readShort(),
-            gp.DirectionSign('Da Segno Segno al Double Coda'): self.readShort(),
-            gp.DirectionSign('Da Segno al Fine'): self.readShort(),
             gp.DirectionSign('Da Segno al Double Coda'): self.readShort(),
+            gp.DirectionSign('Da Segno al Fine'): self.readShort(),
+            gp.DirectionSign('Da Segno Segno'): self.readShort(),
+            gp.DirectionSign('Da Segno Segno al Coda'): self.readShort(),
+            gp.DirectionSign('Da Segno Segno al Double Coda'): self.readShort(),
             gp.DirectionSign('Da Segno Segno al Fine'): self.readShort(),
             gp.DirectionSign('Da Coda'): self.readShort(),
             gp.DirectionSign('Da Double Coda'): self.readShort()
@@ -600,12 +600,12 @@ class GP5File(gp4.GP4File):
                  'Da Capo al Double Coda',
                  'Da Capo al Fine',
                  'Da Segno',
-                 'Da Segno Segno al Coda',
-                 'Da Segno Segno',
                  'Da Segno al Coda',
-                 'Da Segno Segno al Double Coda',
-                 'Da Segno al Fine',
                  'Da Segno al Double Coda',
+                 'Da Segno al Fine',
+                 'Da Segno Segno',
+                 'Da Segno Segno al Coda',
+                 'Da Segno Segno al Double Coda',
                  'Da Segno Segno al Fine',
                  'Da Coda',
                  'Da Double Coda']
@@ -616,7 +616,6 @@ class GP5File(gp4.GP4File):
                 signs[header.direction.name] = number
             if header.fromDirection is not None:
                 signs[header.fromDirection.name] = number
-
 
         for name in order:
             self.writeShort(signs.get(name, -1))
