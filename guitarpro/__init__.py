@@ -1,10 +1,10 @@
 import __builtin__
 import os
 
-from base import *
-from gp3 import GP3File
-from gp4 import GP4File
-from gp5 import GP5File
+from .base import *
+from .gp3 import GP3File
+from .gp4 import GP4File
+from .gp5 import GP5File
 
 
 __version__ = '0.1'
@@ -24,6 +24,7 @@ VERSIONS = {
     'gp5': 'FICHIER GUITAR PRO v5.10'
 }
 
+
 def findFormatExtFile(path):
     '''Guess format from filepath
     '''
@@ -34,6 +35,7 @@ def findFormatExtFile(path):
     else:
         return 'gp5'
 
+
 def open(filename, mode='rb', format=None):
     '''Open a GP file path for reading or writing.
 
@@ -41,8 +43,9 @@ def open(filename, mode='rb', format=None):
     Format may be one of ['gp3', 'gp4', 'gp5']
     '''
     if mode not in ('rb', 'wb'):
-        raise GuitarProException("cannot read or write unless in binary mode, not '%s'" % mode)
-    
+        raise GuitarProException(
+            "cannot read or write unless in binary mode, not '%s'" % mode)
+
     fp = __builtin__.open(filename, mode)
     if mode == 'rb':
         gpfilebase = GPFileBase(fp)
@@ -61,11 +64,13 @@ def open(filename, mode='rb', format=None):
     try:
         GPFile = GPFILES[version]
     except KeyError:
-        raise base.GuitarProException("unsupported version '%s'" % gpfilebase.version)
+        raise GuitarProException("unsupported version '%s'" %
+                                 gpfilebase.version)
     gpfile = GPFile(fp)
     if mode == 'wb':
         gpfile.version = version
     return GPFile(fp)
+
 
 def parse(filename, format=None):
     '''Open a GP file and read its contents
@@ -74,6 +79,7 @@ def parse(filename, format=None):
     song = gpfile.readSong()
     gpfile.close()
     return song
+
 
 def write(song, filename, format=None):
     '''Write a song into GP file

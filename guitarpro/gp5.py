@@ -17,53 +17,59 @@ from __future__ import division
 
 import copy
 
-import base as gp
-import gp4
+from . import base as gp
+from . import gp4
+
 
 class GP5File(gp4.GP4File):
-    '''A reader for GuitarPro 5 files. 
+
+    '''A reader for GuitarPro 5 files.
     '''
-    _supportedVersions = ['FICHIER GUITAR PRO v5.00', 'FICHIER GUITAR PRO v5.10']
-    
+    _supportedVersions = [
+        'FICHIER GUITAR PRO v5.00',
+        'FICHIER GUITAR PRO v5.10']
+
     def __init__(self, *args, **kwargs):
         super(GP5File, self).__init__(*args, **kwargs)
-    
-    #################################################################
-    #### Reading
-    #################################################################
+
+    #
+    # Reading
+    #
 
     def readSong(self):
         if not self.readVersion():
-            raise gp.GuitarProException("unsupported version '%s'" % self.version)
+            raise gp.GuitarProException(
+                "unsupported version '%s'" %
+                self.version)
 
         song = gp.Song()
         self.readInfo(song)
-        
+
         self.readLyrics(song)
         self.readPageSetup(song)
 
         song.tempoName = self.readIntSizeCheckByteString()
         song.tempo = self.readInt()
-                
+
         if not self.version.endswith('5.00'):
             song.hideTempo = self.readBool()
         else:
             song.hideTempo = False
-        
+
         song.key = self.readByte()
         song.octave = self.readInt()
-        
+
         channels = self.readMidiChannels()
-        
+
         directions = self.readDirections()
 
         measureCount = self.readInt()
         trackCount = self.readInt()
-        
+
         self.readMeasureHeaders(song, measureCount, directions)
         self.readTracks(song, trackCount, channels)
         self.readMeasures(song)
-        
+
         return song
 
     def readDirections(self):
@@ -93,9 +99,9 @@ class GP5File(gp4.GP4File):
         # Opeth - Baying of the Hounds.gp5: ffffffff
         # Mastodon - Colony of Birchmen.gp5: 01000000
         # Mostly 00000000
-        self.skip(4) # ???
+        self.skip(4)  # ???
         return signs, fromSigns
-        
+
     def readMeasure(self, measure, track):
         for voice in range(gp.Beat.MAX_VOICES):
             start = measure.start()
@@ -103,17 +109,17 @@ class GP5File(gp4.GP4File):
             for beat in range(beats):
                 start += self.readBeat(start, measure, track, voice)
         measure.lineBreak = self.readByte(default=gp.LineBreak.None_)
-    
+
     def readBeat(self, start, measure, track, voiceIndex):
         flags1 = self.readByte()
-        
+
         beat = self.getBeat(measure, start)
         voice = beat.voices[voiceIndex]
-        
+
         if flags1 & 0x40 != 0:
             beatType = self.readByte()
             voice.isEmpty = (beatType & 0x02) == 0
-        
+
         duration = self.readDuration(flags1)
 
         if flags1 & 0x02 != 0:
@@ -139,7 +145,7 @@ class GP5File(gp4.GP4File):
                 voice.addNote(note)
             # duration.copy(voice.duration)
             voice.duration = copy.copy(duration)
-        
+
         flags2 = self.readByte()
         flags3 = self.readByte()
 
@@ -171,7 +177,7 @@ class GP5File(gp4.GP4File):
         beat.display = display
 
         return duration.time() if not voice.isEmpty else 0
-    
+
     def readNote(self, guitarString, track, effect):
         flags = self.readByte()
         note = gp.Note()
@@ -183,16 +189,17 @@ class GP5File(gp4.GP4File):
             noteType = self.readByte()
             note.isTiedNote = noteType == 0x02
             note.effect.deadNote = noteType == 0x03
-        
+
         if flags & 0x10 != 0:
             dyn = self.readSignedByte()
             note.velocity = self.unpackVelocity(dyn)
-        
+
         if flags & 0x20 != 0:
             fret = self.readSignedByte()
-            value = self.getTiedNoteValue(guitarString.number, track) if note.isTiedNote else fret
+            value = self.getTiedNoteValue(guitarString.number,
+                                          track) if note.isTiedNote else fret
             note.value = value if 0 <= value < 100 else 0
-        
+
         if flags & 0x80 != 0:
             note.effect.leftHandFinger = self.readSignedByte()
             note.effect.rightHandFinger = self.readSignedByte()
@@ -202,13 +209,13 @@ class GP5File(gp4.GP4File):
             note.durationPercent = self.readDouble()
         flags2 = self.readByte()
         note.swapAccidentals = (flags2 & 0x02) != 0
-        
+
         if flags & 0x08 != 0:
             self.readNoteEffects(note.effect)
-            # as with BeatEffects, some effects like 'slide into' are not supported in GP3, 
+            # as with BeatEffects, some effects like 'slide into' are not supported in GP3,
             # but effect flag is still 1
             note.effect.presence = True
-        
+
         return note
 
     def readNoteEffects(self, noteEffect):
@@ -230,8 +237,8 @@ class GP5File(gp4.GP4File):
         noteEffect.hammer = (flags1 & 0x02) != 0
         noteEffect.vibrato = (flags2 & 0x40) != 0 or noteEffect.vibrato
         noteEffect.palmMute = (flags2 & 0x02) != 0
-        noteEffect.staccato = (flags2 & 0x01) != 0    
-    
+        noteEffect.staccato = (flags2 & 0x01) != 0
+
     def fromHarmonicType(self, harmonicType):
         if harmonicType == 1:
             return (0, gp.HarmonicType.Natural)
@@ -258,20 +265,20 @@ class GP5File(gp4.GP4File):
         duration = self.readByte()
         flags = self.readByte()
         grace = gp.GraceEffect()
-        
+
         grace.fret = fret
         grace.velocity = self.unpackVelocity(dyn)
         grace.duration = duration
         grace.isDead = (flags & 0x01) != 0
         grace.isOnBeat = (flags & 0x02) != 0
         grace.transition = self.toGraceTransition(transition)
-        
+
         noteEffect.grace = grace
-    
+
     def readMixTableChange(self, measure):
         tableChange = gp.MixTableChange()
         tableChange.instrument.value = self.readSignedByte()
-        self.skip(16) # RSE info
+        self.skip(16)  # RSE info
         tableChange.volume.value = self.readSignedByte()
         tableChange.balance.value = self.readSignedByte()
         tableChange.chorus.value = self.readSignedByte()
@@ -280,10 +287,10 @@ class GP5File(gp4.GP4File):
         tableChange.tremolo.value = self.readSignedByte()
         tableChange.tempoName = self.readIntSizeCheckByteString()
         tableChange.tempo.value = self.readInt()
-        
+
         if tableChange.instrument.value < 0:
             tableChange.instrument = None
-        
+
         if tableChange.volume.value >= 0:
             tableChange.volume.duration = self.readSignedByte()
         else:
@@ -311,7 +318,8 @@ class GP5File(gp4.GP4File):
         if tableChange.tempo.value >= 0:
             tableChange.tempo.duration = self.readSignedByte()
             measure.tempo().value = tableChange.tempo.value
-            tableChange.hideTempo = not self.version.endswith('5.00') and self.readBool()
+            tableChange.hideTempo = (not self.version.endswith('5.00') and 
+                                     self.readBool())
         else:
             tableChange.tempo = None
 
@@ -353,7 +361,7 @@ class GP5File(gp4.GP4File):
             self.readIntSizeCheckByteString()
 
         return tableChange
-    
+
     def readChord(self, stringCount, beat):
         chord = gp.Chord(stringCount)
         self.skip(17)
@@ -367,13 +375,13 @@ class GP5File(gp4.GP4File):
         self.skip(32)
         if chord.noteCount() > 0:
             beat.setChord(chord)
-    
+
     def readTracks(self, song, trackCount, channels):
         for i in range(trackCount):
             song.addTrack(self.readTrack(i + 1, channels))
         # Always 0
         self.skip(2 if self.version.endswith('5.00') else 1)
-    
+
     def readTrack(self, number, channels):
         if number == 1 or self.version.endswith('5.00'):
             # Always 0
@@ -428,7 +436,7 @@ class GP5File(gp4.GP4File):
 
         bank = self.readByte()
         track.channel.bank = bank
-        
+
         self.skip(45 if not self.version.endswith('5.00') else 40)
         if not self.version.endswith('5.00'):
             self.readIntSizeCheckByteString()
@@ -442,7 +450,7 @@ class GP5File(gp4.GP4File):
             return gp.TripletFeel.Sixteenth
         else:
             return gp.TripletFeel.None_
-    
+
     def readMeasureHeaders(self, song, measureCount, directions):
         super(GP5File, self).readMeasureHeaders(song, measureCount)
         signs, fromSigns = directions
@@ -459,12 +467,12 @@ class GP5File(gp4.GP4File):
             self.skip(1)
 
         flags = self.readByte()
-        
+
         header = gp.MeasureHeader()
         header.number = number
         header.start = 0
         header.tempo.value = song.tempo
-        
+
         if flags & 0x01 != 0:
             header.timeSignature.numerator = self.readByte()
         else:
@@ -473,18 +481,18 @@ class GP5File(gp4.GP4File):
             header.timeSignature.denominator.value = self.readByte()
         else:
             header.timeSignature.denominator.value = previous.timeSignature.denominator.value
-        
+
         header.isRepeatOpen = (flags & 0x04) != 0
-        
+
         if flags & 0x08 != 0:
             header.repeatClose = self.readByte() - 1
-        
+
         if flags & 0x20 != 0:
             header.marker = self.readMarker(header)
-        
+
         if flags & 0x10 != 0:
             header.repeatAlternative = self.readByte()
-        
+
         if flags & 0x40 != 0:
             header.keySignature = self.toKeySignature(self.readSignedByte())
             header.keySignatureType = self.readByte()
@@ -502,31 +510,31 @@ class GP5File(gp4.GP4File):
         if flags & 0x10 == 0:
             # Always 0
             self.skip(1)
-        
+
         header.tripletFeel = self.unpackTripletFeel(self.readByte())
-        
+
         return header
-    
+
     def readPageSetup(self, song):
         setup = gp.PageSetup()
         if not self.version.endswith('5.00'):
             # Master RSE info
             self.skip(19)
         setup.pageSize = gp.Point(self.readInt(), self.readInt())
-        
+
         l = self.readInt()
         r = self.readInt()
         t = self.readInt()
-        b = self.readInt() 
+        b = self.readInt()
         setup.pageMargin = gp.Padding(l, t, r, b)
         setup.scoreSizeProportion = self.readInt() / 100.0
-        
+
         setup.headerAndFooter = self.readByte()
-        
+
         flags2 = self.readByte()
         if flags2 & 0x01 != 0:
             setup.headerAndFooter |= gp.HeaderFooterElements.PAGE_NUMBER
-        
+
         setup.title = self.readIntSizeCheckByteString()
         setup.subtitle = self.readIntSizeCheckByteString()
         setup.artist = self.readIntSizeCheckByteString()
@@ -534,10 +542,11 @@ class GP5File(gp4.GP4File):
         setup.words = self.readIntSizeCheckByteString()
         setup.music = self.readIntSizeCheckByteString()
         setup.wordsAndMusic = self.readIntSizeCheckByteString()
-        setup.copyright = self.readIntSizeCheckByteString() + '\n' + self.readIntSizeCheckByteString()
+        setup.copyright = (self.readIntSizeCheckByteString() + '\n' + 
+                           self.readIntSizeCheckByteString())
         setup.pageNumber = self.readIntSizeCheckByteString()
         song.pageSetup = setup
-    
+
     def readInfo(self, song):
         song.title = self.readIntSizeCheckByteString()
         song.subtitle = self.readIntSizeCheckByteString()
@@ -548,15 +557,15 @@ class GP5File(gp4.GP4File):
         song.copyright = self.readIntSizeCheckByteString()
         song.tab = self.readIntSizeCheckByteString()
         song.instructions = self.readIntSizeCheckByteString()
-        
+
         iNotes = self.readInt()
         song.notice = []
         for i in range(iNotes):
             song.notice.append(self.readIntSizeCheckByteString())
 
-    #################################################################
-    #### Writing
-    #################################################################
+    #
+    # Writing
+    #
 
     def writeSong(self, song):
         self.version = self._supportedVersions[1]
@@ -568,22 +577,22 @@ class GP5File(gp4.GP4File):
 
         self.writeIntSizeCheckByteString(song.tempoName)
         self.writeInt(song.tempo)
-        
+
         if not self.version.endswith('5.00'):
             self.writeBool(song.hideTempo)
-        
+
         self.writeByte(song.key)
         self.writeInt(song.octave)
-        
+
         self.writeMidiChannels(song.tracks)
-        
+
         self.writeDirections(song.measureHeaders)
 
         measureCount = len(song.tracks[0].measures)
-        trackCount = len(song.tracks)        
+        trackCount = len(song.tracks)
         self.writeInt(measureCount)
         self.writeInt(trackCount)
-        
+
         self.writeMeasureHeaders(song.tracks[0].measures)
         self.writeTracks(song.tracks)
         self.writeMeasures(song.tracks)
@@ -608,7 +617,7 @@ class GP5File(gp4.GP4File):
                  'Da Segno Segno al Fine',
                  'Da Coda',
                  'Da Double Coda']
-        
+
         signs = {}
         for number, header in enumerate(measureHeaders, start=1):
             if header.direction is not None:
@@ -631,7 +640,7 @@ class GP5File(gp4.GP4File):
         self.writeIntSizeCheckByteString(song.copyright)
         self.writeIntSizeCheckByteString(song.tab)
         self.writeIntSizeCheckByteString(song.instructions)
-        
+
         self.writeInt(len(song.notice))
         for line in song.notice:
             self.writeIntSizeCheckByteString(line)
@@ -641,20 +650,20 @@ class GP5File(gp4.GP4File):
             self.placeholder(19)
         self.writeInt(setup.pageSize.x)
         self.writeInt(setup.pageSize.y)
-        
+
         self.writeInt(setup.pageMargin.left)
         self.writeInt(setup.pageMargin.right)
         self.writeInt(setup.pageMargin.top)
         self.writeInt(setup.pageMargin.bottom)
         self.writeInt(setup.scoreSizeProportion * 100)
-        
+
         self.writeByte(setup.headerAndFooter & 0xff)
-        
+
         flags2 = 0x00
         if setup.headerAndFooter & gp.HeaderFooterElements.PAGE_NUMBER != 0:
             flags2 |= 0x01
         self.writeByte(flags2)
-        
+
         self.writeIntSizeCheckByteString(setup.title)
         self.writeIntSizeCheckByteString(setup.subtitle)
         self.writeIntSizeCheckByteString(setup.artist)
@@ -705,21 +714,21 @@ class GP5File(gp4.GP4File):
             self.placeholder(1)
 
         self.writeByte(flags)
-                
+
         if flags & 0x01 != 0:
             self.writeByte(header.timeSignature.numerator)
         if flags & 0x02 != 0:
             self.writeByte(header.timeSignature.denominator.value)
-        
+
         if flags & 0x08 != 0:
             self.writeByte(header.repeatClose + 1)
 
         if flags & 0x20 != 0:
             self.writeMarker(header.marker)
-        
+
         if flags & 0x10 != 0:
             self.writeByte(header.repeatAlternative)
-        
+
         if flags & 0x40 != 0:
             self.writeSignedByte(self.fromKeySignature(header.keySignature))
             self.writeByte(header.keySignatureType)
@@ -730,13 +739,13 @@ class GP5File(gp4.GP4File):
 
         if flags & 0x10 == 0:
             self.placeholder(1)
-        
+
         self.writeByte(self.packTripletFeel(header.tripletFeel))
 
     def writeTracks(self, tracks):
         super(GP5File, self).writeTracks(tracks)
         self.placeholder(2 if self.version.endswith('5.00') else 1)
-        
+
     def writeTrack(self, track):
         if track.number == 1 or self.version.endswith('5.00'):
             self.placeholder(1)
@@ -826,7 +835,8 @@ class GP5File(gp4.GP4File):
     def writeMeasure(self, measure):
         sortedBeats = sorted(measure.beats, key=lambda y: y.start)
         for voice in range(gp.Beat.MAX_VOICES):
-            beatsOfVoice = filter(lambda x: not x.voices[voice].isEmpty, sortedBeats)
+            beatsOfVoice = filter(lambda x: not x.voices[voice].isEmpty,
+                                  sortedBeats)
             beatCount = len(beatsOfVoice)
             self.writeInt(beatCount)
             for beat in beatsOfVoice:
@@ -853,11 +863,11 @@ class GP5File(gp4.GP4File):
             flags1 |= 0x40
 
         self.writeByte(flags1)
-                
+
         if flags1 & 0x40 != 0:
             beatType = 0x00 if voice.isEmpty else 0x02
             self.writeByte(beatType)
-        
+
         self.writeDuration(voice.duration, flags1)
 
         if flags1 & 0x02 != 0:
@@ -899,7 +909,7 @@ class GP5File(gp4.GP4File):
             flags2 |= 0x40
 
         self.writeByte(flags2)
-        
+
         flags3 = 0x00
         if beat.octave == gp.Octave.QuindicesimaBassa:
             flags3 |= 0x01
@@ -949,31 +959,30 @@ class GP5File(gp4.GP4File):
             else:
                 noteType = 0x01
             self.writeByte(noteType)
-        
+
         if flags & 0x10 != 0:
             value = self.packVelocity(note.velocity)
             self.writeSignedByte(value)
-        
+
         if flags & 0x20 != 0:
             fret = note.value if not note.isTiedNote else 0
             self.writeSignedByte(fret)
-        
+
         if flags & 0x80 != 0:
             self.writeSignedByte(note.effect.leftHandFinger)
             self.writeSignedByte(note.effect.rightHandFinger)
 
         if flags & 0x01 != 0:
             self.writeDouble(note.durationPercent)
-        
-        flags2 = 0x00        
+
+        flags2 = 0x00
         if note.swapAccidentals:
             flags2 |= 0x02
 
         self.writeByte(flags2)
-        
+
         if flags & 0x08 != 0:
             self.writeNoteEffects(note.effect)
-
 
     def writeNoteEffects(self, noteEffect):
         flags1 = 0x00
@@ -1013,7 +1022,7 @@ class GP5File(gp4.GP4File):
         if flags2 & 0x04 != 0:
             self.writeTremoloPicking(noteEffect.tremoloPicking)
         if flags2 & 0x08 != 0:
-            self.writeByte(self.toSlideType(noteEffect.slide))            
+            self.writeByte(self.toSlideType(noteEffect.slide))
         if flags2 & 0x10 != 0:
             self.writeArtificialHarmonic(noteEffect.harmonic)
         if flags2 & 0x20 != 0:
@@ -1055,16 +1064,17 @@ class GP5File(gp4.GP4File):
 
         self.writeByte(flags)
 
-    def writeMixTableChange(self, tableChange):      
+    def writeMixTableChange(self, tableChange):
         items = [('instrument', tableChange.instrument, self.writeSignedByte),
-                 ('rse', (16, '\xff'), self.placeholder), # RSE info
+                 ('rse', (16, '\xff'), self.placeholder),  # RSE info
                  ('volume', tableChange.volume, self.writeSignedByte),
                  ('balance', tableChange.balance, self.writeSignedByte),
                  ('chorus', tableChange.chorus, self.writeSignedByte),
                  ('reverb', tableChange.reverb, self.writeSignedByte),
                  ('phaser', tableChange.phaser, self.writeSignedByte),
                  ('tremolo', tableChange.tremolo, self.writeSignedByte),
-                 ('tempoName', tableChange.tempoName, self.writeIntSizeCheckByteString),
+                 ('tempoName', tableChange.tempoName,
+                  self.writeIntSizeCheckByteString),
                  ('tempo', tableChange.tempo, self.writeInt)]
 
         for _, item, write in items:
@@ -1138,7 +1148,7 @@ class GP5File(gp4.GP4File):
 
         for channel in map(getTrackChannelByChannel, range(64)):
             self.writeInt(channel.instrument)
-            
+
             self.writeSignedByte(self.fromChannelShort(channel.volume))
             self.writeSignedByte(self.fromChannelShort(channel.balance))
             self.writeSignedByte(self.fromChannelShort(channel.chorus))
