@@ -52,7 +52,7 @@ class GP3File(gp.GPFileBase):
         
         self.readPageSetup(song)
         
-        song.tempoName = ""
+        song.tempoName = ''
         song.tempo = self.readInt()
         song.hideTempo = False
        
@@ -245,7 +245,7 @@ class GP3File(gp.GPFileBase):
         tableChange.reverb.value = self.readSignedByte()
         tableChange.phaser.value = self.readSignedByte()
         tableChange.tremolo.value = self.readSignedByte()
-        tableChange.tempoName = ""
+        tableChange.tempoName = ''
         tableChange.tempo.value = self.readInt()
         
         if tableChange.instrument.value < 0:

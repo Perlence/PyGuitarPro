@@ -15,7 +15,6 @@
 
 from __future__ import division
 
-import math
 import struct
 import copy
 
@@ -23,7 +22,7 @@ class GuitarProException(Exception):
     pass
 
 class GPFileBase(object):
-    DEFAULT_CHARSET = "UTF-8"
+    DEFAULT_CHARSET = 'UTF-8'
     BEND_POSITION = 60
     BEND_SEMITONE = 25
 
@@ -221,7 +220,7 @@ class GPObject(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "<{}.{} object {}>".format(self.__module__, 
+        return '<{}.{} object {}>'.format(self.__module__, 
                                           self.__class__.__name__, 
                                           hex(hash(self)))
 
@@ -280,21 +279,21 @@ class Song(GPObject):
         '''
         self.measureHeaders = []
         self.tracks = []
-        self.title = ""
-        self.subtitle = ""
-        self.artist = ""
-        self.album = ""
-        self.words = ""
-        self.music = ""
-        self.copyright = ""
-        self.tab = ""
-        self.instructions = ""
+        self.title = ''
+        self.subtitle = ''
+        self.artist = ''
+        self.album = ''
+        self.words = ''
+        self.music = ''
+        self.copyright = ''
+        self.tab = ''
+        self.instructions = ''
         self.notice = []
         self._currentRepeatGroup = RepeatGroup()
     
     def addMeasureHeader(self, header):
         '''Adds a new measure header to the song. 
-        :param: header the measure header to add. 
+        :param header: the measure header to add. 
         '''
         header.song = self
         self.measureHeaders.append(header)
@@ -438,16 +437,16 @@ class PageSetup(GPObject):
         self.pageMargin = Padding(10,15,10,10)
         self.scoreSizeProportion = 1
         self.headerAndFooter = HeaderFooterElements.ALL
-        self.title = "%TITLE%"
-        self.subtitle = "%SUBTITLE%"
-        self.artist = "%ARTIST%"
-        self.album = "%ALBUM%"
-        self.words = "Words by %WORDS%"
-        self.music = "Music by %MUSIC%"
-        self.wordsAndMusic = "Words & Music by %WORDSMUSIC%"
-        self.copyright = ("Copyright %COPYRIGHT%\n"
-                          "All Rights Reserved - International Copyright Secured")
-        self.pageNumber = "Page %N%/%P%"
+        self.title = '%TITLE%'
+        self.subtitle = '%SUBTITLE%'
+        self.artist = '%ARTIST%'
+        self.album = '%ALBUM%'
+        self.words = 'Words by %WORDS%'
+        self.music = 'Music by %MUSIC%'
+        self.wordsAndMusic = 'Words & Music by %WORDSMUSIC%'
+        self.copyright = ('Copyright %COPYRIGHT%\n'
+                          'All Rights Reserved - International Copyright Secured')
+        self.pageNumber = 'Page %N%/%P%'
 
 
 class Tempo(GPObject):
@@ -456,7 +455,7 @@ class Tempo(GPObject):
     __attr__ = ['value']
 
     def inUsq(self): 
-        return self.tempoToUsq(value)
+        return self.tempoToUsq(self.value)
     
     def __init__(self):
         self.value = 120
@@ -605,7 +604,7 @@ class Marker(GPObject):
                 'color']
 
     DEFAULT_COLOR = Color.Red
-    DEFAULT_TITLE = "Untitled"
+    DEFAULT_TITLE = 'Untitled'
     
     def __init__(self):
         self.title = ''
@@ -677,7 +676,7 @@ class Track(GPObject):
         self.isMute = False
         self.isVisible = True
         self.indicateTuning = True
-        self.name = ""
+        self.name = ''
         self.measures = []
         self.strings = []
         self.channel = MidiChannel()
@@ -706,9 +705,6 @@ class GuitarString(GPObject):
         notes = 'C C# D D# E F F# G G# A A# B'.split()
         octave, semitone = divmod(self.value, 12)
         return '{note}{octave}'.format(note=notes[semitone], octave=octave)
-    
-    # def clone(self):
-    #     pass
 
 
 class Tuplet(GPObject):
@@ -723,9 +719,6 @@ class Tuplet(GPObject):
     
     def convertTime(self, time):
         return int(time * self.times / self.enters);
-    
-    # def clone(self, factory):
-    #     pass
 
 Tuplet.NORMAL = Tuplet()
 
@@ -759,7 +752,7 @@ class Duration(GPObject):
             result += int((result / 4) * 3)
         return self.tuplet.convertTime(result)
     
-    def index():
+    def index(self):
         index = 0
         value = self.value
         # while (value = (value >> 1)) > 0:
@@ -780,7 +773,6 @@ class Duration(GPObject):
     
     @classmethod
     def fromTime(cls, time, minimum=None, diff=0):
-        # duration = minimum.clone(factory)
         if minimum is None:
             minimum = Duration()
         duration = copy.deepcopy(minimum)
@@ -791,7 +783,6 @@ class Duration(GPObject):
             tmpTime = tmp.time()
             if tmpTime - diff <= time:
                 if abs(tmpTime - time) < abs(duration.time() - time):
-                    # duration = tmp.clone(factory)
                     duration = copy.deepcopy(tmp)
             if tmp.isDotted:
                 tmp.isDotted = False
@@ -806,9 +797,6 @@ class Duration(GPObject):
             if tmp.value > cls.SIXTY_FOURTH:
                 break
         return duration
-    
-    # def clone(self, factory):
-    #     pass
 
 
 class MeasureClef(object):
@@ -892,7 +880,7 @@ class Measure(GPObject):
         self.beats.append(beat)
 
     def __repr__(self):
-        return "<{}.{} object {} isEmpty={}>".format(self.__module__,
+        return '<{}.{} object {} isEmpty={}>'.format(self.__module__,
                                                      self.__class__.__name__,
                                                      hex(hash(self)),
                                                      self.isEmpty())
@@ -975,7 +963,7 @@ class BeatStroke(GPObject):
                     duration = (currentDuration if currentDuration <= Duration.QUARTER_TIME 
                         else Duration.QUARTER_TIME)
             if duration > 0:
-                return round((duration / 8.0) * (4.0 / value))
+                return round((duration / 8.0) * (4.0 / self.value))
         return 0
 
 
@@ -1198,9 +1186,6 @@ class GraceEffect(GPObject):
         self.isOnBeat = False
         self.isDead = False
 
-    # def clone(self, factory):
-    #     pass
-
 
 class TrillEffect(GPObject):
     '''A trill effect. 
@@ -1211,9 +1196,6 @@ class TrillEffect(GPObject):
     def __init__(self):
         self.fret = 0
         self.duration = Duration()
-    
-    # def clone(self):
-    #     pass
 
 
 class TremoloPickingEffect(GPObject):
@@ -1226,9 +1208,6 @@ class TremoloPickingEffect(GPObject):
         :param: factory the factory to create new instances. 
         '''
         self.duration = Duration()
-
-    # def clone(self):
-    #     pass
 
 
 class SlideType(object):
@@ -1317,9 +1296,6 @@ class NoteEffect(GPObject):
                 self.staccato == default.staccato and
                 self.letRing == default.letRing)
 
-    # def clone(self, factory):
-    #     pass
-
 
 class Note(GPObject):
     '''Describes a single note. 
@@ -1351,7 +1327,7 @@ class Note(GPObject):
 
 
 class Chord(GPObject):
-    '''A chord annotation for beats
+    '''A chord annotation for beats.
     '''
     __attr__ = ['firstFret',
                 'strings',
@@ -1406,7 +1382,7 @@ class WahEffect(GPObject):
 
 
 class MixTableChange(GPObject):
-    '''A mixtablechange describes several track changes. 
+    '''A MixTableChange describes several track changes. 
     '''
     __attr__ = ['instrument',
                 'volume',
@@ -1507,9 +1483,6 @@ class BendEffect(GPObject):
         self.type = BendTypes.None_
         self.value = 0
         self.points = []
-
-    # def clone(self, factory):
-    #     pass
 
 
 class TripletFeel(object):

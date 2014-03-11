@@ -15,7 +15,6 @@
 
 from __future__ import division
 
-import math
 import copy
 
 import base as gp
@@ -48,7 +47,7 @@ class GP4File(gp3.GP3File):
         
         self.readPageSetup(song)
         
-        song.tempoName = ""
+        song.tempoName = ''
         song.tempo = self.readInt()
         song.hideTempo = False
         
