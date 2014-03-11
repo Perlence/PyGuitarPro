@@ -449,7 +449,7 @@ class GP5File(gp4.GP4File):
         signs, fromSigns = directions
         for sign, number in signs.items():
             if number > -1:
-                song.measureHeaders[number - 1].directions = sign
+                song.measureHeaders[number - 1].direction = sign
         for sign, number in fromSigns.items():
             if number > -1:
                 song.measureHeaders[number - 1].fromDirection = sign
