@@ -92,7 +92,7 @@ class GP5File(gp4.GP4File):
             beats = self.readInt()
             for __ in range(beats):
                 start += self.readBeat(start, measure, track, voice)
-        measure.lineBreak = self.readByte(default=gp.LineBreak.None_)
+        measure.lineBreak = self.readByte(default=gp.LineBreak.none)
 
     def readBeat(self, start, measure, track, voiceIndex):
         flags1 = self.readByte()
@@ -134,13 +134,13 @@ class GP5File(gp4.GP4File):
         flags3 = self.readByte()
 
         if flags2 & 0x10 != 0:
-            beat.octave = gp.Octave.Ottava
+            beat.octave = gp.Octave.ottava
         if flags2 & 0x20 != 0:
-            beat.octave = gp.Octave.OttavaBassa
+            beat.octave = gp.Octave.ottavaBassa
         if flags2 & 0x40 != 0:
-            beat.octave = gp.Octave.Quindicesima
+            beat.octave = gp.Octave.quindicesima
         if flags3 & 0x01 != 0:
-            beat.octave = gp.Octave.QuindicesimaBassa
+            beat.octave = gp.Octave.quindicesimaBassa
 
         display = gp.BeatDisplay()
         display.breakBeam = (flags2 & 0x01) != 0
@@ -225,7 +225,7 @@ class GP5File(gp4.GP4File):
 
     def fromHarmonicType(self, harmonicType):
         if harmonicType == 1:
-            return (0, gp.HarmonicType.Natural)
+            return (0, gp.HarmonicType.natural)
         elif harmonicType == 2:
             # C = 0, D = 2, E = 4, F = 5...
             # b = -1, # = 1
@@ -233,14 +233,14 @@ class GP5File(gp4.GP4File):
             semitone = self.readByte()
             accidental = self.readSignedByte()
             octave = self.readByte()
-            return ((semitone, accidental, octave), gp.HarmonicType.Artificial)
+            return ((semitone, accidental, octave), gp.HarmonicType.artificial)
         elif harmonicType == 3:
             fret = self.readByte()
-            return (fret, gp.HarmonicType.Tapped)
+            return (fret, gp.HarmonicType.tapped)
         elif harmonicType == 4:
-            return (0, gp.HarmonicType.Pinch)
+            return (0, gp.HarmonicType.pinch)
         elif harmonicType == 5:
-            return (0, gp.HarmonicType.Semi)
+            return (0, gp.HarmonicType.semi)
 
     def readGrace(self, noteEffect):
         fret = self.readByte()
@@ -869,17 +869,17 @@ class GP5File(gp4.GP4File):
             flags2 |= 0x04
         if beat.display.beamDirection == gp.VoiceDirection.Up:
             flags2 |= 0x08
-        if beat.octave == gp.Octave.Ottava:
+        if beat.octave == gp.Octave.ottava:
             flags2 |= 0x10
-        if beat.octave == gp.Octave.OttavaBassa:
+        if beat.octave == gp.Octave.ottavaBassa:
             flags2 |= 0x20
-        if beat.octave == gp.Octave.Quindicesima:
+        if beat.octave == gp.Octave.quindicesima:
             flags2 |= 0x40
 
         self.writeByte(flags2)
 
         flags3 = 0x00
-        if beat.octave == gp.Octave.QuindicesimaBassa:
+        if beat.octave == gp.Octave.quindicesimaBassa:
             flags3 |= 0x01
         if beat.display.tupletBracket == gp.TupletBracket.Start:
             flags3 |= 0x02
@@ -1001,12 +1001,12 @@ class GP5File(gp4.GP4File):
 
     def writeArtificialHarmonic(self, harmonic):
         self.writeSignedByte(self.toHarmonicType(harmonic))
-        if harmonic.type == gp.HarmonicType.Artificial:
+        if harmonic.type == gp.HarmonicType.artificial:
             semitone, accidental, octave = harmonic.data
             self.writeByte(semitone)
             self.writeSignedByte(accidental)
             self.writeByte(octave)
-        elif harmonic.type == gp.HarmonicType.Tapped:
+        elif harmonic.type == gp.HarmonicType.tapped:
             self.writeByte(harmonic.data)
 
     def writeGrace(self, grace):

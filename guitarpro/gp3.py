@@ -11,7 +11,7 @@ class GP3File(gp.GPFileBase):
     '''A reader for GuitarPro 3 files.
     '''
     _supportedVersions = ['FICHIER GUITAR PRO v3.00']
-    _tripletFeel = gp.TripletFeel.None_
+    _tripletFeel = gp.TripletFeel.none
 
     def __init__(self, *args, **kwargs):
         super(GP3File, self).__init__(*args, **kwargs)
@@ -34,8 +34,8 @@ class GP3File(gp.GPFileBase):
 
         self.readInfo(song)
 
-        self._tripletFeel = (gp.TripletFeel.Eighth if self.readBool()
-                             else gp.TripletFeel.None_)
+        self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
+                             else gp.TripletFeel.none)
 
         self.readLyrics(song)
 
@@ -160,7 +160,7 @@ class GP3File(gp.GPFileBase):
 
         if flags & 0x08 != 0:
             self.readNoteEffects(note.effect)
-            if note.effect.isHarmonic and note.effect.harmonic.type == gp.HarmonicType.Tapped:
+            if note.effect.isHarmonic and note.effect.harmonic.type == gp.HarmonicType.tapped:
                 note.effect.harmonic.data = note.value + 12
             # as with BeatEffects, some effects like 'slide into' are not supported in GP3,
             # but effect flag is still 1
@@ -175,7 +175,7 @@ class GP3File(gp.GPFileBase):
 
     def readNoteEffects(self, noteEffect):
         flags1 = self.readByte()
-        noteEffect.slide = (flags1 & 0x04) != 0 and gp.SlideType.LegatoSlideTo
+        noteEffect.slide = (flags1 & 0x04) != 0 and gp.SlideType.legatoSlideTo
         noteEffect.hammer = (flags1 & 0x02) != 0
         noteEffect.letRing = (flags1 & 0x08) != 0
 
@@ -290,19 +290,19 @@ class GP3File(gp.GPFileBase):
                 beat.effect.stroke.value = self.toStrokeValue(strokeDown)
         if flags1 & 0x04 != 0:
             harmonic = gp.HarmonicEffect()
-            harmonic.type = gp.HarmonicType.Natural
+            harmonic.type = gp.HarmonicType.natural
             harmonic.data = 0
             effect.harmonic = harmonic
 
         if flags1 & 0x08 != 0:
             harmonic = gp.HarmonicEffect()
-            harmonic.type = gp.HarmonicType.Artificial
+            harmonic.type = gp.HarmonicType.artificial
             harmonic.data = 0
             effect.harmonic = harmonic
 
     def readTremoloBar(self, effect):
         barEffect = gp.BendEffect()
-        barEffect.type = gp.BendType.Dip
+        barEffect.type = gp.BendType.dip
         barEffect.value = self.readInt()
 
         barEffect.points.append(gp.BendPoint(0, 0))
@@ -882,7 +882,7 @@ class GP3File(gp.GPFileBase):
             flags1 |= 0x01
         if noteEffect.hammer:
             flags1 |= 0x02
-        if noteEffect.slide in (gp.SlideType.ShiftSlideTo, gp.SlideType.LegatoSlideTo):
+        if noteEffect.slide in (gp.SlideType.shiftSlideTo, gp.SlideType.legatoSlideTo):
             flags1 |= 0x04
         if noteEffect.letRing:
             flags1 |= 0x08
@@ -945,9 +945,9 @@ class GP3File(gp.GPFileBase):
             flags1 |= 0x01
         if beatEffect.vibrato:
             flags1 |= 0x02
-        if voice.hasHarmonic == gp.HarmonicType.Natural:
+        if voice.hasHarmonic == gp.HarmonicType.natural:
             flags1 |= 0x04
-        if voice.hasHarmonic == gp.HarmonicType.Artificial:
+        if voice.hasHarmonic == gp.HarmonicType.artificial:
             flags1 |= 0x08
         if beatEffect.fadeIn:
             flags1 |= 0x10

@@ -569,7 +569,7 @@ class MeasureHeader(GPObject):
         self.keySignaturePresence = False
         self.tempo = Tempo()
         self.marker = None
-        self.tripletFeel = TripletFeel.None_
+        self.tripletFeel = TripletFeel.none
         self.isRepeatOpen = False
         self.repeatClose = -1
         self.repeatAlternative = 0
@@ -835,7 +835,7 @@ class LineBreak(object):
 
     '''A line break directive
     '''
-    None_ = 0
+    none = 0
     Break = 1
     Protect = 2
 
@@ -933,7 +933,7 @@ class VoiceDirection(object):
 
     '''Voice directions indicating the direction of beams.
     '''
-    None_ = 0
+    none = 0
     Up = 1
     Down = 2
 
@@ -951,7 +951,7 @@ class Voice(GPObject):
     def __init__(self, *args, **kwargs):
         self.duration = Duration()
         self.notes = []
-        self.direction = VoiceDirection.None_
+        self.direction = VoiceDirection.none
         self.isEmpty = True
         GPObject.__init__(self, *args, **kwargs)
 
@@ -971,7 +971,7 @@ class Voice(GPObject):
         for note in self.notes:
             if note.effect.isHarmonic:
                 return note.effect.harmonic.type
-        return HarmonicType.None_
+        return HarmonicType.none
 
     def addNote(self, note):
         note.voice = self
@@ -983,7 +983,7 @@ class BeatStrokeDirection(object):
 
     '''All beat stroke directions
     '''
-    None_ = 0
+    none = 0
     Up = 1
     Down = 2
 
@@ -996,7 +996,7 @@ class BeatStroke(GPObject):
                 'value']
 
     def __init__(self, *args, **kwargs):
-        self.direction = BeatStrokeDirection.None_
+        self.direction = BeatStrokeDirection.none
         self.value = 0
         GPObject.__init__(self, *args, **kwargs)
 
@@ -1073,7 +1073,7 @@ class BeatEffect(GPObject):
 
 
 class TupletBracket(object):
-    None_ = 0
+    none = 0
     Start = 1
     End = 2
 
@@ -1103,8 +1103,8 @@ class BeatDisplay(GPObject):
     def __init__(self, *args, **kwargs):
         self.breakBeam = False
         self.forceBeam = False
-        self.beamDirection = VoiceDirection.None_
-        self.tupletBracket = TupletBracket.None_
+        self.beamDirection = VoiceDirection.none
+        self.tupletBracket = TupletBracket.none
         self.breakSecondary = 0
         self.breakSecondaryTuplet = False
         self.forceBracket = False
@@ -1115,11 +1115,11 @@ class Octave(Enum):
 
     '''Octave signs.
     '''
-    None_ = 0
-    Ottava = 1
-    OttavaBassa = 2
-    Quindicesima = 3
-    QuindicesimaBassa = 4
+    none = 0
+    ottava = 1
+    ottavaBassa = 2
+    quindicesima = 3
+    quindicesimaBassa = 4
 
 
 class Beat(GPObject):
@@ -1140,7 +1140,7 @@ class Beat(GPObject):
         self.start = Duration.QUARTER_TIME
         self.effect = BeatEffect()
         self.text = None
-        self.octave = Octave.None_
+        self.octave = Octave.none
         self.display = BeatDisplay()
         self.voices = []
         self.measure = None
@@ -1190,12 +1190,12 @@ class HarmonicType(Enum):
 
     '''All harmonic effect types.
     '''
-    None_ = 0
-    Natural = 1
-    Artificial = 2
-    Tapped = 3
-    Pinch = 4
-    Semi = 5
+    none = 0
+    natural = 1
+    artificial = 2
+    tapped = 3
+    pinch = 4
+    semi = 5
 
 
 class HarmonicEffect(GPObject):
@@ -1217,13 +1217,13 @@ class GraceEffectTransition(Enum):
     '''All transition types for grace notes.
     '''
     #: No transition
-    None_ = 0
+    none = 0
     #: Slide from the grace note to the real one
-    Slide = 1
+    slide = 1
     #: Perform a bend from the grace note to the real one
-    Bend = 2
+    bend = 2
     #: Perform a hammer on
-    Hammer = 3
+    hammer = 3
 
 
 class GraceEffect(GPObject):
@@ -1243,7 +1243,7 @@ class GraceEffect(GPObject):
         self.fret = 0
         self.duration = 1
         self.velocity = Velocities.DEFAULT
-        self.transition = GraceEffectTransition.None_
+        self.transition = GraceEffectTransition.none
         self.isOnBeat = False
         self.isDead = False
         GPObject.__init__(self, *args, **kwargs)
@@ -1283,13 +1283,13 @@ class SlideType(Enum):
 
     '''Lists all supported slide types.
     '''
-    IntoFromBelow = -2
-    IntoFromAbove = -1
-    None_ = 0
-    ShiftSlideTo = 1
-    LegatoSlideTo = 2
-    OutDownWards = 3
-    OutUpWards = 4
+    intoFromBelow = -2
+    intoFromAbove = -1
+    none = 0
+    shiftSlideTo = 1
+    legatoSlideTo = 2
+    outDownWards = 3
+    outUpWards = 4
 
 
 class NoteEffect(GPObject):
@@ -1323,7 +1323,7 @@ class NoteEffect(GPObject):
         self.tremoloPicking = None
         self.vibrato = False
         self.deadNote = False
-        self.slide = SlideType.None_
+        self.slide = SlideType.none
         self.hammer = False
         self.ghostNote = False
         self.accentuatedNote = False
@@ -1442,21 +1442,21 @@ class Chord(GPObject):
 
 
 class ChordType(Enum):
-    Major = 0
-    Seventh = 1
-    MajorSeventh = 2
-    Sixth = 3
-    Minor = 4
-    MinorSeventh = 5
-    MinorMajor = 6
-    MinorSixth = 7
-    SuspendedSecond = 8
-    SuspendedFourth = 9
-    SeventhSuspendedSecond = 10
-    SeventhSuspendedFourth = 11
-    Diminished = 12
-    Augmented = 13
-    Power = 14
+    major = 0
+    seventh = 1
+    majorSeventh = 2
+    sixth = 3
+    minor = 4
+    minorSeventh = 5
+    minorMajor = 6
+    minorSixth = 7
+    suspendedSecond = 8
+    suspendedFourth = 9
+    seventhSuspendedSecond = 10
+    seventhSuspendedFourth = 11
+    diminished = 12
+    augmented = 13
+    power = 14
 
 
 class Barre(GPObject):
@@ -1473,19 +1473,19 @@ class Barre(GPObject):
 
 
 class Fingering(Enum):
-    Unknown = -2
-    Open = -1
-    Thumb = 0
-    Index = 1
-    Middle = 2
-    Annular = 3
-    Little = 4
+    unknown = -2
+    open = -1
+    thumb = 0
+    index = 1
+    middle = 2
+    annular = 3
+    little = 4
 
 
 class ChordTonality(Enum):
-    Perfect = 0
-    Augmented = 1
-    Diminished = 2
+    perfect = 0
+    augmented = 1
+    diminished = 2
 
 
 class BeatText(GPObject):
@@ -1564,31 +1564,31 @@ class BendType(Enum):
     '''
     # Bends
     #: No Preset
-    None_ = 0
+    none = 0
     #: A simple bend
-    Bend = 1
+    bend = 1
     #: A bend and release afterwards
-    BendRelease = 2
+    bendRelease = 2
     #: A bend, then release and rebend
-    BendReleaseBend = 3
+    bendReleaseBend = 3
     #: Prebend
-    Prebend = 4
+    prebend = 4
     #: Prebend and then release
-    PrebendRelease = 5
+    prebendRelease = 5
 
     # Tremolobar
     #: Dip the bar down and then back up
-    Dip = 6
+    dip = 6
     #: Dive the bar
-    Dive = 7
+    dive = 7
     #: Release the bar up
-    ReleaseUp = 8
+    releaseUp = 8
     #: Dip the bar up and then back down
-    InvertedDip = 9
+    invertedDip = 9
     #: Return the bar
-    Return = 10
+    return_ = 10
     #: Release the bar down
-    ReleaseDown = 11
+    releaseDown = 11
 
 
 class BendPoint(GPObject):
@@ -1631,7 +1631,7 @@ class BendEffect(GPObject):
     def __init__(self, *args, **kwargs):
         '''Initializes a new instance of the BendEffect
         '''
-        self.type = BendType.None_
+        self.type = BendType.none
         self.value = 0
         self.points = []
         GPObject.__init__(self, *args, **kwargs)
@@ -1641,9 +1641,9 @@ class TripletFeel(Enum):
 
     '''A list of different triplet feels
     '''
-    None_ = 0
-    Eighth = 1
-    Sixteenth = 2
+    none = 0
+    eighth = 1
+    sixteenth = 2
 
 
 class TimeSignature(GPObject):

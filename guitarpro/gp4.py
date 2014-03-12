@@ -31,8 +31,8 @@ class GP4File(gp3.GP3File):
 
         self.readInfo(song)
 
-        self._tripletFeel = (gp.TripletFeel.Eighth if self.readBool()
-                             else gp.TripletFeel.None_)
+        self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
+                             else gp.TripletFeel.none)
 
         self.readLyrics(song)
 
@@ -142,22 +142,22 @@ class GP4File(gp3.GP3File):
 
     def fromHarmonicType(self, harmonicType):
         if harmonicType == 1:
-            return (0, gp.HarmonicType.Natural)
+            return (0, gp.HarmonicType.natural)
         elif harmonicType == 3:
-            return (0, gp.HarmonicType.Tapped)
+            return (0, gp.HarmonicType.tapped)
         elif harmonicType == 4:
-            return (0, gp.HarmonicType.Pinch)
+            return (0, gp.HarmonicType.pinch)
         elif harmonicType == 5:
-            return (0, gp.HarmonicType.Semi)
+            return (0, gp.HarmonicType.semi)
         elif harmonicType == 15:
             data = 0, 0, 1
-            return (data, gp.HarmonicType.Artificial)
+            return (data, gp.HarmonicType.artificial)
         elif harmonicType == 17:
             data = 7, 0, 1
-            return (data, gp.HarmonicType.Artificial)
+            return (data, gp.HarmonicType.artificial)
         elif harmonicType == 22:
             data = 0, 0, 0
-            return (data, gp.HarmonicType.Artificial)
+            return (data, gp.HarmonicType.artificial)
 
     def readArtificialHarmonic(self, noteEffect):
         harmonicType = self.readSignedByte()
@@ -480,7 +480,7 @@ class GP4File(gp3.GP3File):
         self.writeSignedByte(self.toTrillPeriod(trill.duration.value))
 
     def toHarmonicType(self, harmonic):
-        if harmonic.type != gp.HarmonicType.Artificial:
+        if harmonic.type != gp.HarmonicType.artificial:
             return harmonic.type.value
         else:
             if harmonic.data == (0, 0, 1):
