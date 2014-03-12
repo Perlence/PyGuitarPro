@@ -3,6 +3,8 @@ from __future__ import division
 import struct
 import copy
 
+from enum import Enum
+
 
 class GuitarProException(Exception):
     pass
@@ -179,18 +181,16 @@ class GPFileBase(object):
         return -1
 
 
-class MetaGPObject(type):
-
-    def __new__(cls, name, bases, dict_):
-        type_ = super(MetaGPObject, cls).__new__(cls, name, bases, dict_)
-        for name in dict_['__attr__']:
-            setattr(type_, name, None)
-        return type_
-
-
 class GPObject(object):
-    __metaclass__ = MetaGPObject
     __attr__ = []
+
+    class __metaclass__(type):
+
+        def __new__(cls, name, bases, dict_):
+            type_ = type.__new__(cls, name, bases, dict_)
+            for name in dict_['__attr__']:
+                setattr(type_, name, None)
+            return type_
 
     def __init__(self, *args, **kwargs):
         for key, value in zip(self.__attr__, args):
@@ -1111,7 +1111,7 @@ class BeatDisplay(GPObject):
         GPObject.__init__(self, *args, **kwargs)
 
 
-class Octave(object):
+class Octave(Enum):
 
     '''Octave signs.
     '''
@@ -1186,7 +1186,7 @@ class Beat(GPObject):
         return notes
 
 
-class HarmonicType(object):
+class HarmonicType(Enum):
 
     '''All harmonic effect types.
     '''
@@ -1212,7 +1212,7 @@ class HarmonicEffect(GPObject):
                            [5, 28], [7, 19], [4, 28], [3, 31]]
 
 
-class GraceEffectTransition(object):
+class GraceEffectTransition(Enum):
 
     '''All transition types for grace notes.
     '''
@@ -1279,17 +1279,17 @@ class TremoloPickingEffect(GPObject):
         GPObject.__init__(self, *args, **kwargs)
 
 
-class SlideType(object):
+class SlideType(Enum):
 
     '''Lists all supported slide types.
     '''
+    IntoFromBelow = -2
+    IntoFromAbove = -1
     None_ = 0
     ShiftSlideTo = 1
     LegatoSlideTo = 2
     OutDownWards = 3
     OutUpWards = 4
-    IntoFromBelow = 5
-    IntoFromAbove = 6
 
 
 class NoteEffect(GPObject):
@@ -1441,7 +1441,7 @@ class Chord(GPObject):
         return filter(lambda string: string >= 0, self.strings)
 
 
-class ChordType(object):
+class ChordType(Enum):
     Major = 0
     Seventh = 1
     MajorSeventh = 2
@@ -1472,7 +1472,7 @@ class Barre(GPObject):
         return self.start, self.end
 
 
-class Fingering(object):
+class Fingering(Enum):
     Unknown = -2
     Open = -1
     Thumb = 0
@@ -1482,7 +1482,7 @@ class Fingering(object):
     Little = 4
 
 
-class ChordTonality(object):
+class ChordTonality(Enum):
     Perfect = 0
     Augmented = 1
     Diminished = 2
@@ -1558,7 +1558,7 @@ class MixTableChange(GPObject):
         GPObject.__init__(self, *args, **kwargs)
 
 
-class BendTypes(object):
+class BendType(Enum):
 
     '''All Bend presets
     '''
@@ -1631,13 +1631,13 @@ class BendEffect(GPObject):
     def __init__(self, *args, **kwargs):
         '''Initializes a new instance of the BendEffect
         '''
-        self.type = BendTypes.None_
+        self.type = BendType.None_
         self.value = 0
         self.points = []
         GPObject.__init__(self, *args, **kwargs)
 
 
-class TripletFeel(object):
+class TripletFeel(Enum):
 
     '''A list of different triplet feels
     '''

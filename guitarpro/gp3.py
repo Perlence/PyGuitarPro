@@ -175,7 +175,7 @@ class GP3File(gp.GPFileBase):
 
     def readNoteEffects(self, noteEffect):
         flags1 = self.readByte()
-        noteEffect.slide = (flags1 & 0x04) != 0
+        noteEffect.slide = (flags1 & 0x04) != 0 and gp.SlideType.LegatoSlideTo
         noteEffect.hammer = (flags1 & 0x02) != 0
         noteEffect.letRing = (flags1 & 0x08) != 0
 
@@ -186,7 +186,7 @@ class GP3File(gp.GPFileBase):
             self.readGrace(noteEffect)
 
     def readGrace(self, noteEffect):
-        fret = self.readByte()
+        fret = self.readSignedByte()
         dyn = self.readByte()
         transition = self.readSignedByte()
         duration = self.readByte()
@@ -195,27 +195,15 @@ class GP3File(gp.GPFileBase):
         grace.fret = fret
         grace.velocity = self.unpackVelocity(dyn)
         grace.duration = duration
-        grace.isDead = fret == 255
+        grace.isDead = fret == -1
         grace.isOnBeat = False
-        grace.transition = self.toGraceTransition(transition)
+        grace.transition = gp.GraceEffectTransition(transition)
 
         noteEffect.grace = grace
 
-    def toGraceTransition(self, transition):
-        if transition == 0:
-            return gp.GraceEffectTransition.None_
-        elif transition == 1:
-            return gp.GraceEffectTransition.Slide
-        elif transition == 2:
-            return gp.GraceEffectTransition.Bend
-        elif transition == 3:
-            return gp.GraceEffectTransition.Hammer
-        else:
-            return gp.GraceEffectTransition.None_
-
     def readBend(self, noteEffect):
         bendEffect = gp.BendEffect()
-        bendEffect.type = self.readSignedByte()
+        bendEffect.type = gp.BendType(self.readSignedByte())
         bendEffect.value = self.readInt()
         pointCount = self.readInt()
         for i in range(pointCount):
@@ -314,7 +302,7 @@ class GP3File(gp.GPFileBase):
 
     def readTremoloBar(self, effect):
         barEffect = gp.BendEffect()
-        barEffect.type = gp.BendTypes.Dip
+        barEffect.type = gp.BendType.Dip
         barEffect.value = self.readInt()
 
         barEffect.points.append(gp.BendPoint(0, 0))
@@ -912,7 +900,7 @@ class GP3File(gp.GPFileBase):
     def writeGrace(self, grace):
         self.writeByte(grace.fret)
         self.writeByte(self.packVelocity(grace.velocity))
-        self.writeSignedByte(grace.transition)
+        self.writeSignedByte(grace.transition.value)
         self.writeByte(grace.duration)
 
     def packVelocity(self, velocity):
@@ -920,7 +908,7 @@ class GP3File(gp.GPFileBase):
                  gp.Velocities.MIN_VELOCITY) / gp.Velocities.VELOCITY_INCREMENT)
 
     def writeBend(self, bend):
-        self.writeSignedByte(bend.type)
+        self.writeSignedByte(bend.type.value)
         self.writeInt(bend.value)
         self.writeInt(len(bend.points))
         for point in bend.points:
