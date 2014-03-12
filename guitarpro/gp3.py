@@ -73,10 +73,10 @@ class GP3File(gp.GPFileBase):
 
             # tempo.copy(header.tempo)
             header.tempo = tempo
-            start += header.length()
+            start += header.length
 
     def readMeasure(self, measure, track):
-        start = measure.start()
+        start = measure.start
         beats = self.readInt()
         for beat in range(beats):
             start += self.readBeat(start, measure, track, 0)
@@ -94,7 +94,7 @@ class GP3File(gp.GPFileBase):
         duration = self.readDuration(flags)
         effect = gp.NoteEffect()
         if flags & 0x02 != 0:
-            self.readChord(track.stringCount(), beat)
+            self.readChord(len(track.strings), beat)
 
         if flags & 0x04 != 0:
             self.readText(beat)
@@ -112,7 +112,7 @@ class GP3File(gp.GPFileBase):
         stringFlags = self.readByte()
         for j in range(7):
             i = 6 - j
-            if stringFlags & (1 << i) != 0 and (6 - i) < track.stringCount():
+            if stringFlags & (1 << i) != 0 and (6 - i) < len(track.strings):
                 # guitarString = track.strings[6 - i].clone(factory)
                 guitarString = copy.copy(track.strings[6 - i])
                 # note = self.readNote(guitarString, track, effect.clone(factory))
@@ -124,7 +124,7 @@ class GP3File(gp.GPFileBase):
             # duration.copy(voice.duration)
             voice.duration = copy.copy(duration)
 
-        return duration.time() if not voice.isEmpty else 0
+        return duration.time if not voice.isEmpty else 0
 
     def readNote(self, guitarString, track, effect):
         flags = self.readByte()
@@ -160,7 +160,7 @@ class GP3File(gp.GPFileBase):
 
         if flags & 0x08 != 0:
             self.readNoteEffects(note.effect)
-            if note.effect.isHarmonic() and note.effect.harmonic.type == gp.HarmonicType.Tapped:
+            if note.effect.isHarmonic and note.effect.harmonic.type == gp.HarmonicType.Tapped:
                 note.effect.harmonic.data = note.value + 12
             # as with BeatEffects, some effects like 'slide into' are not supported in GP3,
             # but effect flag is still 1
@@ -270,7 +270,7 @@ class GP3File(gp.GPFileBase):
             tableChange.tremolo = None
         if tableChange.tempo.value >= 0:
             tableChange.tempo.duration = self.readSignedByte()
-            measure.tempo().value = tableChange.tempo.value
+            measure.tempo.value = tableChange.tempo.value
             tableChange.hideTempo = False
         else:
             tableChange.tempo = None
@@ -350,7 +350,7 @@ class GP3File(gp.GPFileBase):
                 if i < len(chord.strings):
                     chord.strings[i] = fret
             self.skip(36)
-        if chord.noteCount() > 0:
+        if len(chord.notes) > 0:
             beat.setChord(chord)
 
     def readDuration(self, flags):
@@ -432,7 +432,7 @@ class GP3File(gp.GPFileBase):
             track.channel = copy.copy(channels[index])
             if track.channel.instrument < 0:
                 track.channel.instrument = 0
-            if not track.channel.isPercussionChannel():
+            if not track.channel.isPercussionChannel:
                 track.channel.effectChannel = effectChannel
 
     def readMeasureHeaders(self, song, measureCount):
@@ -522,7 +522,7 @@ class GP3File(gp.GPFileBase):
             newChannel.channel = i
             newChannel.effectChannel = i
             instrument = self.readInt()
-            if newChannel.isPercussionChannel() and instrument == -1:
+            if newChannel.isPercussionChannel and instrument == -1:
                 instrument = 0
             newChannel.instrument = instrument
 
@@ -594,7 +594,7 @@ class GP3File(gp.GPFileBase):
         self.writeVersion(0)
         self.writeInfo(song)
 
-        self._tripletFeel = song.tracks[0].measures[0].tripletFeel()
+        self._tripletFeel = song.tracks[0].measures[0].tripletFeel
         self.writeBool(self._tripletFeel)
 
         self.writeLyrics(None)
@@ -643,12 +643,12 @@ class GP3File(gp.GPFileBase):
             default = gp.MidiChannel()
             default.channel = channel
             default.effectChannel = channel
-            if default.isPercussionChannel():
+            if default.isPercussionChannel:
                 default.instrument = 0
             return default
 
         for channel in map(getTrackChannelByChannel, range(64)):
-            if channel.isPercussionChannel() and channel.instrument == 0:
+            if channel.isPercussionChannel and channel.instrument == 0:
                 self.writeInt(-1)
             else:
                 self.writeInt(channel.instrument)
@@ -749,9 +749,9 @@ class GP3File(gp.GPFileBase):
         self.writeByte(flags)
 
         self.writeByteSizeString(track.name, 40)
-        self.writeInt(track.stringCount())
+        self.writeInt(len(track.strings))
         for i in range(7):
-            if i < track.stringCount():
+            if i < len(track.strings):
                 tuning = track.strings[i].value
             else:
                 tuning = 0
@@ -773,7 +773,7 @@ class GP3File(gp.GPFileBase):
                 self.writeMeasure(measure)
 
     def writeMeasure(self, measure):
-        self.writeInt(measure.beatCount())
+        self.writeInt(len(measure.beats))
         for beat in measure.beats:
             self.writeBeat(beat)
 
@@ -783,18 +783,18 @@ class GP3File(gp.GPFileBase):
         flags = 0x00
         if voice.duration.isDotted:
             flags |= 0x01
-        if beat.effect.isChord():
+        if beat.effect.isChord:
             flags |= 0x02
         if beat.text is not None:
             flags |= 0x04
-        if (not beat.effect.isDefault() or voice.hasVibrato() or
-                voice.hasHarmonic() or beat.effect.presence):
+        if (not beat.effect.isDefault or voice.hasVibrato or
+                voice.hasHarmonic or beat.effect.presence):
             flags |= 0x08
         if beat.effect.mixTableChange is not None:
             flags |= 0x10
         if voice.duration.tuplet != gp.Tuplet():
             flags |= 0x20
-        if voice.isEmpty or voice.isRestVoice():
+        if voice.isEmpty or voice.isRestVoice:
             flags |= 0x40
 
         self.writeByte(flags)
@@ -846,7 +846,7 @@ class GP3File(gp.GPFileBase):
             flags |= 0x02
         if note.effect.ghostNote:
             flags |= 0x04
-        if not noteEffect.isDefault() or note.effect.presence:
+        if not noteEffect.isDefault or note.effect.presence:
             flags |= 0x08
         # if previous is not None and note.velocity != previous.velocity:
         if note.velocity != gp.Velocities.DEFAULT:
@@ -890,7 +890,7 @@ class GP3File(gp.GPFileBase):
 
     def writeNoteEffects(self, noteEffect):
         flags1 = 0x00
-        if noteEffect.isBend():
+        if noteEffect.isBend:
             flags1 |= 0x01
         if noteEffect.hammer:
             flags1 |= 0x02
@@ -898,7 +898,7 @@ class GP3File(gp.GPFileBase):
             flags1 |= 0x04
         if noteEffect.letRing:
             flags1 |= 0x08
-        if noteEffect.isGrace():
+        if noteEffect.isGrace:
             flags1 |= 0x10
 
         self.writeByte(flags1)
@@ -953,24 +953,24 @@ class GP3File(gp.GPFileBase):
 
     def writeBeatEffects(self, beatEffect, voice):
         flags1 = 0x00
-        if voice.hasVibrato():
+        if voice.hasVibrato:
             flags1 |= 0x01
         if beatEffect.vibrato:
             flags1 |= 0x02
-        if voice.hasHarmonic() == gp.HarmonicType.Natural:
+        if voice.hasHarmonic == gp.HarmonicType.Natural:
             flags1 |= 0x04
-        if voice.hasHarmonic() == gp.HarmonicType.Artificial:
+        if voice.hasHarmonic == gp.HarmonicType.Artificial:
             flags1 |= 0x08
         if beatEffect.fadeIn:
             flags1 |= 0x10
-        if beatEffect.isTremoloBar() or beatEffect.isSlapEffect():
+        if beatEffect.isTremoloBar or beatEffect.isSlapEffect:
             flags1 |= 0x20
         if beatEffect.stroke != gp.BeatStroke():
             flags1 |= 0x40
         self.writeByte(flags1)
 
         if flags1 & 0x20 != 0:
-            if not beatEffect.isSlapEffect():
+            if not beatEffect.isSlapEffect:
                 self.writeByte(0)
                 self.writeTremoloBar(beatEffect.tremoloBar)
             else:

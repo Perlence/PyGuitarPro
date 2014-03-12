@@ -165,14 +165,12 @@ class GPFileBase(object):
     # Misc
     # ====
     def getTiedNoteValue(self, stringIndex, track):
-        measureCount = track.measureCount()
+        measureCount = len(track.measures)
         if measureCount > 0:
             for m2 in range(measureCount):
                 m = measureCount - 1 - m2
                 measure = track.measures[m]
-                for b2 in range(measure.beatCount()):
-                    b = measure.beatCount() - 1 - b2
-                    beat = measure.beats[b]
+                for beat in reversed(measure.beats):
                     for voice in beat.voices:
                         if not voice.isEmpty:
                             for note in voice.notes:
@@ -395,12 +393,6 @@ class Padding(GPObject):
     def __repr__(self):
         return 'Padding({right}, {top}, {left}, {bottom})'.format(**vars(self))
 
-    def getHorizontal(self):
-        return self.left + self.right
-
-    def getVertical(self):
-        return self.top + self.bottom
-
 
 class HeaderFooterElements(object):
 
@@ -483,10 +475,11 @@ class Tempo(GPObject):
     def __str__(self):
         return '{value}bpm'.format(**vars(self))
 
-    def inUsq(self):
-        return self.tempoToUsq(self.value)
+    @property
+    def USQ(self):
+        return self.tempoToUSQ(self.value)
 
-    def tempoToUsq(self, tempo):
+    def tempoToUSQ(self, tempo):
         # BPM to microseconds per quarternote
         return int(60000000 / tempo)
 
@@ -529,6 +522,7 @@ class MidiChannel(GPObject):
         self.bank = self.DEFAULT_BANK
         GPObject.__init__(self, *args, **kwargs)
 
+    @property
     def isPercussionChannel(self):
         return self.channel % 16 == self.DEFAULT_PERCUSSION_CHANNEL
 
@@ -585,12 +579,14 @@ class MeasureHeader(GPObject):
         self.hasDoubleBar = False
         GPObject.__init__(self, *args, **kwargs)
 
+    @property
     def hasMarker(self):
         return self.marker is not None
 
+    @property
     def length(self):
         return (self.timeSignature.numerator *
-                self.timeSignature.denominator.time())
+                self.timeSignature.denominator.time)
 
 
 class Color(GPObject):
@@ -706,12 +702,6 @@ class Track(GPObject):
     def __str__(self):
         return '<guitarpro.base.Track {}>'.format(self.number)
 
-    def stringCount(self):
-        return len(self.strings)
-
-    def measureCount(self):
-        return len(self.measures)
-
     def addMeasure(self, measure):
         measure.track = self
         self.measures.append(measure)
@@ -782,6 +772,7 @@ class Duration(GPObject):
         self.tuplet = Tuplet()
         GPObject.__init__(self, *args, **kwargs)
 
+    @property
     def time(self):
         result = int(self.QUARTER_TIME * (4.0 / self.value))
         if self.isDotted:
@@ -790,11 +781,10 @@ class Duration(GPObject):
             result += int((result / 4) * 3)
         return self.tuplet.convertTime(result)
 
+    @property
     def index(self):
         index = 0
         value = self.value
-        # while (value = (value >> 1)) > 0:
-        #     index += 1
         while True:
             value = (value >> 1)
             if value > 0:
@@ -812,7 +802,7 @@ class Duration(GPObject):
         tmp.value = cls.WHOLE
         tmp.isDotted = True
         while True:
-            tmpTime = tmp.time()
+            tmpTime = tmp.time
             if tmpTime - diff <= time:
                 if abs(tmpTime - time) < abs(duration.time() - time):
                     duration = copy.deepcopy(tmp)
@@ -873,53 +863,63 @@ class Measure(GPObject):
         return '<{}.{} object {} isEmpty={}>'.format(self.__module__,
                                                      self.__class__.__name__,
                                                      hex(hash(self)),
-                                                     self.isEmpty())
+                                                     self.isEmpty)
 
     def __str__(self):
         measure = self.number()
         track = self.track.number
         return '<guitarpro.base.Measure {} on Track {}>'.format(measure, track)
 
+    @property
     def isEmpty(self):
         return (len(self.beats) == 0 or all(beat.isRestBeat()
                                             for beat in self.beats))
 
-    def beatCount(self):
-        return len(self.beats)
-
+    @property
     def end(self):
         return self.start() + self.length()
 
+    @property
     def number(self):
         return self.header.number
 
+    @property
     def keySignature(self):
         return self.header.keySignature
 
+    @property
     def repeatClose(self):
         return self.header.repeatClose
 
+    @property
     def start(self):
         return self.header.start
 
+    @property
     def length(self):
         return self.header.length()
 
+    @property
     def tempo(self):
         return self.header.tempo
 
+    @property
     def timeSignature(self):
         return self.header.timeSignature
 
+    @property
     def isRepeatOpen(self):
         return self.header.isRepeatOpen
 
+    @property
     def tripletFeel(self):
         return self.header.tripletFeel
 
+    @property
     def hasMarker(self):
         return self.header.hasMarker()
 
+    @property
     def marker(self):
         return self.header.marker
 
@@ -955,18 +955,21 @@ class Voice(GPObject):
         self.isEmpty = True
         GPObject.__init__(self, *args, **kwargs)
 
+    @property
     def isRestVoice(self):
         return len(self.notes) == 0
 
+    @property
     def hasVibrato(self):
         for note in self.notes:
             if note.effect.vibrato:
                 return True
         return False
 
+    @property
     def hasHarmonic(self):
         for note in self.notes:
-            if note.effect.isHarmonic():
+            if note.effect.isHarmonic:
                 return note.effect.harmonic.type
         return HarmonicType.None_
 
@@ -1043,15 +1046,19 @@ class BeatEffect(GPObject):
         self.vibrato = False
         GPObject.__init__(self, *args, **kwargs)
 
+    @property
     def isChord(self):
         return self.chord is not None
 
+    @property
     def isTremoloBar(self):
         return self.tremoloBar is not None
 
+    @property
     def isSlapEffect(self):
         return self.tapping or self.slapping or self.popping
 
+    @property
     def isDefault(self):
         default = BeatEffect()
         return (self.stroke == default.stroke and
@@ -1143,13 +1150,15 @@ class Beat(GPObject):
             self.voices.append(voice)
         GPObject.__init__(self, *args, **kwargs)
 
+    @property
     def isRestBeat(self):
         for voice in self.voices:
             if not voice.isEmpty and not voice.isRestVoice():
                 return False
         return True
 
-    def getRealStart(self):
+    @property
+    def realStart(self):
         offset = self.start - self.measure.start()
         return self.measure.header.realStart + offset
 
@@ -1168,7 +1177,8 @@ class Beat(GPObject):
             voice.beat = self
             self.voices.append(voice)
 
-    def getNotes(self):
+    @property
+    def notes(self):
         notes = []
         for voice in self.voices:
             for note in voice.notes:
@@ -1238,6 +1248,7 @@ class GraceEffect(GPObject):
         self.isDead = False
         GPObject.__init__(self, *args, **kwargs)
 
+    @property
     def durationTime(self):
         '''Get the duration of the effect.
         '''
@@ -1326,21 +1337,27 @@ class NoteEffect(GPObject):
         self.presence = False
         GPObject.__init__(self, *args, **kwargs)
 
+    @property
     def isBend(self):
         return self.bend is not None and len(self.bend.points)
 
+    @property
     def isHarmonic(self):
         return self.harmonic is not None
 
+    @property
     def isGrace(self):
         return self.grace is not None
 
+    @property
     def isTrill(self):
         return self.trill is not None
 
+    @property
     def isTremoloPicking(self):
         return self.tremoloPicking is not None
 
+    @property
     def isDefault(self):
         default = NoteEffect()
         return (self.leftHandFinger == default.leftHandFinger and
@@ -1384,6 +1401,7 @@ class Note(GPObject):
         self.voice = None
         GPObject.__init__(self, *args, **kwargs)
 
+    @property
     def realValue(self):
         if self._realValue == -1:
             self._realValue = (self.value +
@@ -1405,15 +1423,9 @@ class Chord(GPObject):
         self.name = ''
         GPObject.__init__(self, *args, **kwargs)
 
-    def stringCount(self):
-        return len(self.strings)
-
-    def noteCount(self):
-        count = 0
-        for string in self.strings:
-            if string >= 0:
-                count += 1
-        return count
+    @property
+    def notes(self):
+        return filter(lambda string: string >= 0, self.strings)
 
 
 class BeatText(GPObject):
@@ -1536,8 +1548,7 @@ class BendPoint(GPObject):
 
     def getTime(self, duration):
         '''Gets the exact time when the point need to be played (midi)
-        :param: duration the full duration of the effect
-        :param: the time when this point is processed according to the given song duration
+        :param duration: the full duration of the effect
         '''
         return int(duration * self.position / BendEffect.MAX_POSITION)
 

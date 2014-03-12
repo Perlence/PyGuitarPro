@@ -77,7 +77,7 @@ class GP4File(gp3.GP3File):
 
         duration = self.readDuration(flags)
         if flags & 0x02 != 0:
-            self.readChord(track.stringCount(), beat)
+            self.readChord(len(track.strings), beat)
 
         if flags & 0x04 != 0:
             self.readText(beat)
@@ -92,7 +92,7 @@ class GP4File(gp3.GP3File):
         stringFlags = self.readSignedByte()
         for j in range(7):
             i = 6 - j
-            if stringFlags & (1 << i) != 0 and (6 - i) < track.stringCount():
+            if stringFlags & (1 << i) != 0 and (6 - i) < len(track.strings):
                 # guitarString = track.strings[6 - i].clone(factory)
                 guitarString = copy.copy(track.strings[6 - i])
                 note = self.readNote(guitarString, track, gp.NoteEffect())
@@ -100,7 +100,7 @@ class GP4File(gp3.GP3File):
             # duration.copy(voice.duration)
             voice.duration = copy.copy(duration)
 
-        return duration.time() if not voice.isEmpty else 0
+        return duration.time if not voice.isEmpty else 0
 
     def fromSlideType(self, slideType):
         if slideType == 1:
@@ -273,7 +273,7 @@ class GP4File(gp3.GP3File):
                 if i < len(chord.strings):
                     chord.strings[i] = fret
             self.skip(32)
-        if chord.noteCount() > 0:
+        if len(chord.notes) > 0:
             beat.setChord(chord)
 
     #
@@ -284,7 +284,7 @@ class GP4File(gp3.GP3File):
         self.writeVersion(1)
         self.writeInfo(song)
 
-        self._tripletFeel = song.tracks[0].measures[0].tripletFeel()
+        self._tripletFeel = song.tracks[0].measures[0].tripletFeel
         self.writeBool(self._tripletFeel)
 
         self.writeLyrics(song.lyrics)
@@ -317,17 +317,17 @@ class GP4File(gp3.GP3File):
         flags = 0x00
         if voice.duration.isDotted:
             flags |= 0x01
-        if beat.effect.isChord():
+        if beat.effect.isChord:
             flags |= 0x02
         if beat.text is not None:
             flags |= 0x04
-        if not beat.effect.isDefault():
+        if not beat.effect.isDefault:
             flags |= 0x08
         if beat.effect.mixTableChange is not None:
             flags |= 0x10
         if voice.duration.tuplet != gp.Tuplet():
             flags |= 0x20
-        if voice.isEmpty or voice.isRestVoice():
+        if voice.isEmpty or voice.isRestVoice:
             flags |= 0x40
 
         self.writeSignedByte(flags)
@@ -371,7 +371,7 @@ class GP4File(gp3.GP3File):
             flags |= 0x02
         if note.effect.ghostNote:
             flags |= 0x04
-        if not note.effect.isDefault() or note.effect.presence:
+        if not note.effect.isDefault or note.effect.presence:
             flags |= 0x08
         # if previous is not None and note.velocity != previous.velocity:
         if note.velocity != gp.Velocities.DEFAULT:
@@ -429,13 +429,13 @@ class GP4File(gp3.GP3File):
 
     def writeNoteEffects(self, noteEffect):
         flags1 = 0x00
-        if noteEffect.isBend():
+        if noteEffect.isBend:
             flags1 |= 0x01
         if noteEffect.hammer:
             flags1 |= 0x02
         if noteEffect.letRing:
             flags1 |= 0x08
-        if noteEffect.isGrace():
+        if noteEffect.isGrace:
             flags1 |= 0x10
 
         self.writeSignedByte(flags1)
@@ -445,13 +445,13 @@ class GP4File(gp3.GP3File):
             flags2 |= 0x01
         if noteEffect.palmMute:
             flags2 |= 0x02
-        if noteEffect.isTremoloPicking():
+        if noteEffect.isTremoloPicking:
             flags2 |= 0x04
         if noteEffect.slide:
             flags2 |= 0x08
-        if noteEffect.isHarmonic():
+        if noteEffect.isHarmonic:
             flags2 |= 0x10
-        if noteEffect.isTrill():
+        if noteEffect.isTrill:
             flags2 |= 0x20
         if noteEffect.vibrato:
             flags2 |= 0x40
@@ -538,7 +538,7 @@ class GP4File(gp3.GP3File):
             flags1 |= 0x02
         if beatEffect.fadeIn:
             flags1 |= 0x10
-        if beatEffect.isSlapEffect():
+        if beatEffect.isSlapEffect:
             flags1 |= 0x20
         if beatEffect.stroke != gp.BeatStroke():
             flags1 |= 0x40
@@ -550,7 +550,7 @@ class GP4File(gp3.GP3File):
             flags2 |= 0x01
         if beatEffect.hasPickStroke:
             flags2 |= 0x02
-        if beatEffect.isTremoloBar():
+        if beatEffect.isTremoloBar:
             flags2 |= 0x04
 
         self.writeSignedByte(flags2)
