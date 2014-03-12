@@ -1,18 +1,3 @@
-# This file is part of alphaTab.
-#
-#  alphaTab is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  alphaTab is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with alphaTab.  If not, see <http://www.gnu.org/licenses/>.
-
 from __future__ import division
 
 import copy
@@ -25,9 +10,8 @@ class GP5File(gp4.GP4File):
 
     '''A reader for GuitarPro 5 files.
     '''
-    _supportedVersions = [
-        'FICHIER GUITAR PRO v5.00',
-        'FICHIER GUITAR PRO v5.10']
+    _supportedVersions = ['FICHIER GUITAR PRO v5.00',
+                          'FICHIER GUITAR PRO v5.10']
 
     def __init__(self, *args, **kwargs):
         super(GP5File, self).__init__(*args, **kwargs)

@@ -1,18 +1,3 @@
-# This file is part of alphaTab.
-#
-#  alphaTab is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  alphaTab is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with alphaTab.  If not, see <http://www.gnu.org/licenses/>.
-
 from __future__ import division
 
 import struct
@@ -313,7 +298,8 @@ class Song(GPObject):
         # if the group is closed only the next upcoming header can
         # reopen the group in case of a repeat alternative, so we
         # remove the current group
-        if header.isRepeatOpen or (self._currentRepeatGroup.isClosed and header.repeatAlternative <= 0):
+        if header.isRepeatOpen or (self._currentRepeatGroup.isClosed and 
+                                   header.repeatAlternative <= 0):
             self._currentRepeatGroup = RepeatGroup()
 
         self._currentRepeatGroup.addMeasureHeader(header)
@@ -371,8 +357,8 @@ class Point(GPObject):
         self.x = x
         self.y = y
 
-    def __str__(self):
-        return 'Point(x={x}, y={y})'.format(**vars(self))
+    def __repr__(self):
+        return 'Point({x}, {y})'.format(**vars(self))
 
 
 class Padding(GPObject):
@@ -390,11 +376,8 @@ class Padding(GPObject):
         self.left = left
         self.bottom = bottom
 
-    def __str__(self):
-        return (
-            'Padding(right={right}, top={top}, left={left}, bottom={bottom})'.format(
-                **vars(self))
-        )
+    def __repr__(self):
+        return 'Padding({right}, {top}, {left}, {bottom})'.format(**vars(self))
 
     def getHorizontal(self):
         return self.left + self.right
@@ -479,11 +462,8 @@ class Tempo(GPObject):
     def inUsq(self):
         return self.tempoToUsq(self.value)
 
-    def __init__(self):
-        self.value = 120
-
-    # def copy(self, tempo):
-    #     self.value = tempo.value
+    def __init__(self, value=120):
+        self.value = value
 
     def __str__(self):
         return '{value}bpm'.format(**vars(self))
@@ -596,33 +576,22 @@ class Color(GPObject):
 
     '''A RGB Color.
     '''
-    __attr__ = ['r',
-                'g',
-                'b',
-                'a']
+    __attr__ = ['r', 'g', 'b', 'a']
 
-    def __init__(self, r, g, b, a):
+    def __init__(self, r, g, b, a=1):
         self.r = r
         self.g = g
         self.b = b
         self.a = a
 
-    def __str__(self):
+    def __repr__(self):
         if self.a == 1:
-            return 'rgb({r}, {g}, {b})'.format(**vars(self))
+            return 'Color({r}, {g}, {b})'.format(**vars(self))
         else:
-            return 'rgb({r}, {g}, {b}, {a})'.format(**vars(self))
+            return 'Color({r}, {g}, {b}, {a})'.format(**vars(self))
 
-    @staticmethod
-    def fromRgb(r, g, b):
-        return Color(r, g, b, 1)
-
-    @staticmethod
-    def fromARgb(r, g, b, a):
-        return Color(r, g, b, a)
-
-Color.Black = Color.fromRgb(0, 0, 0)
-Color.Red = Color.fromRgb(255, 0, 0)
+Color.Black = Color(0, 0, 0)
+Color.Red = Color(255, 0, 0)
 
 
 class Marker(GPObject):
@@ -711,7 +680,7 @@ class Track(GPObject):
         self.measures = []
         self.strings = []
         self.channel = MidiChannel()
-        self.color = Color.fromRgb(255, 0, 0)
+        self.color = Color(255, 0, 0)
         self.settings = TrackSettings()
         self.fretCount = None
         self.port = 0
@@ -869,10 +838,8 @@ class Measure(GPObject):
     DEFAULT_CLEF = MeasureClef.Treble
 
     def isEmpty(self):
-        return (
-            len(self.beats) == 0 or all(beat.isRestBeat()
-                                        for beat in self.beats)
-        )
+        return (len(self.beats) == 0 or all(beat.isRestBeat()
+                                            for beat in self.beats))
 
     def beatCount(self):
         return len(self.beats)
@@ -1033,14 +1000,6 @@ class BeatEffect(GPObject):
                 'slapping',
                 'popping']
 
-    hasRasgueado = False
-    pickStroke = 0
-    hasPickStroke = False
-    chord = None
-    vibrato = False
-    tremoloBar = None
-    mixTableChange = None
-
     def isChord(self):
         return self.chord is not None
 
@@ -1063,17 +1022,22 @@ class BeatEffect(GPObject):
                 self.popping == default.popping)
 
     def __init__(self):
-        self.tapping = False
-        self.slapping = False
-        self.popping = False
+        self.chord = None
         self.fadeIn = False
-        self.stroke = BeatStroke()
+        self.hasPickStroke = False
+        self.hasRasgueado = False
+        self.mixTableChange = None
+        self.pickStroke = 0
+        self.popping = False
         self.presence = False
+        self.slapping = False
+        self.stroke = BeatStroke()
+        self.tapping = False
+        self.tremoloBar = None
+        self.vibrato = False
 
 
 class TupletBracket(object):
-
-    ''''''
     None_ = 0
     Start = 1
     End = 2
@@ -1216,13 +1180,13 @@ class GraceEffectTransition(object):
 
     '''All transition types for grace notes.
     '''
-    # No transition
+    #: No transition
     None_ = 0
-    # Slide from the grace note to the real one
+    #: Slide from the grace note to the real one
     Slide = 1
-    # Perform a bend from the grace note to the real one
+    #: Perform a bend from the grace note to the real one
     Bend = 2
-    # Perform a hammer on
+    #: Perform a hammer on
     Hammer = 3
 
 
@@ -1240,9 +1204,9 @@ class GraceEffect(GPObject):
     def durationTime(self):
         '''Gets the duration of the effect.
         '''
-        return int((Duration.QUARTER_TIME / 16.00) * self.duration)
+        return int(Duration.QUARTER_TIME / 16 * self.duration)
 
-    def __init__(self, ):
+    def __init__(self):
         '''Initializes a new instance of the GraceEffect class.
         '''
         self.fret = 0
@@ -1272,9 +1236,6 @@ class TremoloPickingEffect(GPObject):
     __attr__ = ['duration']
 
     def __init__(self):
-        '''Initializes a new instance of he TremoloPickingEffect class.
-        :param: factory the factory to create new instances.
-        '''
         self.duration = Duration()
 
 
@@ -1381,8 +1342,8 @@ class Note(GPObject):
 
     def realValue(self):
         if self._realValue == -1:
-            self._realValue = self.value + \
-                self.voice.beat.measure.track.strings[self.string - 1].value
+            self._realValue = (self.value +
+                self.voice.beat.measure.track.strings[self.string - 1].value)
         return self._realValue
 
     def __init__(self):
@@ -1588,7 +1549,7 @@ class TimeSignature(GPObject):
     def __init__(self):
         self.numerator = 4
         self.denominator = Duration()
-        self.beams = [0, 0, 0, 0]
+        self.beams = (0, 0, 0, 0)
 
 
 class Velocities(object):

@@ -1,18 +1,3 @@
-# This file is part of alphaTab.
-#
-#  alphaTab is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  alphaTab is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with alphaTab.  If not, see <http://www.gnu.org/licenses/>.
-
 from __future__ import division
 
 import math
@@ -75,8 +60,7 @@ class GP3File(gp.GPFileBase):
         return song
 
     def readMeasures(self, song):
-        tempo = gp.Tempo()
-        tempo.value = song.tempo
+        tempo = gp.Tempo(song.tempo)
         start = gp.Duration.QUARTER_TIME
         for header in song.measureHeaders:
             header.start = start
@@ -529,7 +513,7 @@ class GP3File(gp.GPFileBase):
         g = self.readByte()
         b = self.readByte()
         self.skip(1)
-        return gp.Color.fromRgb(r, g, b)
+        return gp.Color(r, g, b)
 
     def readMidiChannels(self):
         channels = []
