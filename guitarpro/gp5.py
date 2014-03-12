@@ -302,7 +302,7 @@ class GP5File(gp4.GP4File):
         if tableChange.tempo.value >= 0:
             tableChange.tempo.duration = self.readSignedByte()
             measure.tempo().value = tableChange.tempo.value
-            tableChange.hideTempo = (not self.version.endswith('5.00') and 
+            tableChange.hideTempo = (not self.version.endswith('5.00') and
                                      self.readBool())
         else:
             tableChange.tempo = None
@@ -526,7 +526,7 @@ class GP5File(gp4.GP4File):
         setup.words = self.readIntSizeCheckByteString()
         setup.music = self.readIntSizeCheckByteString()
         setup.wordsAndMusic = self.readIntSizeCheckByteString()
-        setup.copyright = (self.readIntSizeCheckByteString() + '\n' + 
+        setup.copyright = (self.readIntSizeCheckByteString() + '\n' +
                            self.readIntSizeCheckByteString())
         setup.pageNumber = self.readIntSizeCheckByteString()
         song.pageSetup = setup
