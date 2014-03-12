@@ -264,15 +264,37 @@ class GP4File(gp3.GP3File):
                     if i < len(chord.strings):
                         chord.strings[i] = fret
         else:
-            self.skip(16)
-            chord.name = self.readByteSizeString(21)
-            self.skip(4)
+            chord.sharp = self.readByte()
+            self.skip(3)
+            chord.root = self.readByte()
+            chord.type = self.readByte()
+            chord.net = self.readByte()
+            chord.bass = self.readInt()
+            chord.tonality = self.readInt()
+            chord.add = self.readBool()
+            chord.name = self.readByteSizeString(20)
+            self.skip(2)
+            chord.fifth = self.readByte()
+            chord.ninth = self.readByte()
+            chord.eleventh = self.readByte()
             chord.firstFret = self.readInt()
             for i in range(7):
                 fret = self.readInt()
                 if i < len(chord.strings):
                     chord.strings[i] = fret
-            self.skip(32)
+            chord.barres = []
+            barresCount = self.readByte()
+            barreFrets = [self.readByte() for __ in range(5)]
+            barreStarts = [self.readByte() for __ in range(5)]
+            barreEnds = [self.readByte() for __ in range(5)]
+            for fret, start, end, __ in zip(barreFrets, barreStarts, barreEnds,
+                                            range(barresCount)):
+                barre = gp.Barre(fret, start, end)
+                chord.barres.append(barre)
+            chord.omissions = [self.readByte() for __ in range(7)]
+            self.skip(1)
+            chord.fingerings = [self.readSignedByte() for __ in range(7)]
+            chord.show = self.readBool()
         if len(chord.notes) > 0:
             beat.setChord(chord)
 

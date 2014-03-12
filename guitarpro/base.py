@@ -1413,12 +1413,25 @@ class Chord(GPObject):
 
     '''A chord annotation for beats.
     '''
-    __attr__ = ['firstFret',
+    __attr__ = ['sharp',
+                'root',
+                'type',
+                'net',
+                'bass',
+                'tonality',
+                'add',
+                'name',
+                'fifth',
+                'ninth',
+                'eleventh',
+                'firstFret',
                 'strings',
-                'name']
+                'barres',
+                'omissions',
+                'fingerings',
+                'show']
 
     def __init__(self, length, *args, **kwargs):
-        self.firstFret = None
         self.strings = [-1] * length
         self.name = ''
         GPObject.__init__(self, *args, **kwargs)
@@ -1426,6 +1439,53 @@ class Chord(GPObject):
     @property
     def notes(self):
         return filter(lambda string: string >= 0, self.strings)
+
+
+class ChordType(object):
+    Major = 0
+    Seventh = 1
+    MajorSeventh = 2
+    Sixth = 3
+    Minor = 4
+    MinorSeventh = 5
+    MinorMajor = 6
+    MinorSixth = 7
+    SuspendedSecond = 8
+    SuspendedFourth = 9
+    SeventhSuspendedSecond = 10
+    SeventhSuspendedFourth = 11
+    Diminished = 12
+    Augmented = 13
+    Power = 14
+
+
+class Barre(GPObject):
+    __attr__ = ['fret', 'start', 'end']
+
+    def __init__(self, *args, **kwargs):
+        self.start = 0
+        self.end = 0
+        GPObject.__init__(self, *args, **kwargs)
+
+    @property
+    def range(self):
+        return self.start, self.end
+
+
+class Fingering(object):
+    Unknown = -2
+    Open = -1
+    Thumb = 0
+    Index = 1
+    Middle = 2
+    Annular = 3
+    Little = 4
+
+
+class ChordTonality(object):
+    Perfect = 0
+    Augmented = 1
+    Diminished = 2
 
 
 class BeatText(GPObject):
