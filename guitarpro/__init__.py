@@ -39,11 +39,12 @@ def findFormatExtFile(path):
 def open(filename, mode='rb', format=None):
     '''Open a GP file path for reading or writing.
 
-    For writing to a GP file, `mode` should be "wb".
-    Format may be one of ['gp3', 'gp4', 'gp5']
+    :param mode: should be either "rb" or "wb".
+    :param format: may be one 'gp3', 'gp4', 'gp5'. If not ``format`` given,
+                   guess what it might be.
     '''
     if mode not in ('rb', 'wb'):
-        raise GuitarProException(
+        raise ValueError(
             "cannot read or write unless in binary mode, not '%s'" % mode)
 
     fp = __builtin__.open(filename, mode)
@@ -69,7 +70,7 @@ def open(filename, mode='rb', format=None):
     gpfile = GPFile(fp)
     if mode == 'wb':
         gpfile.version = version
-    return GPFile(fp)
+    return gpfile
 
 
 def parse(filename, format=None):
