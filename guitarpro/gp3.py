@@ -320,7 +320,7 @@ class GP3File(gp.GPFileBase):
     def readChord(self, stringCount, beat):
         # chord = factory.newChord(stringCount)
         chord = gp.Chord(stringCount)
-        if (self.readByte() & 0x01) == 0:
+        if self.readByte() & 0x01 == 0:
             chord.name = self.readIntSizeCheckByteString()
             chord.firstFret = self.readInt()
             if chord.firstFret != 0:
@@ -329,14 +329,32 @@ class GP3File(gp.GPFileBase):
                     if i < len(chord.strings):
                         chord.strings[i] = fret
         else:
-            self.skip(25)
+            chord.sharp = self.readBool()
+            intonation = 'sharp' if chord.sharp else 'flat'
+            self.skip(3)
+            chord.root = gp.PitchClass.fromValue(self.readInt(), intonation)
+            chord.type = gp.ChordType(self.readInt())
+            chord.extension = gp.ChordExtension(self.readInt())
+            chord.bass = gp.PitchClass.fromValue(self.readInt(), intonation)
+            chord.tonality = gp.ChordTonality(self.readInt())
+            chord.add = self.readBool()
             chord.name = self.readByteSizeString(34)
             chord.firstFret = self.readInt()
             for i in range(6):
                 fret = self.readInt()
                 if i < len(chord.strings):
                     chord.strings[i] = fret
-            self.skip(36)
+            chord.barres = []
+            barresCount = self.readInt()
+            barreFrets = [self.readInt() for __ in range(2)]
+            barreStarts = [self.readInt() for __ in range(2)]
+            barreEnds = [self.readInt() for __ in range(2)]
+            for fret, start, end, __ in zip(barreFrets, barreStarts, barreEnds,
+                                            range(barresCount)):
+                barre = gp.Barre(fret, start, end)
+                chord.barres.append(barre)
+            chord.omissions = [self.readByte() for __ in range(7)]
+            self.skip(1)
         if len(chord.notes) > 0:
             beat.setChord(chord)
 

@@ -1,3 +1,4 @@
+import re
 from itertools import izip_longest
 
 def clamp(iterable, length, fillvalue=None):
@@ -9,3 +10,8 @@ def clamp(iterable, length, fillvalue=None):
             yield x
         else:
             return
+
+def hexify(string):
+    '''Encode string in hex and insert whitespace after each byte.
+    '''
+    return ' '.join(re.findall('[0-9a-zA-Z]{2}', string.encode('hex')))
