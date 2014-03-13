@@ -913,7 +913,7 @@ class GP5File(gp4.GP4File):
         if flags3 & 0x08 != 0:
             self.writeByte(beat.display.breakSecondary)
 
-    def writeNote(self, note, previous):
+    def writeNote(self, note):
         flags = 0x00
         if abs(note.durationPercent - 1.0) >= 1e-2:
             flags |= 0x01
@@ -923,7 +923,6 @@ class GP5File(gp4.GP4File):
             flags |= 0x04
         if not note.effect.isDefault or note.effect.presence:
             flags |= 0x08
-        # if previous is not None and note.velocity != previous.velocity:
         if note.velocity != gp.Velocities.DEFAULT:
             flags |= 0x10
         # if note.isTiedNote or note.effect.deadNote:

@@ -355,12 +355,10 @@ class GP4File(gp3.GP3File):
             stringFlags |= 1 << (7 - note.string)
         self.writeSignedByte(stringFlags)
 
-        previous = None
         for note in voice.notes:
-            self.writeNote(note, previous)
-            previous = note
+            self.writeNote(note)
 
-    def writeNote(self, note, previous):
+    def writeNote(self, note):
         flags = 0x00
         try:
             if note.duration is not None and note.tuplet is not None:
@@ -373,7 +371,6 @@ class GP4File(gp3.GP3File):
             flags |= 0x04
         if not note.effect.isDefault or note.effect.presence:
             flags |= 0x08
-        # if previous is not None and note.velocity != previous.velocity:
         if note.velocity != gp.Velocities.DEFAULT:
             flags |= 0x10
         # if note.isTiedNote or note.effect.deadNote:

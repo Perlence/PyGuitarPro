@@ -826,12 +826,10 @@ class GP3File(gp.GPFileBase):
             stringFlags |= 1 << (7 - note.string)
         self.writeByte(stringFlags)
 
-        previous = None
         for note in voice.notes:
-            self.writeNote(note, previous)
-            previous = note
+            self.writeNote(note)
 
-    def writeNote(self, note, previous):
+    def writeNote(self, note):
         # In GP3 NoteEffect doesn't have vibrato attribute
         noteEffect = copy.copy(note.effect)
         noteEffect.vibrato = False
@@ -848,7 +846,6 @@ class GP3File(gp.GPFileBase):
             flags |= 0x04
         if not noteEffect.isDefault or note.effect.presence:
             flags |= 0x08
-        # if previous is not None and note.velocity != previous.velocity:
         if note.velocity != gp.Velocities.DEFAULT:
             flags |= 0x10
         # if note.isTiedNote or note.effect.deadNote:
