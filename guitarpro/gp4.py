@@ -112,7 +112,6 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x04 != 0:
             self.readTremoloPicking(noteEffect)
         if flags2 & 0x08 != 0:
-            import ipdb; ipdb.set_trace()
             noteEffect.slide = gp.SlideType(self.readSignedByte())
         if flags2 & 0x10 != 0:
             self.readArtificialHarmonic(noteEffect)
@@ -611,6 +610,7 @@ class GP4File(gp3.GP3File):
             self.writeByte(omission)
 
         self.placeholder(1)
-        for fingering in clamp(chord.fingerings, 7, fillvalue=-1):
+        for fingering in clamp(chord.fingerings or [], 7,
+                               fillvalue=gp.Fingering.unknown):
             self.writeSignedByte(fingering.value)
         self.writeBool(chord.show)

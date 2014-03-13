@@ -345,20 +345,6 @@ class GP5File(gp4.GP4File):
 
         return tableChange
 
-    def readChord(self, stringCount, beat):
-        chord = gp.Chord(stringCount)
-        self.skip(17)
-        chord.name = self.readByteSizeString(21)
-        self.skip(4)
-        chord.firstFret = self.readInt()
-        for i in range(7):
-            fret = self.readInt()
-            if i < len(chord.strings):
-                chord.strings[i] = fret
-        self.skip(32)
-        if len(chord.notes) > 0:
-            beat.setChord(chord)
-
     def readTracks(self, song, trackCount, channels):
         for i in range(trackCount):
             song.addTrack(self.readTrack(i + 1, channels))
@@ -1073,18 +1059,6 @@ class GP5File(gp4.GP4File):
         if not self.version.endswith('5.00'):
             self.writeIntSizeCheckByteString('')
             self.writeIntSizeCheckByteString('')
-
-    def writeChord(self, chord):
-        self.data.write('01010000000c0000ffffffff0000000000'.decode('hex'))
-        self.writeByteSizeString(chord.name, 21)
-        self.placeholder(4)
-        self.writeInt(chord.firstFret)
-        for i in range(7):
-            fret = -1
-            if i < len(chord.strings):
-                fret = chord.strings[i]
-            self.writeInt(fret)
-        self.placeholder(32)
 
     def writeMidiChannels(self, tracks):
         def getTrackChannelByChannel(channel):
