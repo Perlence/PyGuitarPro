@@ -16,9 +16,8 @@ class GP5File(gp4.GP4File):
     def __init__(self, *args, **kwargs):
         super(GP5File, self).__init__(*args, **kwargs)
 
-    #
     # Reading
-    #
+    # =======
 
     def readSong(self):
         if not self.readVersion():
@@ -92,7 +91,7 @@ class GP5File(gp4.GP4File):
             beats = self.readInt()
             for __ in range(beats):
                 start += self.readBeat(start, measure, track, voice)
-        measure.lineBreak = self.readByte(default=gp.LineBreak.None_)
+        measure.lineBreak = self.readByte(default=gp.LineBreak.none)
 
     def readBeat(self, start, measure, track, voiceIndex):
         flags1 = self.readByte()
@@ -134,13 +133,13 @@ class GP5File(gp4.GP4File):
         flags3 = self.readByte()
 
         if flags2 & 0x10 != 0:
-            beat.octave = gp.Octave.Ottava
+            beat.octave = gp.Octave.ottava
         if flags2 & 0x20 != 0:
-            beat.octave = gp.Octave.OttavaBassa
+            beat.octave = gp.Octave.ottavaBassa
         if flags2 & 0x40 != 0:
-            beat.octave = gp.Octave.Quindicesima
+            beat.octave = gp.Octave.quindicesima
         if flags3 & 0x01 != 0:
-            beat.octave = gp.Octave.QuindicesimaBassa
+            beat.octave = gp.Octave.quindicesimaBassa
 
         display = gp.BeatDisplay()
         display.breakBeam = (flags2 & 0x01) != 0
@@ -212,7 +211,7 @@ class GP5File(gp4.GP4File):
         if flags2 & 0x04 != 0:
             self.readTremoloPicking(noteEffect)
         if flags2 & 0x08 != 0:
-            noteEffect.slide = self.fromSlideType(self.readByte())
+            noteEffect.slide = gp.SlideType(self.readByte())
         if flags2 & 0x10 != 0:
             self.readArtificialHarmonic(noteEffect)
         if flags2 & 0x20 != 0:
@@ -225,7 +224,7 @@ class GP5File(gp4.GP4File):
 
     def fromHarmonicType(self, harmonicType):
         if harmonicType == 1:
-            return (0, gp.HarmonicType.Natural)
+            return (0, gp.HarmonicType.natural)
         elif harmonicType == 2:
             # C = 0, D = 2, E = 4, F = 5...
             # b = -1, # = 1
@@ -233,14 +232,14 @@ class GP5File(gp4.GP4File):
             semitone = self.readByte()
             accidental = self.readSignedByte()
             octave = self.readByte()
-            return ((semitone, accidental, octave), gp.HarmonicType.Artificial)
+            return ((semitone, accidental, octave), gp.HarmonicType.artificial)
         elif harmonicType == 3:
             fret = self.readByte()
-            return (fret, gp.HarmonicType.Tapped)
+            return (fret, gp.HarmonicType.tapped)
         elif harmonicType == 4:
-            return (0, gp.HarmonicType.Pinch)
+            return (0, gp.HarmonicType.pinch)
         elif harmonicType == 5:
-            return (0, gp.HarmonicType.Semi)
+            return (0, gp.HarmonicType.semi)
 
     def readGrace(self, noteEffect):
         fret = self.readByte()
@@ -255,7 +254,7 @@ class GP5File(gp4.GP4File):
         grace.duration = duration
         grace.isDead = (flags & 0x01) != 0
         grace.isOnBeat = (flags & 0x02) != 0
-        grace.transition = self.toGraceTransition(transition)
+        grace.transition = gp.GraceEffectTransition(transition)
 
         noteEffect.grace = grace
 
@@ -346,20 +345,6 @@ class GP5File(gp4.GP4File):
 
         return tableChange
 
-    def readChord(self, stringCount, beat):
-        chord = gp.Chord(stringCount)
-        self.skip(17)
-        chord.name = self.readByteSizeString(21)
-        self.skip(4)
-        chord.firstFret = self.readInt()
-        for i in range(7):
-            fret = self.readInt()
-            if i < len(chord.strings):
-                chord.strings[i] = fret
-        self.skip(32)
-        if len(chord.notes) > 0:
-            beat.setChord(chord)
-
     def readTracks(self, song, trackCount, channels):
         for i in range(trackCount):
             song.addTrack(self.readTrack(i + 1, channels))
@@ -427,14 +412,6 @@ class GP5File(gp4.GP4File):
             self.readIntSizeCheckByteString()
         return track
 
-    def unpackTripletFeel(self, tripletFeel):
-        if tripletFeel == 1:
-            return gp.TripletFeel.Eighth
-        elif tripletFeel == 2:
-            return gp.TripletFeel.Sixteenth
-        else:
-            return gp.TripletFeel.None_
-
     def readMeasureHeaders(self, song, measureCount, directions):
         super(GP5File, self).readMeasureHeaders(song, measureCount)
         signs, fromSigns = directions
@@ -495,7 +472,7 @@ class GP5File(gp4.GP4File):
             # Always 0
             self.skip(1)
 
-        header.tripletFeel = self.unpackTripletFeel(self.readByte())
+        header.tripletFeel = gp.TripletFeel(self.readByte())
 
         return header
 
@@ -547,9 +524,8 @@ class GP5File(gp4.GP4File):
         for __ in range(iNotes):
             song.notice.append(self.readIntSizeCheckByteString())
 
-    #
     # Writing
-    #
+    # =======
 
     def writeSong(self, song):
         self.version = self._supportedVersions[1]
@@ -660,14 +636,6 @@ class GP5File(gp4.GP4File):
         self.writeIntSizeCheckByteString(copyrightb)
         self.writeIntSizeCheckByteString(setup.pageNumber)
 
-    def packTripletFeel(self, tripletFeel):
-        if tripletFeel == gp.TripletFeel.None_:
-            return 0
-        elif tripletFeel == gp.TripletFeel.Eighth:
-            return 1
-        elif tripletFeel == gp.TripletFeel.Sixteenth:
-            return 2
-
     def writeMeasureHeader(self, header, previous=None):
         flags = 0x00
         if previous is not None:
@@ -724,7 +692,7 @@ class GP5File(gp4.GP4File):
         if flags & 0x10 == 0:
             self.placeholder(1)
 
-        self.writeByte(self.packTripletFeel(header.tripletFeel))
+        self.writeByte(header.tripletFeel.value)
 
     def writeTracks(self, tracks):
         super(GP5File, self).writeTracks(tracks)
@@ -885,17 +853,17 @@ class GP5File(gp4.GP4File):
             flags2 |= 0x04
         if beat.display.beamDirection == gp.VoiceDirection.Up:
             flags2 |= 0x08
-        if beat.octave == gp.Octave.Ottava:
+        if beat.octave == gp.Octave.ottava:
             flags2 |= 0x10
-        if beat.octave == gp.Octave.OttavaBassa:
+        if beat.octave == gp.Octave.ottavaBassa:
             flags2 |= 0x20
-        if beat.octave == gp.Octave.Quindicesima:
+        if beat.octave == gp.Octave.quindicesima:
             flags2 |= 0x40
 
         self.writeByte(flags2)
 
         flags3 = 0x00
-        if beat.octave == gp.Octave.QuindicesimaBassa:
+        if beat.octave == gp.Octave.quindicesimaBassa:
             flags3 |= 0x01
         if beat.display.tupletBracket == gp.TupletBracket.Start:
             flags3 |= 0x02
@@ -1005,38 +973,29 @@ class GP5File(gp4.GP4File):
         if flags2 & 0x04 != 0:
             self.writeTremoloPicking(noteEffect.tremoloPicking)
         if flags2 & 0x08 != 0:
-            self.writeByte(self.toSlideType(noteEffect.slide))
+            self.writeByte(noteEffect.slide.value)
         if flags2 & 0x10 != 0:
             self.writeArtificialHarmonic(noteEffect.harmonic)
         if flags2 & 0x20 != 0:
             self.writeTrill(noteEffect.trill)
 
     def toHarmonicType(self, harmonic):
-        if harmonic.type == gp.HarmonicType.Natural:
-            return 1
-        elif harmonic.type == gp.HarmonicType.Artificial:
-            return 2
-        elif harmonic.type == gp.HarmonicType.Tapped:
-            return 3
-        elif harmonic.type == gp.HarmonicType.Pinch:
-            return 4
-        elif harmonic.type == gp.HarmonicType.Semi:
-            return 5
+        return harmonic.type.value
 
     def writeArtificialHarmonic(self, harmonic):
         self.writeSignedByte(self.toHarmonicType(harmonic))
-        if harmonic.type == gp.HarmonicType.Artificial:
+        if harmonic.type == gp.HarmonicType.artificial:
             semitone, accidental, octave = harmonic.data
             self.writeByte(semitone)
             self.writeSignedByte(accidental)
             self.writeByte(octave)
-        elif harmonic.type == gp.HarmonicType.Tapped:
+        elif harmonic.type == gp.HarmonicType.tapped:
             self.writeByte(harmonic.data)
 
     def writeGrace(self, grace):
         self.writeByte(grace.fret)
         self.writeByte(self.packVelocity(grace.velocity))
-        self.writeByte(grace.transition)
+        self.writeByte(grace.transition.value)
         self.writeByte(grace.duration)
 
         flags = 0x00
@@ -1099,18 +1058,6 @@ class GP5File(gp4.GP4File):
         if not self.version.endswith('5.00'):
             self.writeIntSizeCheckByteString('')
             self.writeIntSizeCheckByteString('')
-
-    def writeChord(self, chord):
-        self.data.write('01010000000c0000ffffffff0000000000'.decode('hex'))
-        self.writeByteSizeString(chord.name, 21)
-        self.placeholder(4)
-        self.writeInt(chord.firstFret)
-        for i in range(7):
-            fret = -1
-            if i < len(chord.strings):
-                fret = chord.strings[i]
-            self.writeInt(fret)
-        self.placeholder(32)
 
     def writeMidiChannels(self, tracks):
         def getTrackChannelByChannel(channel):

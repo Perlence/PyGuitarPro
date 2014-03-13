@@ -4,6 +4,7 @@ import math
 import copy
 
 from . import base as gp
+from .utils import clamp
 
 
 class GP3File(gp.GPFileBase):
@@ -11,14 +12,13 @@ class GP3File(gp.GPFileBase):
     '''A reader for GuitarPro 3 files.
     '''
     _supportedVersions = ['FICHIER GUITAR PRO v3.00']
-    _tripletFeel = gp.TripletFeel.None_
+    _tripletFeel = gp.TripletFeel.none
 
     def __init__(self, *args, **kwargs):
         super(GP3File, self).__init__(*args, **kwargs)
 
-    #
     # Reading
-    #
+    # =======
 
     def readSong(self):
         '''Reads the song
@@ -34,8 +34,8 @@ class GP3File(gp.GPFileBase):
 
         self.readInfo(song)
 
-        self._tripletFeel = (gp.TripletFeel.Eighth if self.readBool()
-                             else gp.TripletFeel.None_)
+        self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
+                             else gp.TripletFeel.none)
 
         self.readLyrics(song)
 
@@ -160,7 +160,7 @@ class GP3File(gp.GPFileBase):
 
         if flags & 0x08 != 0:
             self.readNoteEffects(note.effect)
-            if note.effect.isHarmonic and note.effect.harmonic.type == gp.HarmonicType.Tapped:
+            if note.effect.isHarmonic and note.effect.harmonic.type == gp.HarmonicType.tapped:
                 note.effect.harmonic.data = note.value + 12
             # as with BeatEffects, some effects like 'slide into' are not supported in GP3,
             # but effect flag is still 1
@@ -175,7 +175,7 @@ class GP3File(gp.GPFileBase):
 
     def readNoteEffects(self, noteEffect):
         flags1 = self.readByte()
-        noteEffect.slide = (flags1 & 0x04) != 0
+        noteEffect.slide = (flags1 & 0x04) != 0 and gp.SlideType.legatoSlideTo
         noteEffect.hammer = (flags1 & 0x02) != 0
         noteEffect.letRing = (flags1 & 0x08) != 0
 
@@ -186,7 +186,7 @@ class GP3File(gp.GPFileBase):
             self.readGrace(noteEffect)
 
     def readGrace(self, noteEffect):
-        fret = self.readByte()
+        fret = self.readSignedByte()
         dyn = self.readByte()
         transition = self.readSignedByte()
         duration = self.readByte()
@@ -195,27 +195,15 @@ class GP3File(gp.GPFileBase):
         grace.fret = fret
         grace.velocity = self.unpackVelocity(dyn)
         grace.duration = duration
-        grace.isDead = fret == 255
+        grace.isDead = fret == -1
         grace.isOnBeat = False
-        grace.transition = self.toGraceTransition(transition)
+        grace.transition = gp.GraceEffectTransition(transition)
 
         noteEffect.grace = grace
 
-    def toGraceTransition(self, transition):
-        if transition == 0:
-            return gp.GraceEffectTransition.None_
-        elif transition == 1:
-            return gp.GraceEffectTransition.Slide
-        elif transition == 2:
-            return gp.GraceEffectTransition.Bend
-        elif transition == 3:
-            return gp.GraceEffectTransition.Hammer
-        else:
-            return gp.GraceEffectTransition.None_
-
     def readBend(self, noteEffect):
         bendEffect = gp.BendEffect()
-        bendEffect.type = self.readSignedByte()
+        bendEffect.type = gp.BendType(self.readSignedByte())
         bendEffect.value = self.readInt()
         pointCount = self.readInt()
         for i in range(pointCount):
@@ -302,19 +290,19 @@ class GP3File(gp.GPFileBase):
                 beat.effect.stroke.value = self.toStrokeValue(strokeDown)
         if flags1 & 0x04 != 0:
             harmonic = gp.HarmonicEffect()
-            harmonic.type = gp.HarmonicType.Natural
+            harmonic.type = gp.HarmonicType.natural
             harmonic.data = 0
             effect.harmonic = harmonic
 
         if flags1 & 0x08 != 0:
             harmonic = gp.HarmonicEffect()
-            harmonic.type = gp.HarmonicType.Artificial
+            harmonic.type = gp.HarmonicType.artificial
             harmonic.data = 0
             effect.harmonic = harmonic
 
     def readTremoloBar(self, effect):
         barEffect = gp.BendEffect()
-        barEffect.type = gp.BendTypes.Dip
+        barEffect.type = gp.BendType.dip
         barEffect.value = self.readInt()
 
         barEffect.points.append(gp.BendPoint(0, 0))
@@ -331,9 +319,8 @@ class GP3File(gp.GPFileBase):
         beat.setText(text)
 
     def readChord(self, stringCount, beat):
-        # chord = factory.newChord(stringCount)
         chord = gp.Chord(stringCount)
-        if (self.readByte() & 0x01) == 0:
+        if self.readByte() & 0x01 == 0:
             chord.name = self.readIntSizeCheckByteString()
             chord.firstFret = self.readInt()
             if chord.firstFret != 0:
@@ -342,20 +329,41 @@ class GP3File(gp.GPFileBase):
                     if i < len(chord.strings):
                         chord.strings[i] = fret
         else:
-            self.skip(25)
-            chord.name = self.readByteSizeString(34)
+            chord.sharp = self.readBool()
+            intonation = 'sharp' if chord.sharp else 'flat'
+            self.skip(3)
+            chord.root = gp.PitchClass.fromValue(self.readInt(), intonation)
+            chord.type = gp.ChordType(self.readInt())
+            chord.extension = gp.ChordExtension(self.readInt())
+            chord.bass = gp.PitchClass.fromValue(self.readInt(), intonation)
+            chord.tonality = gp.ChordTonality(self.readInt())
+            chord.add = self.readBool()
+            chord.name = self.readByteSizeString(22)
+            chord.fifth = gp.ChordTonality(self.readInt())
+            chord.ninth = gp.ChordTonality(self.readInt())
+            chord.eleventh = gp.ChordTonality(self.readInt())
             chord.firstFret = self.readInt()
             for i in range(6):
                 fret = self.readInt()
                 if i < len(chord.strings):
                     chord.strings[i] = fret
-            self.skip(36)
+            chord.barres = []
+            barresCount = self.readInt()
+            barreFrets = [self.readInt() for __ in range(2)]
+            barreStarts = [self.readInt() for __ in range(2)]
+            barreEnds = [self.readInt() for __ in range(2)]
+            for fret, start, end, __ in zip(barreFrets, barreStarts, barreEnds,
+                                            range(barresCount)):
+                barre = gp.Barre(fret, start, end)
+                chord.barres.append(barre)
+            chord.omissions = [self.readByte() for __ in range(7)]
+            self.skip(1)
         if len(chord.notes) > 0:
             beat.setChord(chord)
 
     def readDuration(self, flags):
         duration = gp.Duration()
-        duration.value = round(2 ** (self.readSignedByte() + 2))
+        duration.value = 1 << (self.readSignedByte() + 2)
         duration.isDotted = (flags & 0x01) != 0
         if (flags & 0x20) != 0:
             iTuplet = self.readInt()
@@ -584,9 +592,8 @@ class GP3File(gp.GPFileBase):
         else:
             return gp.Duration.SIXTY_FOURTH
 
-    #
     # Writing
-    #
+    # =======
 
     def writeSong(self, song):
         '''Writes the song
@@ -891,7 +898,7 @@ class GP3File(gp.GPFileBase):
             flags1 |= 0x01
         if noteEffect.hammer:
             flags1 |= 0x02
-        if noteEffect.slide in (gp.SlideType.ShiftSlideTo, gp.SlideType.LegatoSlideTo):
+        if noteEffect.slide in (gp.SlideType.shiftSlideTo, gp.SlideType.legatoSlideTo):
             flags1 |= 0x04
         if noteEffect.letRing:
             flags1 |= 0x08
@@ -909,7 +916,7 @@ class GP3File(gp.GPFileBase):
     def writeGrace(self, grace):
         self.writeByte(grace.fret)
         self.writeByte(self.packVelocity(grace.velocity))
-        self.writeSignedByte(grace.transition)
+        self.writeSignedByte(grace.transition.value)
         self.writeByte(grace.duration)
 
     def packVelocity(self, velocity):
@@ -917,7 +924,7 @@ class GP3File(gp.GPFileBase):
                  gp.Velocities.MIN_VELOCITY) / gp.Velocities.VELOCITY_INCREMENT)
 
     def writeBend(self, bend):
-        self.writeSignedByte(bend.type)
+        self.writeSignedByte(bend.type.value)
         self.writeInt(bend.value)
         self.writeInt(len(bend.points))
         for point in bend.points:
@@ -954,9 +961,9 @@ class GP3File(gp.GPFileBase):
             flags1 |= 0x01
         if beatEffect.vibrato:
             flags1 |= 0x02
-        if voice.hasHarmonic == gp.HarmonicType.Natural:
+        if voice.hasHarmonic == gp.HarmonicType.natural:
             flags1 |= 0x04
-        if voice.hasHarmonic == gp.HarmonicType.Artificial:
+        if voice.hasHarmonic == gp.HarmonicType.artificial:
             flags1 |= 0x08
         if beatEffect.fadeIn:
             flags1 |= 0x10
@@ -1012,21 +1019,40 @@ class GP3File(gp.GPFileBase):
         self.writeIntSizeCheckByteString(text.value)
 
     def writeChord(self, chord):
-        self.writeByte(0)
-        self.writeIntSizeCheckByteString(chord.name)
+        self.writeSignedByte(1)  # signify GP4 chord format
+        self.writeBool(chord.sharp)
+        self.placeholder(3)
+        self.writeInt(chord.root.value)
+        self.writeInt(chord.type.value)
+        self.writeInt(chord.extension.value)
+        self.writeInt(chord.bass.value)
+        self.writeInt(chord.tonality.value)
+        self.writeBool(chord.add)
+        self.writeByteSizeString(chord.name, 22)
+        self.writeInt(chord.fifth.value)
+        self.writeInt(chord.ninth.value)
+        self.writeInt(chord.eleventh.value)
+
         self.writeInt(chord.firstFret)
-        if chord.firstFret != 0:
-            for i in range(6):
-                self.writeInt(chord.strings[i])
-        # else:
-        #     self.skip(25)
-        #     chord.name = self.writeByteSizeString(34)
-        #     chord.firstFret = self.writeInt()
-        #     for i in range(6):
-        #         fret = self.writeInt()
-        #         if i < len(chord.strings):
-        #             chord.strings[i] = fret
-        #     self.skip(36)
+        for fret in clamp(chord.strings, 6, fillvalue=-1):
+            self.writeInt(fret)
+
+        self.writeInt(len(chord.barres))
+        if chord.barres:
+            barreFrets, barreStarts, barreEnds = zip(*chord.barres)
+        else:
+            barreFrets, barreStarts, barreEnds = [], [], []
+        for fret in clamp(barreFrets, 2, fillvalue=0):
+            self.writeInt(fret)
+        for start in clamp(barreStarts, 2, fillvalue=0):
+            self.writeInt(start)
+        for end in clamp(barreEnds, 2, fillvalue=0):
+            self.writeInt(end)
+
+        for omission in clamp(chord.omissions, 7, fillvalue=1):
+            self.writeByte(omission)
+
+        self.placeholder(1)
 
     def writeDuration(self, duration, flags):
         value = round(math.log(duration.value, 2) - 2)

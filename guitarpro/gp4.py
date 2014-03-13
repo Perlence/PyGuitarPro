@@ -4,6 +4,7 @@ import copy
 
 from . import base as gp
 from . import gp3
+from .utils import clamp
 
 
 class GP4File(gp3.GP3File):
@@ -17,9 +18,8 @@ class GP4File(gp3.GP3File):
     def __init__(self, *args, **kwargs):
         super(GP4File, self).__init__(*args, **kwargs)
 
-    #
     # Reading
-    #
+    # =======
 
     def readSong(self):
         if not self.readVersion():
@@ -31,8 +31,8 @@ class GP4File(gp3.GP3File):
 
         self.readInfo(song)
 
-        self._tripletFeel = (gp.TripletFeel.Eighth if self.readBool()
-                             else gp.TripletFeel.None_)
+        self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
+                             else gp.TripletFeel.none)
 
         self.readLyrics(song)
 
@@ -102,20 +102,6 @@ class GP4File(gp3.GP3File):
 
         return duration.time if not voice.isEmpty else 0
 
-    def fromSlideType(self, slideType):
-        if slideType == 1:
-            return gp.SlideType.ShiftSlideTo
-        elif slideType == 2:
-            return gp.SlideType.LegatoSlideTo
-        elif slideType == 3:
-            return gp.SlideType.OutDownWards
-        elif slideType == 4:
-            return gp.SlideType.OutUpWards
-        elif slideType == -1:
-            return gp.SlideType.IntoFromBelow
-        elif slideType == -2:
-            return gp.SlideType.IntoFromAbove
-
     def readNoteEffects(self, noteEffect):
         flags1 = self.readSignedByte()
         flags2 = self.readSignedByte()
@@ -126,7 +112,7 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x04 != 0:
             self.readTremoloPicking(noteEffect)
         if flags2 & 0x08 != 0:
-            noteEffect.slide = self.fromSlideType(self.readSignedByte())
+            noteEffect.slide = gp.SlideType(self.readSignedByte())
         if flags2 & 0x10 != 0:
             self.readArtificialHarmonic(noteEffect)
         if flags2 & 0x20 != 0:
@@ -155,22 +141,22 @@ class GP4File(gp3.GP3File):
 
     def fromHarmonicType(self, harmonicType):
         if harmonicType == 1:
-            return (0, gp.HarmonicType.Natural)
+            return (0, gp.HarmonicType.natural)
         elif harmonicType == 3:
-            return (0, gp.HarmonicType.Tapped)
+            return (0, gp.HarmonicType.tapped)
         elif harmonicType == 4:
-            return (0, gp.HarmonicType.Pinch)
+            return (0, gp.HarmonicType.pinch)
         elif harmonicType == 5:
-            return (0, gp.HarmonicType.Semi)
+            return (0, gp.HarmonicType.semi)
         elif harmonicType == 15:
             data = 0, 0, 1
-            return (data, gp.HarmonicType.Artificial)
+            return (data, gp.HarmonicType.artificial)
         elif harmonicType == 17:
             data = 7, 0, 1
-            return (data, gp.HarmonicType.Artificial)
+            return (data, gp.HarmonicType.artificial)
         elif harmonicType == 22:
             data = 0, 0, 0
-            return (data, gp.HarmonicType.Artificial)
+            return (data, gp.HarmonicType.artificial)
 
     def readArtificialHarmonic(self, noteEffect):
         harmonicType = self.readSignedByte()
@@ -240,7 +226,7 @@ class GP4File(gp3.GP3File):
 
     def readTremoloBar(self, effect):
         barEffect = gp.BendEffect()
-        barEffect.type = self.readSignedByte()
+        barEffect.type = gp.BendType(self.readSignedByte())
         barEffect.value = self.readInt()
         pointCount = self.readInt()
         for i in range(pointCount):
@@ -264,21 +250,43 @@ class GP4File(gp3.GP3File):
                     if i < len(chord.strings):
                         chord.strings[i] = fret
         else:
-            self.skip(16)
-            chord.name = self.readByteSizeString(21)
-            self.skip(4)
+            chord.sharp = self.readBool()
+            intonation = 'sharp' if chord.sharp else 'flat'
+            self.skip(3)
+            chord.root = gp.PitchClass.fromValue(self.readByte(), intonation)
+            chord.type = gp.ChordType(self.readByte())
+            chord.extension = gp.ChordExtension(self.readByte())
+            chord.bass = gp.PitchClass.fromValue(self.readInt(), intonation)
+            chord.tonality = gp.ChordTonality(self.readInt())
+            chord.add = self.readBool()
+            chord.name = self.readByteSizeString(22)
+            chord.fifth = gp.ChordTonality(self.readByte())
+            chord.ninth = gp.ChordTonality(self.readByte())
+            chord.eleventh = gp.ChordTonality(self.readByte())
             chord.firstFret = self.readInt()
             for i in range(7):
                 fret = self.readInt()
                 if i < len(chord.strings):
                     chord.strings[i] = fret
-            self.skip(32)
+            chord.barres = []
+            barresCount = self.readByte()
+            barreFrets = [self.readByte() for __ in range(5)]
+            barreStarts = [self.readByte() for __ in range(5)]
+            barreEnds = [self.readByte() for __ in range(5)]
+            for fret, start, end, __ in zip(barreFrets, barreStarts, barreEnds,
+                                            range(barresCount)):
+                barre = gp.Barre(fret, start, end)
+                chord.barres.append(barre)
+            chord.omissions = [self.readByte() for __ in range(7)]
+            self.skip(1)
+            chord.fingerings = [gp.Fingering(self.readSignedByte())
+                                for __ in range(7)]
+            chord.show = self.readBool()
         if len(chord.notes) > 0:
             beat.setChord(chord)
 
-    #
     # Writing
-    #
+    # =======
 
     def writeSong(self, song):
         self.writeVersion(1)
@@ -410,20 +418,6 @@ class GP4File(gp3.GP3File):
         if flags & 0x08 != 0:
             self.writeNoteEffects(note.effect)
 
-    def toSlideType(self, slide):
-        if slide == gp.SlideType.ShiftSlideTo:
-            return 1
-        elif slide == gp.SlideType.LegatoSlideTo:
-            return 2
-        elif slide == gp.SlideType.OutDownWards:
-            return 3
-        elif slide == gp.SlideType.OutUpWards:
-            return 4
-        elif slide == gp.SlideType.IntoFromBelow:
-            return -1
-        elif slide == gp.SlideType.IntoFromAbove:
-            return -2
-
     def writeNoteEffects(self, noteEffect):
         flags1 = 0x00
         if noteEffect.isBend:
@@ -462,7 +456,7 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x04 != 0:
             self.writeTremoloPicking(noteEffect.tremoloPicking)
         if flags2 & 0x08 != 0:
-            self.writeSignedByte(self.toSlideType(noteEffect.slide))
+            self.writeSignedByte(noteEffect.slide.value)
         if flags2 & 0x10 != 0:
             self.writeArtificialHarmonic(noteEffect.harmonic)
         if flags2 & 0x20 != 0:
@@ -481,15 +475,9 @@ class GP4File(gp3.GP3File):
         self.writeSignedByte(self.toTrillPeriod(trill.duration.value))
 
     def toHarmonicType(self, harmonic):
-        if harmonic.type == gp.HarmonicType.Natural:
-            return 1
-        elif harmonic.type == gp.HarmonicType.Tapped:
-            return 3
-        elif harmonic.type == gp.HarmonicType.Pinch:
-            return 4
-        elif harmonic.type == gp.HarmonicType.Semi:
-            return 5
-        elif harmonic.type == gp.HarmonicType.Artificial:
+        if harmonic.type != gp.HarmonicType.artificial:
+            return harmonic.type.value
+        else:
             if harmonic.data == (0, 0, 1):
                 return 15
             elif harmonic.data == (7, 0, 1):
@@ -575,7 +563,7 @@ class GP4File(gp3.GP3File):
             self.writeSignedByte(beatEffect.pickStroke)
 
     def writeTremoloBar(self, tremoloBar):
-        self.writeSignedByte(tremoloBar.type)
+        self.writeSignedByte(tremoloBar.type.value)
         self.writeInt(tremoloBar.value)
         self.writeInt(len(tremoloBar.points))
         for point in tremoloBar.points:
@@ -585,22 +573,41 @@ class GP4File(gp3.GP3File):
             self.writeBool(point.vibrato)
 
     def writeChord(self, chord):
-        # if self.writeSignedByte() & 0x01 == 0:
-        #     chord.name = self.writeIntSizeCheckByteString()
-        #     chord.firstFret = self.writeInt()
-        #     if chord.firstFret != 0:
-        #         for i in range(6):
-        #             fret = self.writeInt()
-        #             if i < len(chord.strings):
-        #                 chord.strings[i] = fret
-        self.writeSignedByte(1)
-        self.placeholder(16)
-        self.writeByteSizeString(chord.name, 21)
-        self.placeholder(4)
+        self.writeSignedByte(1)  # signify GP4 chord format
+        self.writeBool(chord.sharp)
+        self.placeholder(3)
+        self.writeByte(chord.root.value)
+        self.writeByte(chord.type.value)
+        self.writeByte(chord.extension.value)
+        self.writeInt(chord.bass.value)
+        self.writeInt(chord.tonality.value)
+        self.writeBool(chord.add)
+        self.writeByteSizeString(chord.name, 22)
+        self.writeByte(chord.fifth.value)
+        self.writeByte(chord.ninth.value)
+        self.writeByte(chord.eleventh.value)
+
         self.writeInt(chord.firstFret)
-        for i in range(7):
-            fret = -1
-            if i < len(chord.strings):
-                fret = chord.strings[i]
+        for fret in clamp(chord.strings, 7, fillvalue=-1):
             self.writeInt(fret)
-        self.placeholder(32)
+
+        self.writeByte(len(chord.barres))
+        if chord.barres:
+            barreFrets, barreStarts, barreEnds = zip(*chord.barres)
+        else:
+            barreFrets, barreStarts, barreEnds = [], [], []
+        for fret in clamp(barreFrets, 5, fillvalue=0):
+            self.writeByte(fret)
+        for start in clamp(barreStarts, 5, fillvalue=0):
+            self.writeByte(start)
+        for end in clamp(barreEnds, 5, fillvalue=0):
+            self.writeByte(end)
+
+        for omission in clamp(chord.omissions, 7, fillvalue=1):
+            self.writeByte(omission)
+
+        self.placeholder(1)
+        for fingering in clamp(chord.fingerings or [], 7,
+                               fillvalue=gp.Fingering.unknown):
+            self.writeSignedByte(fingering.value)
+        self.writeBool(chord.show)
