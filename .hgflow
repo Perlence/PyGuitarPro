@@ -1,7 +1,7 @@
 [Basic]
-master = default
+publish = default
 develop = develop
 feature = feature/
 release = release/
 hotfix = hotfix/
-support = support/
+version_tag = 
