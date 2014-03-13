@@ -213,7 +213,7 @@ class GP5File(gp4.GP4File):
         if flags2 & 0x08 != 0:
             noteEffect.slide = gp.SlideType(self.readByte())
         if flags2 & 0x10 != 0:
-            self.readArtificialHarmonic(noteEffect)
+            self.readHarmonic(noteEffect)
         if flags2 & 0x20 != 0:
             self.readTrill(noteEffect)
         noteEffect.letRing = (flags1 & 0x08) != 0
@@ -222,24 +222,33 @@ class GP5File(gp4.GP4File):
         noteEffect.palmMute = (flags2 & 0x02) != 0
         noteEffect.staccato = (flags2 & 0x01) != 0
 
-    def fromHarmonicType(self, harmonicType):
-        if harmonicType == 1:
-            return (0, gp.HarmonicType.natural)
-        elif harmonicType == 2:
+    def readHarmonic(self, noteEffect):
+        harmonicType = self.readSignedByte()
+        if harmonicType == gp.HarmonicType.natural:
+            harmonic = gp.NaturalHarmonic()
+        elif harmonicType == gp.HarmonicType.artificial:
             # C = 0, D = 2, E = 4, F = 5...
             # b = -1, # = 1
             # loco = 0, 8va = 1, 15ma = 2
             semitone = self.readByte()
             accidental = self.readSignedByte()
-            octave = self.readByte()
-            return ((semitone, accidental, octave), gp.HarmonicType.artificial)
-        elif harmonicType == 3:
+            octave = gp.Octaveself.readByte()
+            if accidental == -1:
+                intonation = 'flat'
+            elif accidental == 1:
+                intonation = 'sharp'
+            else:
+                intonation = 'sharp'
+            pitchClass = gp.PitchClass.fromValue(semitone + accidental, intonation)
+            harmonic = gp.ArtificialHarmonic(pitchClass, octave)
+        elif harmonicType == gp.HarmonicType.tapped:
             fret = self.readByte()
-            return (fret, gp.HarmonicType.tapped)
-        elif harmonicType == 4:
-            return (0, gp.HarmonicType.pinch)
-        elif harmonicType == 5:
-            return (0, gp.HarmonicType.semi)
+            harmonic = gp.TappedHarmonic(fret)
+        elif harmonicType == gp.HarmonicType.pinch:
+            harmonic = gp.PinchHarmonic()
+        elif harmonicType == gp.HarmonicType.semi:
+            harmonic = gp.SemiHarmonic()
+        noteEffect.harmonic = harmonic
 
     def readGrace(self, noteEffect):
         fret = self.readByte()
@@ -973,22 +982,25 @@ class GP5File(gp4.GP4File):
         if flags2 & 0x08 != 0:
             self.writeByte(noteEffect.slide.value)
         if flags2 & 0x10 != 0:
-            self.writeArtificialHarmonic(noteEffect.harmonic)
+            self.writeHarmonic(noteEffect.harmonic)
         if flags2 & 0x20 != 0:
             self.writeTrill(noteEffect.trill)
 
-    def toHarmonicType(self, harmonic):
-        return harmonic.type.value
-
-    def writeArtificialHarmonic(self, harmonic):
-        self.writeSignedByte(self.toHarmonicType(harmonic))
-        if harmonic.type == gp.HarmonicType.artificial:
-            semitone, accidental, octave = harmonic.data
-            self.writeByte(semitone)
+    def writeHarmonic(self, harmonic):
+        self.writeSignedByte(harmonic.type.value)
+        if isinstance(harmonic, gp.ArtificialHarmonic):
+            intonation = harmonic.pitchClass.intonation
+            if intonation == '':
+                accidental = 0
+            elif intonation == 'flat':
+                accidental = -1
+            elif intonation == 'sharp':
+                accidental = 1
+            self.writeByte(harmonic.pitchClass.just)
             self.writeSignedByte(accidental)
             self.writeByte(octave)
-        elif harmonic.type == gp.HarmonicType.tapped:
-            self.writeByte(harmonic.data)
+        elif isinstance(harmonic, gp.TappedHarmonic):
+            self.writeByte(harmonic.fret)
 
     def writeGrace(self, grace):
         self.writeByte(grace.fret)

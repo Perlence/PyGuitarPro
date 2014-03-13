@@ -114,7 +114,7 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x08 != 0:
             noteEffect.slide = gp.SlideType(self.readSignedByte())
         if flags2 & 0x10 != 0:
-            self.readArtificialHarmonic(noteEffect)
+            self.readHarmonic(noteEffect)
         if flags2 & 0x20 != 0:
             self.readTrill(noteEffect)
         noteEffect.letRing = (flags1 & 0x08) != 0
@@ -139,29 +139,29 @@ class GP4File(gp3.GP3File):
         trill.duration.value = self.fromTrillPeriod(period)
         noteEffect.trill = trill
 
-    def fromHarmonicType(self, harmonicType):
-        if harmonicType == 1:
-            return (0, gp.HarmonicType.natural)
-        elif harmonicType == 3:
-            return (0, gp.HarmonicType.tapped)
-        elif harmonicType == 4:
-            return (0, gp.HarmonicType.pinch)
-        elif harmonicType == 5:
-            return (0, gp.HarmonicType.semi)
-        elif harmonicType == 15:
-            data = 0, 0, 1
-            return (data, gp.HarmonicType.artificial)
-        elif harmonicType == 17:
-            data = 7, 0, 1
-            return (data, gp.HarmonicType.artificial)
-        elif harmonicType == 22:
-            data = 0, 0, 0
-            return (data, gp.HarmonicType.artificial)
-
-    def readArtificialHarmonic(self, noteEffect):
+    def readHarmonic(self, noteEffect):
         harmonicType = self.readSignedByte()
-        data, type_ = self.fromHarmonicType(harmonicType)
-        noteEffect.harmonic = gp.HarmonicEffect(type_, data)
+        if harmonicType == 1:
+            harmonic = gp.NaturalHarmonic()
+        elif harmonicType == 3:
+            harmonic = gp.TappedHarmonic()
+        elif harmonicType == 4:
+            harmonic = gp.PinchHarmonic()
+        elif harmonicType == 5:
+            harmonic = gp.SemiHarmonic()
+        elif harmonicType == 15:
+            pitchClass = gp.PitchClass.C
+            octave = gp.Octave.ottava
+            harmonic = gp.ArtificialHarmonic(pitchClass, octave)
+        elif harmonicType == 17:
+            pitchClass = gp.PitchClass.G
+            octave = gp.Octave.ottava
+            harmonic = gp.ArtificialHarmonic(pitchClass, octave)
+        elif harmonicType == 22:
+            pitchClass = gp.PitchClass.C
+            octave = gp.Octave.none
+            harmonic = gp.ArtificialHarmonic(pitchClass, octave)
+        noteEffect.harmonic = harmonic
 
     def fromTremoloValue(self, value):
         if value == 1:
@@ -458,7 +458,7 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x08 != 0:
             self.writeSignedByte(noteEffect.slide.value)
         if flags2 & 0x10 != 0:
-            self.writeArtificialHarmonic(noteEffect.harmonic)
+            self.writeHarmonic(noteEffect.harmonic)
         if flags2 & 0x20 != 0:
             self.writeTrill(noteEffect.trill)
 
@@ -474,19 +474,19 @@ class GP4File(gp3.GP3File):
         self.writeSignedByte(trill.fret)
         self.writeSignedByte(self.toTrillPeriod(trill.duration.value))
 
-    def toHarmonicType(self, harmonic):
-        if harmonic.type != gp.HarmonicType.artificial:
-            return harmonic.type.value
+    def writeHarmonic(self, harmonic):
+        if not isinstance(harmonic, gp.ArtificialHarmonic):
+            byte = harmonic.type.value
         else:
-            if harmonic.data == (0, 0, 1):
-                return 15
-            elif harmonic.data == (7, 0, 1):
-                return 17
+            if (harmonic.pitchClass == gp.PitchClass.C
+                    and harmonic.octave == gp.Octave.ottava):
+                byte = 15
+            elif (harmonic.pitchClass == gp.PitchClass.G
+                    and harmonic.octave == gp.Octave.ottava):
+                byte = 17
             else:
-                return 22
-
-    def writeArtificialHarmonic(self, harmonic):
-        self.writeSignedByte(self.toHarmonicType(harmonic))
+                byte = 22
+        self.writeSignedByte(byte)
 
     def toTremoloValue(self, value):
         if value == gp.Duration.EIGHTH:

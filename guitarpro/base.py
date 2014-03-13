@@ -1067,8 +1067,8 @@ class Octave(Enum):
     '''
     none = 0
     ottava = 1
-    ottavaBassa = 2
-    quindicesima = 3
+    quindicesima = 2
+    ottavaBassa = 3
     quindicesimaBassa = 4
 
 
@@ -1147,17 +1147,34 @@ class HarmonicType(Enum):
 
 
 class HarmonicEffect(GPObject):
-
     '''A harmonic note effect.
     '''
-    __attr__ = ['type',
-                'data']
+    __attr__ = ['type']
 
-    # Lists all harmonic type groups
-    # [i][0] -> The note played
-    # [i][1] -> The according harmonic note to [i][0]
-    NATURAL_FREQUENCIES = [[12, 12], [9, 28],
-                           [5, 28], [7, 19], [4, 28], [3, 31]]
+
+class NaturalHarmonic(HarmonicEffect):
+    __attr__ = ['type']
+    type = HarmonicType.natural
+
+
+class ArtificialHarmonic(HarmonicEffect):
+    __attr__ = ['pitchClass', 'octave', 'type']
+    type = HarmonicType.artificial
+
+
+class TappedHarmonic(HarmonicEffect):
+    __attr__ = ['fret', 'type']
+    type = HarmonicType.tapped
+
+
+class PinchHarmonic(HarmonicEffect):
+    __attr__ = ['type']
+    type = HarmonicType.pinch
+
+
+class SemiHarmonic(HarmonicEffect):
+    __attr__ = ['type']
+    type = HarmonicType.semi
 
 
 class GraceEffectTransition(Enum):
@@ -1437,38 +1454,22 @@ class ChordExtension(Enum):
     thirteenth = 3
 
 
-class PitchClass(Enum):
-    C = 0
-    Csharp = 1
-    Dflat = 1
-    D = 2
-    Dsharp = 3
-    Eflat = 3
-    E = 4
-    F = 5
-    Fsharp = 6
-    Gflat = 6
-    G = 7
-    Gsharp = 8
-    Aflat = 8
-    A = 9
-    Asharp = 10
-    Bflat = 10
-    B = 11
+class PitchClass(object):
+    _notes = 'C C# D D# E F F# G G# A A# B'.split()
 
-    @classmethod
-    def fromValue(cls, value, intonation='sharp'):
+    def __init__(cls, value, intonation='sharp'):
         if intonation not in ('sharp', 'flat'):
             raise ValueError(
                 "intonation must be sharp or flat, got '%s'" %
                 intonation)
-        result = cls.__new__(cls, value % 12)
-        base = result.name[0]
-        foundIntonation = result.name[1:]
-        if not foundIntonation or intonation == foundIntonation:
-            return result
-        else:
-            return cls._member_map_[base + intonation]
+        self.value = value
+        self.intonation = intonation
+        self.semitone = self.value % 12
+        name = self._notes[self.semitone]
+
+    @property
+    def just(self):
+        return getattr(PitchClass, self.note)
 
 
 class BeatText(GPObject):

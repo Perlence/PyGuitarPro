@@ -160,8 +160,8 @@ class GP3File(gp.GPFileBase):
 
         if flags & 0x08 != 0:
             self.readNoteEffects(note.effect)
-            if note.effect.isHarmonic and note.effect.harmonic.type == gp.HarmonicType.tapped:
-                note.effect.harmonic.data = note.value + 12
+            if note.effect.isHarmonic and isinstance(note.effect.harmonic, gp.TappedHarmonic):
+                note.effect.harmonic.fret = note.value + 12
             # as with BeatEffects, some effects like 'slide into' are not supported in GP3,
             # but effect flag is still 1
             note.effect.presence = True
@@ -289,15 +289,11 @@ class GP3File(gp.GPFileBase):
                 beat.effect.stroke.direction = gp.BeatStrokeDirection.down
                 beat.effect.stroke.value = self.toStrokeValue(strokeDown)
         if flags1 & 0x04 != 0:
-            harmonic = gp.HarmonicEffect()
-            harmonic.type = gp.HarmonicType.natural
-            harmonic.data = 0
+            harmonic = gp.NaturalHarmonic()
             effect.harmonic = harmonic
 
         if flags1 & 0x08 != 0:
-            harmonic = gp.HarmonicEffect()
-            harmonic.type = gp.HarmonicType.artificial
-            harmonic.data = 0
+            harmonic = gp.ArtificialHarmonic()
             effect.harmonic = harmonic
 
     def readTremoloBar(self, effect):
@@ -961,9 +957,9 @@ class GP3File(gp.GPFileBase):
             flags1 |= 0x01
         if beatEffect.vibrato:
             flags1 |= 0x02
-        if voice.hasHarmonic == gp.HarmonicType.natural:
+        if isinstance(voice.hasHarmonic, gp.NaturalHarmonic):
             flags1 |= 0x04
-        if voice.hasHarmonic == gp.HarmonicType.artificial:
+        if isinstance(voice.hasHarmonic, gp.ArtificialHarmonic):
             flags1 |= 0x08
         if beatEffect.fadeIn:
             flags1 |= 0x10
