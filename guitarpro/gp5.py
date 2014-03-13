@@ -91,7 +91,7 @@ class GP5File(gp4.GP4File):
             beats = self.readInt()
             for __ in range(beats):
                 start += self.readBeat(start, measure, track, voice)
-        measure.lineBreak = self.readByte(default=gp.LineBreak.none)
+        measure.lineBreak = gp.LineBreak(self.readByte(default=0))
 
     def readBeat(self, start, measure, track, voiceIndex):
         flags1 = self.readByte()
@@ -147,13 +147,13 @@ class GP5File(gp4.GP4File):
         display.forceBracket = (flags3 & 0x20) != 0
         display.breakSecondaryTuplet = (flags3 & 0x10) != 0
         if flags2 & 0x02 != 0:
-            display.beamDirection = gp.VoiceDirection.Down
+            display.beamDirection = gp.VoiceDirection.down
         if flags2 & 0x08 != 0:
-            display.beamDirection = gp.VoiceDirection.Up
+            display.beamDirection = gp.VoiceDirection.up
         if flags3 & 0x02 != 0:
-            display.tupletBracket = gp.TupletBracket.Start
+            display.tupletBracket = gp.TupletBracket.start
         if flags3 & 0x04 != 0:
-            display.tupletBracket = gp.TupletBracket.End
+            display.tupletBracket = gp.TupletBracket.end
         if flags3 & 0x08 != 0:
             display.breakSecondary = self.readByte()
 
@@ -793,7 +793,7 @@ class GP5File(gp4.GP4File):
             self.writeInt(beatCount)
             for beat in beatsOfVoice:
                 self.writeBeat(beat, voice)
-        self.writeByte(measure.lineBreak)
+        self.writeByte(measure.lineBreak.value)
 
     def writeBeat(self, beat, voiceIndex=0):
         voice = beat.voices[voiceIndex]
@@ -839,19 +839,17 @@ class GP5File(gp4.GP4File):
             stringFlags |= 1 << (7 - note.string)
         self.writeByte(stringFlags)
 
-        previous = None
         for note in voice.notes:
-            self.writeNote(note, previous)
-            previous = note
+            self.writeNote(note)
 
         flags2 = 0x00
         if beat.display.breakBeam:
             flags2 |= 0x01
-        if beat.display.beamDirection == gp.VoiceDirection.Down:
+        if beat.display.beamDirection == gp.VoiceDirection.down:
             flags2 |= 0x02
         if beat.display.forceBeam:
             flags2 |= 0x04
-        if beat.display.beamDirection == gp.VoiceDirection.Up:
+        if beat.display.beamDirection == gp.VoiceDirection.up:
             flags2 |= 0x08
         if beat.octave == gp.Octave.ottava:
             flags2 |= 0x10
@@ -865,9 +863,9 @@ class GP5File(gp4.GP4File):
         flags3 = 0x00
         if beat.octave == gp.Octave.quindicesimaBassa:
             flags3 |= 0x01
-        if beat.display.tupletBracket == gp.TupletBracket.Start:
+        if beat.display.tupletBracket == gp.TupletBracket.start:
             flags3 |= 0x02
-        if beat.display.tupletBracket == gp.TupletBracket.End:
+        if beat.display.tupletBracket == gp.TupletBracket.end:
             flags3 |= 0x04
         if beat.display.breakSecondary:
             flags3 |= 0x08
@@ -1064,17 +1062,7 @@ class GP5File(gp4.GP4File):
             for track in tracks:
                 if channel in (track.channel.channel, track.channel.effectChannel):
                     return track.channel
-            default = gp.MidiChannel()
-            default.channel = channel
-            default.effectChannel = channel
-            default.instrument = 0
-            default.volume = 0
-            default.balance = 0
-            default.chorus = 0
-            default.reverb = 0
-            default.phaser = 0
-            default.tremolo = 0
-            return default
+            return gp.MidiChannel(channel, channel)
 
         for channel in map(getTrackChannelByChannel, range(64)):
             self.writeInt(channel.instrument)

@@ -283,10 +283,10 @@ class GP3File(gp.GPFileBase):
             strokeUp = self.readSignedByte()
             strokeDown = self.readSignedByte()
             if strokeUp > 0:
-                beat.effect.stroke.direction = gp.BeatStrokeDirection.Up
+                beat.effect.stroke.direction = gp.BeatStrokeDirection.up
                 beat.effect.stroke.value = self.toStrokeValue(strokeUp)
             elif strokeDown > 0:
-                beat.effect.stroke.direction = gp.BeatStrokeDirection.Down
+                beat.effect.stroke.direction = gp.BeatStrokeDirection.down
                 beat.effect.stroke.value = self.toStrokeValue(strokeDown)
         if flags1 & 0x04 != 0:
             harmonic = gp.HarmonicEffect()
@@ -987,10 +987,10 @@ class GP3File(gp.GPFileBase):
                 self.writeByte(slapEffect)
                 self.placeholder(4)
         if flags1 & 0x40 != 0:
-            if beatEffect.stroke.direction == gp.BeatStrokeDirection.Up:
+            if beatEffect.stroke.direction == gp.BeatStrokeDirection.up:
                 strokeUp = self.fromStrokeValue(beatEffect.stroke.value)
                 strokeDown = 0
-            elif beatEffect.stroke.direction == gp.BeatStrokeDirection.Down:
+            elif beatEffect.stroke.direction == gp.BeatStrokeDirection.down:
                 strokeUp = 0
                 strokeDown = self.fromStrokeValue(beatEffect.stroke.value)
             self.writeSignedByte(strokeUp)
