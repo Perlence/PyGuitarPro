@@ -124,8 +124,9 @@ class GP5File(gp4.GP4File):
             if stringFlags & (1 << i) != 0 and (6 - i) < len(track.strings):
                 # guitarString = track.strings[6 - i].clone(factory)
                 guitarString = copy.copy(track.strings[6 - i])
-                note = self.readNote(guitarString, track, gp.NoteEffect())
+                note = gp.Note()
                 voice.addNote(note)
+                self.readNote(note, guitarString, track, gp.NoteEffect())
             # duration.copy(voice.duration)
             voice.duration = copy.copy(duration)
 
@@ -161,9 +162,8 @@ class GP5File(gp4.GP4File):
 
         return duration.time if not voice.isEmpty else 0
 
-    def readNote(self, guitarString, track, effect):
+    def readNote(self, note, guitarString, track, effect):
         flags = self.readByte()
-        note = gp.Note()
         note.string = guitarString.number
         note.effect.accentuatedNote = (flags & 0x40) != 0
         note.effect.heavyAccentuatedNote = (flags & 0x02) != 0
@@ -194,14 +194,15 @@ class GP5File(gp4.GP4File):
         note.swapAccidentals = (flags2 & 0x02) != 0
 
         if flags & 0x08 != 0:
-            self.readNoteEffects(note.effect)
+            self.readNoteEffects(note)
             # as with BeatEffects, some effects like 'slide into' are not supported in GP3,
             # but effect flag is still 1
             note.effect.presence = True
 
         return note
 
-    def readNoteEffects(self, noteEffect):
+    def readNoteEffects(self, note):
+        noteEffect = note.effect
         flags1 = self.readByte()
         flags2 = self.readByte()
         if flags1 & 0x01 != 0:
@@ -213,7 +214,7 @@ class GP5File(gp4.GP4File):
         if flags2 & 0x08 != 0:
             noteEffect.slide = gp.SlideType(self.readByte())
         if flags2 & 0x10 != 0:
-            self.readArtificialHarmonic(noteEffect)
+            self.readHarmonic(note)
         if flags2 & 0x20 != 0:
             self.readTrill(noteEffect)
         noteEffect.letRing = (flags1 & 0x08) != 0
@@ -222,24 +223,28 @@ class GP5File(gp4.GP4File):
         noteEffect.palmMute = (flags2 & 0x02) != 0
         noteEffect.staccato = (flags2 & 0x01) != 0
 
-    def fromHarmonicType(self, harmonicType):
+    def readHarmonic(self, note):
+        noteEffect = note.effect
+        harmonicType = self.readSignedByte()
         if harmonicType == 1:
-            return (0, gp.HarmonicType.natural)
+            harmonic = gp.NaturalHarmonic()
         elif harmonicType == 2:
             # C = 0, D = 2, E = 4, F = 5...
             # b = -1, # = 1
             # loco = 0, 8va = 1, 15ma = 2
             semitone = self.readByte()
             accidental = self.readSignedByte()
-            octave = self.readByte()
-            return ((semitone, accidental, octave), gp.HarmonicType.artificial)
+            pitchClass = gp.PitchClass(semitone, accidental)
+            octave = gp.Octave(self.readByte())
+            harmonic = gp.ArtificialHarmonic(pitchClass, octave)
         elif harmonicType == 3:
             fret = self.readByte()
-            return (fret, gp.HarmonicType.tapped)
+            harmonic = gp.TappedHarmonic(fret)
         elif harmonicType == 4:
-            return (0, gp.HarmonicType.pinch)
+            harmonic = gp.PinchHarmonic()
         elif harmonicType == 5:
-            return (0, gp.HarmonicType.semi)
+            harmonic = gp.SemiHarmonic()
+        noteEffect.harmonic = harmonic
 
     def readGrace(self, noteEffect):
         fret = self.readByte()
@@ -931,9 +936,10 @@ class GP5File(gp4.GP4File):
         self.writeByte(flags2)
 
         if flags & 0x08 != 0:
-            self.writeNoteEffects(note.effect)
+            self.writeNoteEffects(note)
 
-    def writeNoteEffects(self, noteEffect):
+    def writeNoteEffects(self, note):
+        noteEffect = note.effect
         flags1 = 0x00
         if noteEffect.isBend:
             flags1 |= 0x01
@@ -973,22 +979,18 @@ class GP5File(gp4.GP4File):
         if flags2 & 0x08 != 0:
             self.writeByte(noteEffect.slide.value)
         if flags2 & 0x10 != 0:
-            self.writeArtificialHarmonic(noteEffect.harmonic)
+            self.writeHarmonic(note, noteEffect.harmonic)
         if flags2 & 0x20 != 0:
             self.writeTrill(noteEffect.trill)
 
-    def toHarmonicType(self, harmonic):
-        return harmonic.type.value
-
-    def writeArtificialHarmonic(self, harmonic):
-        self.writeSignedByte(self.toHarmonicType(harmonic))
-        if harmonic.type == gp.HarmonicType.artificial:
-            semitone, accidental, octave = harmonic.data
-            self.writeByte(semitone)
-            self.writeSignedByte(accidental)
-            self.writeByte(octave)
-        elif harmonic.type == gp.HarmonicType.tapped:
-            self.writeByte(harmonic.data)
+    def writeHarmonic(self, note, harmonic):
+        self.writeSignedByte(harmonic.type)
+        if isinstance(harmonic, gp.ArtificialHarmonic):
+            self.writeByte(harmonic.pitch.just)
+            self.writeSignedByte(harmonic.pitch.accidental)
+            self.writeByte(harmonic.octave.value)
+        elif isinstance(harmonic, gp.TappedHarmonic):
+            self.writeByte(harmonic.fret)
 
     def writeGrace(self, grace):
         self.writeByte(grace.fret)

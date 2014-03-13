@@ -190,7 +190,10 @@ class GPObject(object):
         def __new__(cls, name, bases, dict_):
             type_ = type.__new__(cls, name, bases, dict_)
             for name in dict_['__attr__']:
-                setattr(type_, name, None)
+                try:
+                    getattr(type_, name)
+                except AttributeError:
+                    setattr(type_, name, None)
             return type_
 
     def __init__(self, *args, **kwargs):
@@ -923,8 +926,7 @@ class Voice(GPObject):
     def hasHarmonic(self):
         for note in self.notes:
             if note.effect.isHarmonic:
-                return note.effect.harmonic.type
-        return HarmonicType.none
+                return note.effect.harmonic
 
     def addNote(self, note):
         note.voice = self
@@ -1067,8 +1069,8 @@ class Octave(Enum):
     '''
     none = 0
     ottava = 1
-    ottavaBassa = 2
-    quindicesima = 3
+    quindicesima = 2
+    ottavaBassa = 3
     quindicesimaBassa = 4
 
 
@@ -1101,7 +1103,7 @@ class Beat(GPObject):
     @property
     def isRestBeat(self):
         for voice in self.voices:
-            if not voice.isEmpty and not voice.isRestVoice():
+            if not voice.isEmpty and not voice.isRestVoice:
                 return False
         return True
 
@@ -1134,30 +1136,47 @@ class Beat(GPObject):
         return notes
 
 
-class HarmonicType(Enum):
+# class HarmonicType(Enum):
 
-    '''All harmonic effect types.
-    '''
-    none = 0
-    natural = 1
-    artificial = 2
-    tapped = 3
-    pinch = 4
-    semi = 5
+#     '''All harmonic effect types.
+#     '''
+#     none = 0
+#     natural = 1
+#     artificial = 2
+#     tapped = 3
+#     pinch = 4
+#     semi = 5
 
 
 class HarmonicEffect(GPObject):
-
     '''A harmonic note effect.
     '''
-    __attr__ = ['type',
-                'data']
+    __attr__ = ['type']
 
-    # Lists all harmonic type groups
-    # [i][0] -> The note played
-    # [i][1] -> The according harmonic note to [i][0]
-    NATURAL_FREQUENCIES = [[12, 12], [9, 28],
-                           [5, 28], [7, 19], [4, 28], [3, 31]]
+
+class NaturalHarmonic(HarmonicEffect):
+    __attr__ = ['type']
+    type = 1
+
+
+class ArtificialHarmonic(HarmonicEffect):
+    __attr__ = ['pitch', 'octave', 'type']
+    type = 2
+
+
+class TappedHarmonic(HarmonicEffect):
+    __attr__ = ['fret', 'type']
+    type = 3
+
+
+class PinchHarmonic(HarmonicEffect):
+    __attr__ = ['type']
+    type = 4
+
+
+class SemiHarmonic(HarmonicEffect):
+    __attr__ = ['type']
+    type = 5
 
 
 class GraceEffectTransition(Enum):
@@ -1278,6 +1297,7 @@ class NoteEffect(GPObject):
         self.leftHandFinger = -1
         self.rightHandFinger = -1
         self.presence = False
+        self.note = None
         GPObject.__init__(self, *args, **kwargs)
 
     @property
@@ -1437,38 +1457,46 @@ class ChordExtension(Enum):
     thirteenth = 3
 
 
-class PitchClass(Enum):
-    C = 0
-    Csharp = 1
-    Dflat = 1
-    D = 2
-    Dsharp = 3
-    Eflat = 3
-    E = 4
-    F = 5
-    Fsharp = 6
-    Gflat = 6
-    G = 7
-    Gsharp = 8
-    Aflat = 8
-    A = 9
-    Asharp = 10
-    Bflat = 10
-    B = 11
+class PitchClass(object):
+    _notes = {
+        'sharp': 'C C# D D# E F F# G G# A A# B'.split(),
+        'flat': 'C Db D Eb E F Gb G Ab A Bb B'.split(),
+    }
 
-    @classmethod
-    def fromValue(cls, value, intonation='sharp'):
-        if intonation not in ('sharp', 'flat'):
-            raise ValueError(
-                "intonation must be sharp or flat, got '%s'" %
-                intonation)
-        result = cls.__new__(cls, value % 12)
-        base = result.name[0]
-        foundIntonation = result.name[1:]
-        if not foundIntonation or intonation == foundIntonation:
-            return result
+    def __init__(self, *args, **kwargs):
+        intonation = kwargs.get('intonation', 'sharp')
+        if len(args) == 1 and isinstance(args[0], basestring):
+            # Assume string input
+            string = args[0]
+            try:
+                value = self._notes['sharp'].index(string)
+            except IndexError:
+                value = self._notes['flat'].index(string)
+            if string.endswith('b'):
+                accidental = -1
+            elif string.endswith('#'):
+                accidental = 1
+            else:
+                accidental = 0
+            pitch = value - accidental
         else:
-            return cls._member_map_[base + intonation]
+            pitch = args[0]
+            try:
+                accidental = args[1]
+            except IndexError:
+                accidental = 0
+        self.just = pitch % 12
+        self.accidental = accidental
+        self.value = self.just + accidental
+        if accidental == -1:
+            self.intonation = 'flat'
+        elif accidental == 0:
+            self.intonation = intonation
+        else:
+            self.intonation = 'sharp'
+
+    def __str__(self):
+        return self._notes[self.intonation][self.value]
 
 
 class BeatText(GPObject):

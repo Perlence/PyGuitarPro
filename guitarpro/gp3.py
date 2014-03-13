@@ -116,19 +116,17 @@ class GP3File(gp.GPFileBase):
                 # guitarString = track.strings[6 - i].clone(factory)
                 guitarString = copy.copy(track.strings[6 - i])
                 # note = self.readNote(guitarString, track, effect.clone(factory))
-                note = self.readNote(guitarString,
-                                     track,
-                                     copy.deepcopy(effect))
+                note = gp.Note()
                 voice.addNote(note)
+                self.readNote(note, guitarString, track, copy.deepcopy(effect))
 
             # duration.copy(voice.duration)
             voice.duration = copy.copy(duration)
 
         return duration.time if not voice.isEmpty else 0
 
-    def readNote(self, guitarString, track, effect):
+    def readNote(self, note, guitarString, track, effect):
         flags = self.readByte()
-        note = gp.Note()
         note.string = guitarString.number
         note.effect = effect
         note.effect.accentuatedNote = (flags & 0x40) != 0
@@ -159,9 +157,9 @@ class GP3File(gp.GPFileBase):
             note.effect.isFingering = True
 
         if flags & 0x08 != 0:
-            self.readNoteEffects(note.effect)
-            if note.effect.isHarmonic and note.effect.harmonic.type == gp.HarmonicType.tapped:
-                note.effect.harmonic.data = note.value + 12
+            self.readNoteEffects(note)
+            if note.effect.isHarmonic and isinstance(note.effect.harmonic, gp.TappedHarmonic):
+                note.effect.harmonic.fret = note.value + 12
             # as with BeatEffects, some effects like 'slide into' are not supported in GP3,
             # but effect flag is still 1
             note.effect.presence = True
@@ -173,7 +171,8 @@ class GP3File(gp.GPFileBase):
                 gp.Velocities.VELOCITY_INCREMENT * dyn -
                 gp.Velocities.VELOCITY_INCREMENT)
 
-    def readNoteEffects(self, noteEffect):
+    def readNoteEffects(self, note):
+        noteEffect = note.effect
         flags1 = self.readByte()
         noteEffect.slide = (flags1 & 0x04) != 0 and gp.SlideType.legatoSlideTo
         noteEffect.hammer = (flags1 & 0x02) != 0
@@ -289,15 +288,11 @@ class GP3File(gp.GPFileBase):
                 beat.effect.stroke.direction = gp.BeatStrokeDirection.down
                 beat.effect.stroke.value = self.toStrokeValue(strokeDown)
         if flags1 & 0x04 != 0:
-            harmonic = gp.HarmonicEffect()
-            harmonic.type = gp.HarmonicType.natural
-            harmonic.data = 0
+            harmonic = gp.NaturalHarmonic()
             effect.harmonic = harmonic
 
         if flags1 & 0x08 != 0:
-            harmonic = gp.HarmonicEffect()
-            harmonic.type = gp.HarmonicType.artificial
-            harmonic.data = 0
+            harmonic = gp.ArtificialHarmonic()
             effect.harmonic = harmonic
 
     def readTremoloBar(self, effect):
@@ -332,10 +327,10 @@ class GP3File(gp.GPFileBase):
             chord.sharp = self.readBool()
             intonation = 'sharp' if chord.sharp else 'flat'
             self.skip(3)
-            chord.root = gp.PitchClass.fromValue(self.readInt(), intonation)
+            chord.root = gp.PitchClass(self.readInt(), intonation=intonation)
             chord.type = gp.ChordType(self.readInt())
             chord.extension = gp.ChordExtension(self.readInt())
-            chord.bass = gp.PitchClass.fromValue(self.readInt(), intonation)
+            chord.bass = gp.PitchClass(self.readInt(), intonation=intonation)
             chord.tonality = gp.ChordTonality(self.readInt())
             chord.add = self.readBool()
             chord.name = self.readByteSizeString(22)
@@ -890,9 +885,10 @@ class GP3File(gp.GPFileBase):
             self.writeSignedByte(note.effect.rightHandFinger)
 
         if flags & 0x08 != 0:
-            self.writeNoteEffects(note.effect)
+            self.writeNoteEffects(note)
 
-    def writeNoteEffects(self, noteEffect):
+    def writeNoteEffects(self, note):
+        noteEffect = note.effect
         flags1 = 0x00
         if noteEffect.isBend:
             flags1 |= 0x01
@@ -961,9 +957,9 @@ class GP3File(gp.GPFileBase):
             flags1 |= 0x01
         if beatEffect.vibrato:
             flags1 |= 0x02
-        if voice.hasHarmonic == gp.HarmonicType.natural:
+        if isinstance(voice.hasHarmonic, gp.NaturalHarmonic):
             flags1 |= 0x04
-        if voice.hasHarmonic == gp.HarmonicType.artificial:
+        if isinstance(voice.hasHarmonic, gp.ArtificialHarmonic):
             flags1 |= 0x08
         if beatEffect.fadeIn:
             flags1 |= 0x10
