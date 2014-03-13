@@ -16,9 +16,8 @@ class GP3File(gp.GPFileBase):
     def __init__(self, *args, **kwargs):
         super(GP3File, self).__init__(*args, **kwargs)
 
-    #
     # Reading
-    #
+    # =======
 
     def readSong(self):
         '''Reads the song
@@ -572,9 +571,8 @@ class GP3File(gp.GPFileBase):
         else:
             return gp.Duration.SIXTY_FOURTH
 
-    #
     # Writing
-    #
+    # =======
 
     def writeSong(self, song):
         '''Writes the song

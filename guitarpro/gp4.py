@@ -17,9 +17,8 @@ class GP4File(gp3.GP3File):
     def __init__(self, *args, **kwargs):
         super(GP4File, self).__init__(*args, **kwargs)
 
-    #
     # Reading
-    #
+    # =======
 
     def readSong(self):
         if not self.readVersion():
@@ -251,12 +250,13 @@ class GP4File(gp3.GP3File):
                     if i < len(chord.strings):
                         chord.strings[i] = fret
         else:
-            chord.sharp = self.readByte()
+            chord.sharp = self.readBool()
+            intonation = 'sharp' if chord.sharp else 'flat'
             self.skip(3)
-            chord.root = self.readByte()
+            chord.root = gp.PitchClass.fromValue(self.readByte(), intonation)
             chord.type = gp.ChordType(self.readByte())
-            chord.net = self.readByte()
-            chord.bass = self.readInt()
+            chord.extension = gp.ChordExtension(self.readByte())
+            chord.bass = gp.PitchClass.fromValue(self.readInt(), intonation)
             chord.tonality = gp.ChordTonality(self.readInt())
             chord.add = self.readBool()
             chord.name = self.readByteSizeString(20)
@@ -286,9 +286,8 @@ class GP4File(gp3.GP3File):
         if len(chord.notes) > 0:
             beat.setChord(chord)
 
-    #
     # Writing
-    #
+    # =======
 
     def writeSong(self, song):
         self.writeVersion(1)

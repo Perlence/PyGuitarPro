@@ -16,9 +16,8 @@ class GP5File(gp4.GP4File):
     def __init__(self, *args, **kwargs):
         super(GP5File, self).__init__(*args, **kwargs)
 
-    #
     # Reading
-    #
+    # =======
 
     def readSong(self):
         if not self.readVersion():
@@ -539,9 +538,8 @@ class GP5File(gp4.GP4File):
         for __ in range(iNotes):
             song.notice.append(self.readIntSizeCheckByteString())
 
-    #
     # Writing
-    #
+    # =======
 
     def writeSong(self, song):
         self.version = self._supportedVersions[1]

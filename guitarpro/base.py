@@ -27,11 +27,12 @@ class GPFileBase(object):
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, tb):
-        self.data.close()
+    def __exit__(self, *exc_info):
+        self.close()
 
     # Reading
     # =======
+
     def skip(self, count):
         self.data.read(count)
 
@@ -97,6 +98,7 @@ class GPFileBase(object):
 
     # Writing
     # =======
+
     def placeholder(self, count, byte='\x00'):
         self.data.write(byte * count)
 
@@ -166,6 +168,7 @@ class GPFileBase(object):
 
     # Misc
     # ====
+
     def getTiedNoteValue(self, stringIndex, track):
         measureCount = len(track.measures)
         if measureCount > 0:
@@ -1388,10 +1391,9 @@ class Note(GPObject):
                 'swapAccidentals']
 
     def __init__(self, *args, **kwargs):
-        self._realValue = -1
         self.value = 0
         self.velocity = Velocities.DEFAULT
-        self.string = 1
+        self.string = 0
         self.isTiedNote = False
         self.swapAccidentals = False
         self.effect = NoteEffect()
@@ -1403,10 +1405,8 @@ class Note(GPObject):
 
     @property
     def realValue(self):
-        if self._realValue == -1:
-            self._realValue = (self.value +
-                               self.voice.beat.measure.track.strings[self.string - 1].value)
-        return self._realValue
+        return (self.value +
+                self.voice.beat.measure.track.strings[self.string - 1].value)
 
 
 class Chord(GPObject):
@@ -1416,7 +1416,7 @@ class Chord(GPObject):
     __attr__ = ['sharp',
                 'root',
                 'type',
-                'net',
+                'extension',
                 'bass',
                 'tonality',
                 'add',
@@ -1484,8 +1484,49 @@ class Fingering(Enum):
 
 class ChordTonality(Enum):
     perfect = 0
-    augmented = 1
-    diminished = 2
+    diminished = 1
+    augmented = 2
+
+
+class ChordExtension(Enum):
+    none = 0
+    ninth = 1
+    eleventh = 2
+    thirteenth = 3
+
+
+class PitchClass(Enum):
+    C = 0
+    Csharp = 1
+    Dflat = 1
+    D = 2
+    Dsharp = 3
+    Eflat = 3
+    E = 4
+    F = 5
+    Fsharp = 6
+    Gflat = 6
+    G = 7
+    Gsharp = 8
+    Aflat = 8
+    A = 9
+    Asharp = 10
+    Bflat = 10
+    B = 11
+
+    @classmethod
+    def fromValue(cls, value, intonation='sharp'):
+        if intonation not in ('sharp', 'flat'):
+            raise ValueError(
+                "intonation must be sharp or flat, got '%s'" %
+                intonation)
+        result = cls.__new__(cls, value % 12)
+        base = result.name[0]
+        foundIntonation = result.name[1:]
+        if not foundIntonation or intonation == foundIntonation:
+            return result
+        else:
+            return cls._member_map_[base + intonation]
 
 
 class BeatText(GPObject):
