@@ -228,6 +228,10 @@ class GPObject(object):
                                           self.__class__.__name__,
                                           hex(hash(self)))
 
+    def __iter__(self):
+        for name in self.__attr__:
+            yield getattr(self, name)
+
 
 class RepeatGroup(object):
 

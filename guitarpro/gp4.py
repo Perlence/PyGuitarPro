@@ -4,6 +4,7 @@ import copy
 
 from . import base as gp
 from . import gp3
+from .utils import clamp
 
 
 class GP4File(gp3.GP3File):
@@ -577,22 +578,41 @@ class GP4File(gp3.GP3File):
             self.writeBool(point.vibrato)
 
     def writeChord(self, chord):
-        # if self.writeSignedByte() & 0x01 == 0:
-        #     chord.name = self.writeIntSizeCheckByteString()
-        #     chord.firstFret = self.writeInt()
-        #     if chord.firstFret != 0:
-        #         for i in range(6):
-        #             fret = self.writeInt()
-        #             if i < len(chord.strings):
-        #                 chord.strings[i] = fret
-        self.writeSignedByte(1)
-        self.placeholder(16)
-        self.writeByteSizeString(chord.name, 21)
-        self.placeholder(4)
+        self.writeSignedByte(1)  # signify GP4 chord format
+        self.writeBool(chord.sharp)
+        self.placeholder(3)
+        self.writeByte(chord.root.value)
+        self.writeByte(chord.type.value)
+        self.writeByte(chord.extension.value)
+        self.writeInt(chord.bass.value)
+        self.writeInt(chord.tonality.value)
+        self.writeBool(chord.add)
+        self.writeByteSizeString(chord.name, 20)
+        self.placeholder(2)
+        self.writeByte(chord.fifth.value)
+        self.writeByte(chord.ninth.value)
+        self.writeByte(chord.eleventh.value)
+
         self.writeInt(chord.firstFret)
-        for i in range(7):
-            fret = -1
-            if i < len(chord.strings):
-                fret = chord.strings[i]
+        for fret in clamp(chord.strings, 7, fillvalue=-1):
             self.writeInt(fret)
-        self.placeholder(32)
+
+        self.writeByte(len(chord.barres))
+        if chord.barres:
+            barreFrets, barreStarts, barreEnds = zip(*chord.barres)
+        else:
+            barreFrets, barreStarts, barreEnds = [], [], []
+        for fret in clamp(barreFrets, 5, fillvalue=0):
+            self.writeByte(fret)
+        for start in clamp(barreStarts, 5, fillvalue=0):
+            self.writeByte(start)
+        for end in clamp(barreEnds, 5, fillvalue=0):
+            self.writeByte(end)
+
+        for omission in clamp(chord.omissions, 7, fillvalue=0):
+            self.writeByte(omission)
+
+        self.placeholder(1)
+        for fingering in clamp(chord.fingerings, 7, fillvalue=-1):
+            self.writeSignedByte(fingering.value)
+        self.writeBool(chord.show)
