@@ -338,7 +338,10 @@ class GP3File(gp.GPFileBase):
             chord.bass = gp.PitchClass.fromValue(self.readInt(), intonation)
             chord.tonality = gp.ChordTonality(self.readInt())
             chord.add = self.readBool()
-            chord.name = self.readByteSizeString(34)
+            chord.name = self.readByteSizeString(22)
+            chord.fifth = gp.ChordTonality(self.readInt())
+            chord.ninth = gp.ChordTonality(self.readInt())
+            chord.eleventh = gp.ChordTonality(self.readInt())
             chord.firstFret = self.readInt()
             for i in range(6):
                 fret = self.readInt()
@@ -360,7 +363,7 @@ class GP3File(gp.GPFileBase):
 
     def readDuration(self, flags):
         duration = gp.Duration()
-        duration.value = round(2 ** (self.readSignedByte() + 2))
+        duration.value = 1 << (self.readSignedByte() + 2)
         duration.isDotted = (flags & 0x01) != 0
         if (flags & 0x20) != 0:
             iTuplet = self.readInt()
