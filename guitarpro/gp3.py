@@ -4,6 +4,7 @@ import math
 import copy
 
 from . import base as gp
+from .utils import clamp
 
 
 class GP3File(gp.GPFileBase):
@@ -318,7 +319,6 @@ class GP3File(gp.GPFileBase):
         beat.setText(text)
 
     def readChord(self, stringCount, beat):
-        # chord = factory.newChord(stringCount)
         chord = gp.Chord(stringCount)
         if self.readByte() & 0x01 == 0:
             chord.name = self.readIntSizeCheckByteString()
@@ -1022,21 +1022,40 @@ class GP3File(gp.GPFileBase):
         self.writeIntSizeCheckByteString(text.value)
 
     def writeChord(self, chord):
-        self.writeByte(0)
-        self.writeIntSizeCheckByteString(chord.name)
+        self.writeSignedByte(1)  # signify GP4 chord format
+        self.writeBool(chord.sharp)
+        self.placeholder(3)
+        self.writeInt(chord.root.value)
+        self.writeInt(chord.type.value)
+        self.writeInt(chord.extension.value)
+        self.writeInt(chord.bass.value)
+        self.writeInt(chord.tonality.value)
+        self.writeBool(chord.add)
+        self.writeByteSizeString(chord.name, 22)
+        self.writeInt(chord.fifth.value)
+        self.writeInt(chord.ninth.value)
+        self.writeInt(chord.eleventh.value)
+
         self.writeInt(chord.firstFret)
-        if chord.firstFret != 0:
-            for i in range(6):
-                self.writeInt(chord.strings[i])
-        # else:
-        #     self.skip(25)
-        #     chord.name = self.writeByteSizeString(34)
-        #     chord.firstFret = self.writeInt()
-        #     for i in range(6):
-        #         fret = self.writeInt()
-        #         if i < len(chord.strings):
-        #             chord.strings[i] = fret
-        #     self.skip(36)
+        for fret in clamp(chord.strings, 6, fillvalue=-1):
+            self.writeInt(fret)
+
+        self.writeInt(len(chord.barres))
+        if chord.barres:
+            barreFrets, barreStarts, barreEnds = zip(*chord.barres)
+        else:
+            barreFrets, barreStarts, barreEnds = [], [], []
+        for fret in clamp(barreFrets, 2, fillvalue=0):
+            self.writeInt(fret)
+        for start in clamp(barreStarts, 2, fillvalue=0):
+            self.writeInt(start)
+        for end in clamp(barreEnds, 2, fillvalue=0):
+            self.writeInt(end)
+
+        for omission in clamp(chord.omissions, 7, fillvalue=1):
+            self.writeByte(omission)
+
+        self.placeholder(1)
 
     def writeDuration(self, duration, flags):
         value = round(math.log(duration.value, 2) - 2)

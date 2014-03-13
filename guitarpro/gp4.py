@@ -607,7 +607,7 @@ class GP4File(gp3.GP3File):
         for end in clamp(barreEnds, 5, fillvalue=0):
             self.writeByte(end)
 
-        for omission in clamp(chord.omissions, 7, fillvalue=0):
+        for omission in clamp(chord.omissions, 7, fillvalue=1):
             self.writeByte(omission)
 
         self.placeholder(1)
