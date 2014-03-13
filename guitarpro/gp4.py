@@ -294,7 +294,7 @@ class GP4File(gp3.GP3File):
         self.writeVersion(1)
         self.writeInfo(song)
 
-        self._tripletFeel = song.tracks[0].measures[0].tripletFeel
+        self._tripletFeel = song.tracks[0].measures[0].tripletFeel.value
         self.writeBool(self._tripletFeel)
 
         self.writeLyrics(song.lyrics)
