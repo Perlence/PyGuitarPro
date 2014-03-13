@@ -1022,22 +1022,22 @@ class GP3File(gp.GPFileBase):
         self.writeSignedByte(1)  # signify GP4 chord format
         self.writeBool(chord.sharp)
         self.placeholder(3)
-        self.writeInt(chord.root.value)
-        self.writeInt(chord.type.value)
-        self.writeInt(chord.extension.value)
-        self.writeInt(chord.bass.value)
-        self.writeInt(chord.tonality.value)
+        self.writeInt(chord.root.value if chord.root else 0)
+        self.writeInt(chord.type.value if chord.type else 0)
+        self.writeInt(chord.extension.value if chord.extension else 0)
+        self.writeInt(chord.bass.value if chord.bass else 0)
+        self.writeInt(chord.tonality.value if chord.tonality else 0)
         self.writeBool(chord.add)
         self.writeByteSizeString(chord.name, 22)
-        self.writeInt(chord.fifth.value)
-        self.writeInt(chord.ninth.value)
-        self.writeInt(chord.eleventh.value)
+        self.writeInt(chord.fifth.value if chord.fifth else 0)
+        self.writeInt(chord.ninth.value if chord.ninth else 0)
+        self.writeInt(chord.eleventh.value if chord.eleventh else 0)
 
         self.writeInt(chord.firstFret)
         for fret in clamp(chord.strings, 6, fillvalue=-1):
             self.writeInt(fret)
 
-        self.writeInt(len(chord.barres))
+        self.writeInt(len(chord.barres or []))
         if chord.barres:
             barreFrets, barreStarts, barreEnds = zip(*chord.barres)
         else:
@@ -1049,7 +1049,7 @@ class GP3File(gp.GPFileBase):
         for end in clamp(barreEnds, 2, fillvalue=0):
             self.writeInt(end)
 
-        for omission in clamp(chord.omissions, 7, fillvalue=1):
+        for omission in clamp(chord.omissions or [], 7, fillvalue=1):
             self.writeByte(omission)
 
         self.placeholder(1)
