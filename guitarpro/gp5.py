@@ -1,7 +1,5 @@
 from __future__ import division
 
-import copy
-
 from . import base as gp
 from . import gp4
 
@@ -122,13 +120,11 @@ class GP5File(gp4.GP4File):
         for j in range(7):
             i = 6 - j
             if stringFlags & (1 << i) != 0 and (6 - i) < len(track.strings):
-                # guitarString = track.strings[6 - i].clone(factory)
-                guitarString = copy.copy(track.strings[6 - i])
+                guitarString = track.strings[6 - i]
                 note = gp.Note()
                 voice.addNote(note)
                 self.readNote(note, guitarString, track, gp.NoteEffect())
-            # duration.copy(voice.duration)
-            voice.duration = copy.copy(duration)
+            voice.duration = duration
 
         flags2 = self.readByte()
         flags3 = self.readByte()

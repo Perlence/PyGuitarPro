@@ -1,7 +1,6 @@
 from __future__ import division
 
 import math
-import copy
 
 from . import base as gp
 from .utils import clamp
@@ -66,12 +65,10 @@ class GP3File(gp.GPFileBase):
             header.start = start
             for track in song.tracks:
                 measure = gp.Measure(header)
-                # header.tempo.copy(tempo)
                 tempo = header.tempo
                 track.addMeasure(measure)
                 self.readMeasure(measure, track)
 
-            # tempo.copy(header.tempo)
             header.tempo = tempo
             start += header.length
 
@@ -113,15 +110,11 @@ class GP3File(gp.GPFileBase):
         for j in range(7):
             i = 6 - j
             if stringFlags & (1 << i) != 0 and (6 - i) < len(track.strings):
-                # guitarString = track.strings[6 - i].clone(factory)
-                guitarString = copy.copy(track.strings[6 - i])
-                # note = self.readNote(guitarString, track, effect.clone(factory))
+                guitarString = track.strings[6 - i]
                 note = gp.Note()
                 voice.addNote(note)
-                self.readNote(note, guitarString, track, copy.deepcopy(effect))
-
-            # duration.copy(voice.duration)
-            voice.duration = copy.copy(duration)
+                self.readNote(note, guitarString, track, effect)
+            voice.duration = duration
 
         return duration.time if not voice.isEmpty else 0
 
@@ -431,8 +424,7 @@ class GP3File(gp.GPFileBase):
         index = self.readInt() - 1
         effectChannel = self.readInt() - 1
         if 0 <= index < len(channels):
-            # channels[index].copy(track.channel)
-            track.channel = copy.copy(channels[index])
+            track.channel = channels[index]
             if track.channel.instrument < 0:
                 track.channel.instrument = 0
             if not track.channel.isPercussionChannel:
@@ -833,7 +825,7 @@ class GP3File(gp.GPFileBase):
 
     def writeNote(self, note):
         # In GP3 NoteEffect doesn't have vibrato attribute
-        noteEffect = copy.copy(note.effect)
+        noteEffect = note.effect
         noteEffect.vibrato = False
 
         flags = 0x00

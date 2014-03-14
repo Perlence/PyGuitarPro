@@ -1,7 +1,6 @@
 from __future__ import division
 
 import struct
-import copy
 
 from enum import Enum
 
@@ -756,15 +755,15 @@ class Duration(GPObject):
     def fromTime(cls, time, minimum=None, diff=0):
         if minimum is None:
             minimum = Duration()
-        duration = copy.deepcopy(minimum)
+        duration = minimum
         tmp = Duration()
         tmp.value = cls.WHOLE
         tmp.isDotted = True
         while True:
             tmpTime = tmp.time
             if tmpTime - diff <= time:
-                if abs(tmpTime - time) < abs(duration.time() - time):
-                    duration = copy.deepcopy(tmp)
+                if abs(tmpTime - time) < abs(duration.time - time):
+                    duration = tmp
             if tmp.isDotted:
                 tmp.isDotted = False
             elif tmp.tuplet == Tuplet():
@@ -1518,7 +1517,10 @@ class PitchClass(object):
                     value = self._notes['flat'].index(string)
             elif isinstance(args[0], int):
                 value = args[0]
-                string = self._notes[intonation][value]
+                try:
+                    string = self._notes['sharp'][value]
+                except KeyError:
+                    string = self._notes['flat'][value]
             if string.endswith('b'):
                 accidental = -1
             elif string.endswith('#'):
