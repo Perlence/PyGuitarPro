@@ -32,3 +32,4 @@ nosetests.xml
 
 # Built documentation
 docs/_build
+tests/output
