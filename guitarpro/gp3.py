@@ -766,8 +766,9 @@ class GP3File(gp.GPFileBase):
                 self.writeMeasure(measure)
 
     def writeMeasure(self, measure):
-        self.writeInt(len(measure.beats))
-        for beat in measure.beats:
+        voiceBeats = filter(lambda beat: not beat.voices[0].isRestVoice, measure.beats)
+        self.writeInt(len(voiceBeats))
+        for beat in voiceBeats:
             self.writeBeat(beat)
 
     def writeBeat(self, beat, voiceIndex=0):
@@ -1046,20 +1047,20 @@ class GP3File(gp.GPFileBase):
         value = round(math.log(duration.value, 2) - 2)
         self.writeSignedByte(value)
         if flags & 0x20 != 0:
-            if duration.tuplet.enters == 3 and duration.tuplet.times == 2:
+            if (duration.tuplet.enters, duration.tuplet.times) == (3, 2):
                 iTuplet = 3
-            elif duration.tuplet.enters == 5 and duration.tuplet.times == 4:
+            elif (duration.tuplet.enters, duration.tuplet.times) == (5, 4):
                 iTuplet = 5
-            elif duration.tuplet.enters == 6 and duration.tuplet.times == 4:
+            elif (duration.tuplet.enters, duration.tuplet.times) == (6, 4):
                 iTuplet = 6
-            elif duration.tuplet.enters == 7 and duration.tuplet.times == 4:
+            elif (duration.tuplet.enters, duration.tuplet.times) == (7, 4):
                 iTuplet = 7
-            elif duration.tuplet.enters == 9 and duration.tuplet.times == 8:
+            elif (duration.tuplet.enters, duration.tuplet.times) == (9, 8):
                 iTuplet = 9
-            elif duration.tuplet.enters == 10 and duration.tuplet.times == 8:
+            elif (duration.tuplet.enters, duration.tuplet.times) == (10, 8):
                 iTuplet = 10
-            elif duration.tuplet.enters == 11 and duration.tuplet.times == 8:
+            elif (duration.tuplet.enters, duration.tuplet.times) == (11, 8):
                 iTuplet = 11
-            elif duration.tuplet.enters == 12 and duration.tuplet.times == 8:
+            elif (duration.tuplet.enters, duration.tuplet.times) == (12, 8):
                 iTuplet = 12
             self.writeInt(iTuplet)

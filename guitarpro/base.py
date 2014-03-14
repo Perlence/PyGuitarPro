@@ -895,9 +895,9 @@ class Voice(GPObject):
 
     '''A voice contains multiple notes.
     '''
-    __attr__ = ['duration',
+    __attr__ = ['index',
+                'duration',
                 'notes',
-                'index',
                 'direction',
                 'isEmpty']
 
