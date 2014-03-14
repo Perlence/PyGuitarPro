@@ -97,29 +97,29 @@ class GP5File(gp4.GP4File):
         beat = self.getBeat(measure, start)
         voice = beat.voices[voiceIndex]
 
-        if flags1 & 0x40 != 0:
+        if flags1 & 0x40:
             beatType = self.readByte()
             voice.isEmpty = (beatType & 0x02) == 0
 
         duration = self.readDuration(flags1)
 
-        if flags1 & 0x02 != 0:
+        if flags1 & 0x02:
             self.readChord(len(track.strings), beat)
 
-        if flags1 & 0x04 != 0:
+        if flags1 & 0x04:
             self.readText(beat)
 
-        if flags1 & 0x08 != 0:
+        if flags1 & 0x08:
             self.readBeatEffects(beat, None)
 
-        if flags1 & 0x10 != 0:
+        if flags1 & 0x10:
             mixTableChange = self.readMixTableChange(measure)
             beat.effect.mixTableChange = mixTableChange
 
         stringFlags = self.readByte()
         for j in range(7):
             i = 6 - j
-            if stringFlags & (1 << i) != 0 and (6 - i) < len(track.strings):
+            if stringFlags & (1 << i) and (6 - i) < len(track.strings):
                 guitarString = track.strings[6 - i]
                 note = gp.Note()
                 voice.addNote(note)
@@ -129,29 +129,29 @@ class GP5File(gp4.GP4File):
         flags2 = self.readByte()
         flags3 = self.readByte()
 
-        if flags2 & 0x10 != 0:
+        if flags2 & 0x10:
             beat.octave = gp.Octave.ottava
-        if flags2 & 0x20 != 0:
+        if flags2 & 0x20:
             beat.octave = gp.Octave.ottavaBassa
-        if flags2 & 0x40 != 0:
+        if flags2 & 0x40:
             beat.octave = gp.Octave.quindicesima
-        if flags3 & 0x01 != 0:
+        if flags3 & 0x01:
             beat.octave = gp.Octave.quindicesimaBassa
 
         display = gp.BeatDisplay()
-        display.breakBeam = (flags2 & 0x01) != 0
-        display.forceBeam = (flags2 & 0x04) != 0
-        display.forceBracket = (flags3 & 0x20) != 0
-        display.breakSecondaryTuplet = (flags3 & 0x10) != 0
-        if flags2 & 0x02 != 0:
+        display.breakBeam = bool(flags2 & 0x01)
+        display.forceBeam = bool(flags2 & 0x04)
+        display.forceBracket = bool(flags3 & 0x20)
+        display.breakSecondaryTuplet = bool(flags3 & 0x10)
+        if flags2 & 0x02:
             display.beamDirection = gp.VoiceDirection.down
-        if flags2 & 0x08 != 0:
+        if flags2 & 0x08:
             display.beamDirection = gp.VoiceDirection.up
-        if flags3 & 0x02 != 0:
+        if flags3 & 0x02:
             display.tupletBracket = gp.TupletBracket.start
-        if flags3 & 0x04 != 0:
+        if flags3 & 0x04:
             display.tupletBracket = gp.TupletBracket.end
-        if flags3 & 0x08 != 0:
+        if flags3 & 0x08:
             display.breakSecondary = self.readByte()
 
         beat.display = display
@@ -161,35 +161,35 @@ class GP5File(gp4.GP4File):
     def readNote(self, note, guitarString, track, effect):
         flags = self.readByte()
         note.string = guitarString.number
-        note.effect.accentuatedNote = (flags & 0x40) != 0
-        note.effect.heavyAccentuatedNote = (flags & 0x02) != 0
-        note.effect.ghostNote = (flags & 0x04) != 0
-        if flags & 0x20 != 0:
+        note.effect.accentuatedNote = bool(flags & 0x40)
+        note.effect.heavyAccentuatedNote = bool(flags & 0x02)
+        note.effect.ghostNote = bool(flags & 0x04)
+        if flags & 0x20:
             noteType = self.readByte()
             note.isTiedNote = noteType == 0x02
             note.effect.deadNote = noteType == 0x03
 
-        if flags & 0x10 != 0:
+        if flags & 0x10:
             dyn = self.readSignedByte()
             note.velocity = self.unpackVelocity(dyn)
 
-        if flags & 0x20 != 0:
+        if flags & 0x20:
             fret = self.readSignedByte()
             value = self.getTiedNoteValue(guitarString.number,
                                           track) if note.isTiedNote else fret
             note.value = value if 0 <= value < 100 else 0
 
-        if flags & 0x80 != 0:
+        if flags & 0x80:
             note.effect.leftHandFinger = self.readSignedByte()
             note.effect.rightHandFinger = self.readSignedByte()
             note.effect.isFingering = True
 
-        if flags & 0x01 != 0:
+        if flags & 0x01:
             note.durationPercent = self.readDouble()
         flags2 = self.readByte()
-        note.swapAccidentals = (flags2 & 0x02) != 0
+        note.swapAccidentals = bool(flags2 & 0x02)
 
-        if flags & 0x08 != 0:
+        if flags & 0x08:
             self.readNoteEffects(note)
 
         return note
@@ -198,23 +198,23 @@ class GP5File(gp4.GP4File):
         noteEffect = note.effect
         flags1 = self.readByte()
         flags2 = self.readByte()
-        if flags1 & 0x01 != 0:
+        if flags1 & 0x01:
             self.readBend(noteEffect)
-        if flags1 & 0x10 != 0:
+        if flags1 & 0x10:
             self.readGrace(noteEffect)
-        if flags2 & 0x04 != 0:
+        if flags2 & 0x04:
             self.readTremoloPicking(noteEffect)
-        if flags2 & 0x08 != 0:
+        if flags2 & 0x08:
             self.readSlides(noteEffect)
-        if flags2 & 0x10 != 0:
+        if flags2 & 0x10:
             self.readHarmonic(note)
-        if flags2 & 0x20 != 0:
+        if flags2 & 0x20:
             self.readTrill(noteEffect)
-        noteEffect.letRing = (flags1 & 0x08) != 0
-        noteEffect.hammer = (flags1 & 0x02) != 0
-        noteEffect.vibrato = (flags2 & 0x40) != 0 or noteEffect.vibrato
-        noteEffect.palmMute = (flags2 & 0x02) != 0
-        noteEffect.staccato = (flags2 & 0x01) != 0
+        noteEffect.letRing = bool(flags1 & 0x08)
+        noteEffect.hammer = bool(flags1 & 0x02)
+        noteEffect.vibrato = bool(flags2 & 0x40) or noteEffect.vibrato
+        noteEffect.palmMute = bool(flags2 & 0x02)
+        noteEffect.staccato = bool(flags2 & 0x01)
 
     def readSlides(self, noteEffect):
         slideType = self.readByte()
@@ -267,8 +267,8 @@ class GP5File(gp4.GP4File):
         grace.fret = fret
         grace.velocity = self.unpackVelocity(dyn)
         grace.duration = duration
-        grace.isDead = (flags & 0x01) != 0
-        grace.isOnBeat = (flags & 0x02) != 0
+        grace.isDead = bool(flags & 0x01)
+        grace.isOnBeat = bool(flags & 0x02)
         grace.transition = gp.GraceEffectTransition(transition)
 
         noteEffect.grace = grace
@@ -323,20 +323,20 @@ class GP5File(gp4.GP4File):
 
         allTracksFlags = self.readByte()
         if tableChange.volume is not None:
-            tableChange.volume.allTracks = (allTracksFlags & 0x01) != 0
+            tableChange.volume.allTracks = bool(allTracksFlags & 0x01)
         if tableChange.balance is not None:
-            tableChange.balance.allTracks = (allTracksFlags & 0x02) != 0
+            tableChange.balance.allTracks = bool(allTracksFlags & 0x02)
         if tableChange.chorus is not None:
-            tableChange.chorus.allTracks = (allTracksFlags & 0x04) != 0
+            tableChange.chorus.allTracks = bool(allTracksFlags & 0x04)
         if tableChange.reverb is not None:
-            tableChange.reverb.allTracks = (allTracksFlags & 0x08) != 0
+            tableChange.reverb.allTracks = bool(allTracksFlags & 0x08)
         if tableChange.phaser is not None:
-            tableChange.phaser.allTracks = (allTracksFlags & 0x10) != 0
+            tableChange.phaser.allTracks = bool(allTracksFlags & 0x10)
         if tableChange.tremolo is not None:
-            tableChange.tremolo.allTracks = (allTracksFlags & 0x20) != 0
+            tableChange.tremolo.allTracks = bool(allTracksFlags & 0x20)
         if tableChange.tempo is not None:
             tableChange.tempo.allTracks = True
-        if allTracksFlags & 0x80 != 0:
+        if allTracksFlags & 0x80:
             tableChange.wah.display = True
 
         # Wah-Wah flag
@@ -372,13 +372,13 @@ class GP5File(gp4.GP4File):
             self.skip(1)
         flags1 = self.readByte()
         track = gp.Track()
-        track.isPercussionTrack = (flags1 & 0x01) != 0
-        track.is12StringedGuitarTrack = (flags1 & 0x02) != 0
-        track.isBanjoTrack = (flags1 & 0x04) != 0
-        track.isVisible = (flags1 & 0x08) != 0
-        track.isSolo = (flags1 & 0x10) != 0
-        track.isMute = (flags1 & 0x20) != 0
-        track.indicateTuning = (flags1 & 0x80) != 0
+        track.isPercussionTrack = bool(flags1 & 0x01)
+        track.is12StringedGuitarTrack = bool(flags1 & 0x02)
+        track.isBanjoTrack = bool(flags1 & 0x04)
+        track.isVisible = bool(flags1 & 0x08)
+        track.isSolo = bool(flags1 & 0x10)
+        track.isMute = bool(flags1 & 0x20)
+        track.indicateTuning = bool(flags1 & 0x80)
         track.number = number
         track.name = self.readByteSizeString(40)
         stringCount = self.readInt()
@@ -400,19 +400,19 @@ class GP5File(gp4.GP4File):
         flags2 = self.readByte()
         flags3 = self.readByte()
         trackSettings = gp.TrackSettings()
-        trackSettings.tablature = (flags2 & 0x01) != 0
-        trackSettings.notation = (flags2 & 0x02) != 0
-        trackSettings.diagramsAreBelow = (flags2 & 0x04) != 0
-        trackSettings.showRhythm = (flags2 & 0x08) != 0
-        trackSettings.forceHorizontal = (flags2 & 0x10) != 0
-        trackSettings.forceChannels = (flags2 & 0x20) != 0
-        trackSettings.diagramList = (flags2 & 0x40) != 0
-        trackSettings.diagramsInScore = (flags2 & 0x80) != 0
+        trackSettings.tablature = bool(flags2 & 0x01)
+        trackSettings.notation = bool(flags2 & 0x02)
+        trackSettings.diagramsAreBelow = bool(flags2 & 0x04)
+        trackSettings.showRhythm = bool(flags2 & 0x08)
+        trackSettings.forceHorizontal = bool(flags2 & 0x10)
+        trackSettings.forceChannels = bool(flags2 & 0x20)
+        trackSettings.diagramList = bool(flags2 & 0x40)
+        trackSettings.diagramsInScore = bool(flags2 & 0x80)
 
         # 0x01: ???
-        trackSettings.autoLetRing = (flags3 & 0x02) != 0
-        trackSettings.autoBrush = (flags3 & 0x04) != 0
-        trackSettings.extendRhythmic = (flags3 & 0x08) != 0
+        trackSettings.autoLetRing = bool(flags3 & 0x02)
+        trackSettings.autoBrush = bool(flags3 & 0x04)
+        trackSettings.extendRhythmic = bool(flags3 & 0x08)
         track.settings = trackSettings
 
         # Always 0
@@ -449,36 +449,36 @@ class GP5File(gp4.GP4File):
         header.start = 0
         header.tempo.value = song.tempo
 
-        if flags & 0x01 != 0:
+        if flags & 0x01:
             header.timeSignature.numerator = self.readByte()
         else:
             header.timeSignature.numerator = previous.timeSignature.numerator
-        if flags & 0x02 != 0:
+        if flags & 0x02:
             header.timeSignature.denominator.value = self.readByte()
         else:
             header.timeSignature.denominator.value = previous.timeSignature.denominator.value
 
-        header.isRepeatOpen = (flags & 0x04) != 0
+        header.isRepeatOpen = bool(flags & 0x04)
 
-        if flags & 0x08 != 0:
+        if flags & 0x08:
             header.repeatClose = self.readByte() - 1
 
-        if flags & 0x20 != 0:
+        if flags & 0x20:
             header.marker = self.readMarker(header)
 
-        if flags & 0x10 != 0:
+        if flags & 0x10:
             header.repeatAlternative = self.readByte()
 
-        if flags & 0x40 != 0:
+        if flags & 0x40:
             header.keySignature = self.toKeySignature(self.readSignedByte())
             header.keySignatureType = self.readByte()
         elif previous is not None:
             header.keySignature = previous.keySignature
             header.keySignatureType = previous.keySignatureType
 
-        header.hasDoubleBar = (flags & 0x80) != 0
+        header.hasDoubleBar = bool(flags & 0x80)
 
-        if flags & 0x03 != 0:
+        if flags & 0x03:
             header.timeSignature.beams = [self.readByte() for __ in range(4)]
         else:
             header.timeSignature.beams = previous.timeSignature.beams
@@ -508,7 +508,7 @@ class GP5File(gp4.GP4File):
         setup.headerAndFooter = self.readByte()
 
         flags2 = self.readByte()
-        if flags2 & 0x01 != 0:
+        if flags2 & 0x01:
             setup.headerAndFooter |= gp.HeaderFooterElements.PAGE_NUMBER
 
         setup.title = self.readIntSizeCheckByteString()
@@ -665,7 +665,7 @@ class GP5File(gp4.GP4File):
             flags |= 0x04
         if header.repeatClose > -1:
             flags |= 0x08
-        if header.repeatAlternative != 0:
+        if header.repeatAlternative:
             flags |= 0x10
         if header.marker is not None:
             flags |= 0x20
@@ -682,25 +682,25 @@ class GP5File(gp4.GP4File):
 
         self.writeByte(flags)
 
-        if flags & 0x01 != 0:
+        if flags & 0x01:
             self.writeByte(header.timeSignature.numerator)
-        if flags & 0x02 != 0:
+        if flags & 0x02:
             self.writeByte(header.timeSignature.denominator.value)
 
-        if flags & 0x08 != 0:
+        if flags & 0x08:
             self.writeByte(header.repeatClose + 1)
 
-        if flags & 0x20 != 0:
+        if flags & 0x20:
             self.writeMarker(header.marker)
 
-        if flags & 0x10 != 0:
+        if flags & 0x10:
             self.writeByte(header.repeatAlternative)
 
-        if flags & 0x40 != 0:
+        if flags & 0x40:
             self.writeSignedByte(self.fromKeySignature(header.keySignature))
             self.writeByte(header.keySignatureType)
 
-        if flags & 0x01 != 0:
+        if flags & 0x01:
             for beam in header.timeSignature.beams:
                 self.writeByte(beam)
 
@@ -831,22 +831,22 @@ class GP5File(gp4.GP4File):
 
         self.writeByte(flags1)
 
-        if flags1 & 0x40 != 0:
+        if flags1 & 0x40:
             beatType = 0x00 if voice.isEmpty else 0x02
             self.writeByte(beatType)
 
         self.writeDuration(voice.duration, flags1)
 
-        if flags1 & 0x02 != 0:
+        if flags1 & 0x02:
             self.writeChord(beat.effect.chord)
 
-        if flags1 & 0x04 != 0:
+        if flags1 & 0x04:
             self.writeText(beat.text)
 
-        if flags1 & 0x08 != 0:
+        if flags1 & 0x08:
             self.writeBeatEffects(beat.effect)
 
-        if flags1 & 0x10 != 0:
+        if flags1 & 0x10:
             self.writeMixTableChange(beat.effect.mixTableChange)
 
         stringFlags = 0x00
@@ -891,7 +891,7 @@ class GP5File(gp4.GP4File):
 
         self.writeByte(flags3)
 
-        if flags3 & 0x08 != 0:
+        if flags3 & 0x08:
             self.writeByte(beat.display.breakSecondary)
 
     def writeNote(self, note):
@@ -915,7 +915,7 @@ class GP5File(gp4.GP4File):
 
         self.writeByte(flags)
 
-        if flags & 0x20 != 0:
+        if flags & 0x20:
             if note.isTiedNote:
                 noteType = 0x02
             elif note.effect.deadNote:
@@ -924,19 +924,19 @@ class GP5File(gp4.GP4File):
                 noteType = 0x01
             self.writeByte(noteType)
 
-        if flags & 0x10 != 0:
+        if flags & 0x10:
             value = self.packVelocity(note.velocity)
             self.writeSignedByte(value)
 
-        if flags & 0x20 != 0:
+        if flags & 0x20:
             fret = note.value if not note.isTiedNote else 0
             self.writeSignedByte(fret)
 
-        if flags & 0x80 != 0:
+        if flags & 0x80:
             self.writeSignedByte(note.effect.leftHandFinger)
             self.writeSignedByte(note.effect.rightHandFinger)
 
-        if flags & 0x01 != 0:
+        if flags & 0x01:
             self.writeDouble(note.durationPercent)
 
         flags2 = 0x00
@@ -945,7 +945,7 @@ class GP5File(gp4.GP4File):
 
         self.writeByte(flags2)
 
-        if flags & 0x08 != 0:
+        if flags & 0x08:
             self.writeNoteEffects(note)
 
     def writeNoteEffects(self, note):
@@ -980,17 +980,17 @@ class GP5File(gp4.GP4File):
 
         self.writeByte(flags2)
 
-        if flags1 & 0x01 != 0:
+        if flags1 & 0x01:
             self.writeBend(noteEffect.bend)
-        if flags1 & 0x10 != 0:
+        if flags1 & 0x10:
             self.writeGrace(noteEffect.grace)
-        if flags2 & 0x04 != 0:
+        if flags2 & 0x04:
             self.writeTremoloPicking(noteEffect.tremoloPicking)
-        if flags2 & 0x08 != 0:
+        if flags2 & 0x08:
             self.writeSlides(noteEffect.slides)
-        if flags2 & 0x10 != 0:
+        if flags2 & 0x10:
             self.writeHarmonic(note, noteEffect.harmonic)
-        if flags2 & 0x20 != 0:
+        if flags2 & 0x20:
             self.writeTrill(noteEffect.trill)
 
     def writeSlides(self, slides):
