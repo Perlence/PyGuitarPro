@@ -481,15 +481,18 @@ class GP4File(gp3.GP3File):
         if not isinstance(harmonic, gp.ArtificialHarmonic):
             byte = harmonic.type
         else:
-            if (harmonic.pitch.value == (note.realValue + 7) % 12
-                    and harmonic.octave == gp.Octave.ottava):
-                byte = 15
-            elif (harmonic.pitch.value == note.realValue % 12
-                    and harmonic.octave == gp.Octave.quindicesima):
-                byte = 17
-            elif (harmonic.pitch.value == note.realValue % 12
-                    and harmonic.octave == gp.Octave.ottava):
-                byte = 22
+            if harmonic.pitch and harmonic.octave:
+                if (harmonic.pitch.value == (note.realValue + 7) % 12
+                        and harmonic.octave == gp.Octave.ottava):
+                    byte = 15
+                elif (harmonic.pitch.value == note.realValue % 12
+                        and harmonic.octave == gp.Octave.quindicesima):
+                    byte = 17
+                elif (harmonic.pitch.value == note.realValue % 12
+                        and harmonic.octave == gp.Octave.ottava):
+                    byte = 22
+                else:
+                    byte = 22
             else:
                 byte = 22
         self.writeSignedByte(byte)

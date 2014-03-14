@@ -986,6 +986,9 @@ class GP5File(gp4.GP4File):
     def writeHarmonic(self, note, harmonic):
         self.writeSignedByte(harmonic.type)
         if isinstance(harmonic, gp.ArtificialHarmonic):
+            if not harmonic.pitch or not harmonic.octave:
+                harmonic.pitch = gp.PitchClass(note.realValue % 12)
+                harmonic.octave = gp.Octave.ottava
             self.writeByte(harmonic.pitch.just)
             self.writeSignedByte(harmonic.pitch.accidental)
             self.writeByte(harmonic.octave.value)

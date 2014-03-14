@@ -1458,20 +1458,67 @@ class ChordExtension(Enum):
 
 
 class PitchClass(object):
+
+    '''A pitch class.
+
+    Constructor provides several overloads. Each overload provides keyword argument 
+    ``intonation`` that may be either 'sharp' or 'flat'.
+
+    First of overloads is (tone, accidental):
+
+    :param tone: integer of whole-tone.
+    :param accidental: flat (-1), none (0) or sharp (1).
+
+    >>> p = PitchClass(4, -1)
+    >>> vars(p)
+    {'accidental': -1, 'intonation': 'flat', 'just': 4, 'value': 3}
+    >>> print p
+    Eb
+    >>> p = PitchClass(4, -1, intonation='sharp')
+    >>> vars(p)
+    {'accidental': -1, 'intonation': 'flat', 'just': 4, 'value': 3}
+    >>> print p
+    D#
+
+    Second, semitone number can be directly passed to constructor:
+
+    :param semitone: integer of semitone.
+
+    >>> p = PitchClass(3)
+    >>> print p
+    Eb
+    >>> p = PitchClass(3, intonation='sharp')
+    >>> print p
+    D#
+
+    And last, but not least, note name:
+
+    :param name: string representing note.
+
+    >>> p = PitchClass('D#')
+    >>> print p
+    D#
+
+    '''
+
     _notes = {
         'sharp': 'C C# D D# E F F# G G# A A# B'.split(),
         'flat': 'C Db D Eb E F Gb G Ab A Bb B'.split(),
     }
 
     def __init__(self, *args, **kwargs):
-        intonation = kwargs.get('intonation', 'sharp')
-        if len(args) == 1 and isinstance(args[0], basestring):
-            # Assume string input
-            string = args[0]
-            try:
-                value = self._notes['sharp'].index(string)
-            except IndexError:
-                value = self._notes['flat'].index(string)
+        intonation = kwargs.get('intonation')
+        if len(args) == 1:
+            if isinstance(args[0], basestring):
+                # Assume string input
+                string = args[0]
+                try:
+                    value = self._notes['sharp'].index(string)
+                except ValueError:
+                    value = self._notes['flat'].index(string)
+            elif isinstance(args[0], int):
+                value = args[0]
+                string = self._notes[intonation][value]
             if string.endswith('b'):
                 accidental = -1
             elif string.endswith('#'):
@@ -1479,21 +1526,18 @@ class PitchClass(object):
             else:
                 accidental = 0
             pitch = value - accidental
-        else:
-            pitch = args[0]
-            try:
-                accidental = args[1]
-            except IndexError:
-                accidental = 0
+        elif len(args) == 2:
+            pitch, accidental = args
         self.just = pitch % 12
         self.accidental = accidental
         self.value = self.just + accidental
-        if accidental == -1:
-            self.intonation = 'flat'
-        elif accidental == 0:
+        if intonation is not None:
             self.intonation = intonation
         else:
-            self.intonation = 'sharp'
+            if accidental == -1:
+                self.intonation = 'flat'
+            else:
+                self.intonation = 'sharp'
 
     def __str__(self):
         return self._notes[self.intonation][self.value]
