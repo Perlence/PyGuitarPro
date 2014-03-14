@@ -208,7 +208,7 @@ class GP5File(gp4.GP4File):
         if flags2 & 0x04 != 0:
             self.readTremoloPicking(noteEffect)
         if flags2 & 0x08 != 0:
-            noteEffect.slide = gp.SlideType(self.readByte())
+            self.readSlides(noteEffect)
         if flags2 & 0x10 != 0:
             self.readHarmonic(note)
         if flags2 & 0x20 != 0:
@@ -218,6 +218,23 @@ class GP5File(gp4.GP4File):
         noteEffect.vibrato = (flags2 & 0x40) != 0 or noteEffect.vibrato
         noteEffect.palmMute = (flags2 & 0x02) != 0
         noteEffect.staccato = (flags2 & 0x01) != 0
+
+    def readSlides(self, noteEffect):
+        slideType = self.readByte()
+        slides = []
+        if slideType & 0x01:
+            slides.append(gp.SlideType.shiftSlideTo)
+        if slideType & 0x02:
+            slides.append(gp.SlideType.legatoSlideTo)
+        if slideType & 0x04:
+            slides.append(gp.SlideType.outDownwards)
+        if slideType & 0x08:
+            slides.append(gp.SlideType.outUpwards)
+        if slideType & 0x10:
+            slides.append(gp.SlideType.intoFromBelow)
+        if slideType & 0x20:
+            slides.append(gp.SlideType.intoFromAbove)
+        noteEffect.slides = slides
 
     def readHarmonic(self, note):
         noteEffect = note.effect
@@ -955,7 +972,7 @@ class GP5File(gp4.GP4File):
             flags2 |= 0x02
         if noteEffect.isTremoloPicking:
             flags2 |= 0x04
-        if noteEffect.slide:
+        if noteEffect.slides:
             flags2 |= 0x08
         if noteEffect.isHarmonic:
             flags2 |= 0x10
@@ -973,11 +990,28 @@ class GP5File(gp4.GP4File):
         if flags2 & 0x04 != 0:
             self.writeTremoloPicking(noteEffect.tremoloPicking)
         if flags2 & 0x08 != 0:
-            self.writeByte(noteEffect.slide.value)
+            self.writeSlides(noteEffect.slides)
         if flags2 & 0x10 != 0:
             self.writeHarmonic(note, noteEffect.harmonic)
         if flags2 & 0x20 != 0:
             self.writeTrill(noteEffect.trill)
+
+    def writeSlides(self, slides):
+        slideType = 0
+        for slide in slides:
+            if slide == gp.SlideType.shiftSlideTo:
+                slideType |= 0x01
+            elif slide == gp.SlideType.legatoSlideTo:
+                slideType |= 0x02
+            elif slide == gp.SlideType.outDownwards:
+                slideType |= 0x04
+            elif slide == gp.SlideType.outUpwards:
+                slideType |= 0x08
+            elif slide == gp.SlideType.intoFromBelow:
+                slideType |= 0x10
+            elif slide == gp.SlideType.intoFromAbove:
+                slideType |= 0x20
+        self.writeByte(slideType)
 
     def writeHarmonic(self, note, harmonic):
         self.writeSignedByte(harmonic.type)

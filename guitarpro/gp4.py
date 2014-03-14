@@ -110,7 +110,7 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x04 != 0:
             self.readTremoloPicking(noteEffect)
         if flags2 & 0x08 != 0:
-            noteEffect.slide = gp.SlideType(self.readSignedByte())
+            noteEffect.slides = [gp.SlideType(self.readSignedByte())]
         if flags2 & 0x10 != 0:
             self.readHarmonic(note)
         if flags2 & 0x20 != 0:
@@ -148,7 +148,7 @@ class GP4File(gp3.GP3File):
         elif harmonicType == 5:
             harmonic = gp.SemiHarmonic()
         elif harmonicType == 15:
-            pitch = gp.PitchClass(note.realValue + 7)
+            pitch = gp.PitchClass((note.realValue + 7) % 12)
             octave = gp.Octave.ottava
             harmonic = gp.ArtificialHarmonic(pitch, octave)
         elif harmonicType == 17:
@@ -437,7 +437,7 @@ class GP4File(gp3.GP3File):
             flags2 |= 0x02
         if noteEffect.isTremoloPicking:
             flags2 |= 0x04
-        if noteEffect.slide:
+        if noteEffect.slides:
             flags2 |= 0x08
         if noteEffect.isHarmonic:
             flags2 |= 0x10
@@ -455,7 +455,7 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x04 != 0:
             self.writeTremoloPicking(noteEffect.tremoloPicking)
         if flags2 & 0x08 != 0:
-            self.writeSignedByte(noteEffect.slide.value)
+            self.writeSignedByte(noteEffect.slides[0].value)
         if flags2 & 0x10 != 0:
             self.writeHarmonic(note, noteEffect.harmonic)
         if flags2 & 0x20 != 0:

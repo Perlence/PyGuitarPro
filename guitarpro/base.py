@@ -1249,13 +1249,13 @@ class SlideType(Enum):
 
     '''Lists all supported slide types.
     '''
-    intoFromBelow = -2
-    intoFromAbove = -1
+    intoFromAbove = -2
+    intoFromBelow = -1
     none = 0
     shiftSlideTo = 1
     legatoSlideTo = 2
-    outDownWards = 3
-    outUpWards = 4
+    outDownwards = 3
+    outUpwards = 4
 
 
 class NoteEffect(GPObject):
@@ -1272,7 +1272,7 @@ class NoteEffect(GPObject):
                 'tremoloPicking',
                 'vibrato',
                 'deadNote',
-                'slide',
+                'slides',
                 'hammer',
                 'ghostNote',
                 'accentuatedNote',
@@ -1284,7 +1284,7 @@ class NoteEffect(GPObject):
     def __init__(self, *args, **kwargs):
         self.vibrato = False
         self.deadNote = False
-        self.slide = SlideType.none
+        self.slides = []
         self.hammer = False
         self.ghostNote = False
         self.accentuatedNote = False
@@ -1330,7 +1330,7 @@ class NoteEffect(GPObject):
                 self.trill == default.trill and
                 self.tremoloPicking == default.tremoloPicking and
                 self.vibrato == default.vibrato and
-                self.slide == default.slide and
+                self.slides == default.slides and
                 self.hammer == default.hammer and
                 self.palmMute == default.palmMute and
                 self.staccato == default.staccato and
@@ -1516,7 +1516,7 @@ class PitchClass(object):
                 except ValueError:
                     value = self._notes['flat'].index(string)
             elif isinstance(args[0], int):
-                value = args[0]
+                value = args[0] % 12
                 try:
                     string = self._notes['sharp'][value]
                 except KeyError:

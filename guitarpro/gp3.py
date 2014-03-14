@@ -167,7 +167,7 @@ class GP3File(gp.GPFileBase):
     def readNoteEffects(self, note):
         noteEffect = note.effect
         flags1 = self.readByte()
-        noteEffect.slide = (flags1 & 0x04) != 0 and gp.SlideType.legatoSlideTo
+        noteEffect.slides = [gp.SlideType.legatoSlideTo] if flags1 & 0x04 else []
         noteEffect.hammer = (flags1 & 0x02) != 0
         noteEffect.letRing = (flags1 & 0x08) != 0
 
@@ -886,7 +886,8 @@ class GP3File(gp.GPFileBase):
             flags1 |= 0x01
         if noteEffect.hammer:
             flags1 |= 0x02
-        if noteEffect.slide in (gp.SlideType.shiftSlideTo, gp.SlideType.legatoSlideTo):
+        if (gp.SlideType.shiftSlideTo in noteEffect.slides or 
+                gp.SlideType.legatoSlideTo in noteEffect.slides):
             flags1 |= 0x04
         if noteEffect.letRing:
             flags1 |= 0x08
