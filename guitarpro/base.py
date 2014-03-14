@@ -279,7 +279,6 @@ class Song(GPObject):
                 'tempo',
                 'hideTempo',
                 'key',
-                'octave',
                 'tracks']
 
     def __init__(self, *args, **kwargs):
@@ -298,7 +297,6 @@ class Song(GPObject):
         self._currentRepeatGroup = RepeatGroup()
         self.hideTempo = False
         self.tempoName = ''
-        self.octave = 0
         GPObject.__init__(self, *args, **kwargs)
 
     def addMeasureHeader(self, header):

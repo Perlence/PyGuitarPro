@@ -45,7 +45,6 @@ class GP3File(gp.GPFileBase):
         song.hideTempo = False
 
         song.key = self.readInt()
-        song.octave = 0
 
         channels = self.readMidiChannels()
 

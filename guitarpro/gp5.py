@@ -38,7 +38,7 @@ class GP5File(gp4.GP4File):
             song.hideTempo = False
 
         song.key = self.readByte()
-        song.octave = self.readInt()
+        self.readInt()  # octave
 
         channels = self.readMidiChannels()
 
@@ -560,7 +560,7 @@ class GP5File(gp4.GP4File):
             self.writeBool(song.hideTempo)
 
         self.writeByte(song.key)
-        self.writeInt(song.octave)
+        self.writeInt(0)  # octave
 
         self.writeMidiChannels(song.tracks)
 
