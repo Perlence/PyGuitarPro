@@ -97,9 +97,6 @@ class GP3File(gp.GPFileBase):
 
         if flags & 0x08 != 0:
             self.readBeatEffects(beat, effect)
-            # some BeatEffects are not supported in GP3
-            # nonetheless effect flag is 1
-            beat.effect.presence = True
 
         if flags & 0x10 != 0:
             mixTableChange = self.readMixTableChange(measure)
@@ -152,9 +149,6 @@ class GP3File(gp.GPFileBase):
             self.readNoteEffects(note)
             if note.effect.isHarmonic and isinstance(note.effect.harmonic, gp.TappedHarmonic):
                 note.effect.harmonic.fret = note.value + 12
-            # as with BeatEffects, some effects like 'slide into' are not supported in GP3,
-            # but effect flag is still 1
-            note.effect.presence = True
 
         return note
 
@@ -782,7 +776,7 @@ class GP3File(gp.GPFileBase):
         if beat.text is not None:
             flags |= 0x04
         if (not beat.effect.isDefault or voice.hasVibrato or
-                voice.hasHarmonic or beat.effect.presence):
+                voice.hasHarmonic):
             flags |= 0x08
         if beat.effect.mixTableChange is not None:
             flags |= 0x10
@@ -824,9 +818,7 @@ class GP3File(gp.GPFileBase):
             self.writeNote(note)
 
     def writeNote(self, note):
-        # In GP3 NoteEffect doesn't have vibrato attribute
         noteEffect = note.effect
-        noteEffect.vibrato = False
 
         flags = 0x00
         try:
@@ -838,7 +830,7 @@ class GP3File(gp.GPFileBase):
             flags |= 0x02
         if note.effect.ghostNote:
             flags |= 0x04
-        if not noteEffect.isDefault or note.effect.presence:
+        if not noteEffect.isDefault:
             flags |= 0x08
         if note.velocity != gp.Velocities.DEFAULT:
             flags |= 0x10

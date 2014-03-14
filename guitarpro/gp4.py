@@ -115,11 +115,12 @@ class GP4File(gp3.GP3File):
             self.readHarmonic(note)
         if flags2 & 0x20 != 0:
             self.readTrill(noteEffect)
-        noteEffect.letRing = (flags1 & 0x08) != 0
         noteEffect.hammer = (flags1 & 0x02) != 0
-        noteEffect.vibrato = (flags2 & 0x40) != 0 or noteEffect.vibrato
-        noteEffect.palmMute = (flags2 & 0x02) != 0
+        noteEffect.letRing = (flags1 & 0x08) != 0
         noteEffect.staccato = (flags2 & 0x01) != 0
+        noteEffect.palmMute = (flags2 & 0x02) != 0
+        noteEffect.vibrato = (flags2 & 0x40) != 0 or noteEffect.vibrato
+        print note, noteEffect.vibrato
 
     def fromTrillPeriod(self, period):
         if period == 1:
@@ -199,8 +200,8 @@ class GP4File(gp3.GP3File):
     def readBeatEffects(self, beat, effect):
         flags1 = self.readSignedByte()
         flags2 = self.readSignedByte()
-        beat.effect.fadeIn = (flags1 & 0x10) != 0
         beat.effect.vibrato = (flags1 & 0x02) != 0 or beat.effect.vibrato
+        beat.effect.fadeIn = (flags1 & 0x10) != 0
         if flags1 & 0x20 != 0:
             slapEffect = self.readSignedByte()
             beat.effect.tapping = slapEffect == 1
@@ -375,7 +376,7 @@ class GP4File(gp3.GP3File):
             flags |= 0x02
         if note.effect.ghostNote:
             flags |= 0x04
-        if not note.effect.isDefault or note.effect.presence:
+        if not note.effect.isDefault:
             flags |= 0x08
         if note.velocity != gp.Velocities.DEFAULT:
             flags |= 0x10
@@ -445,7 +446,7 @@ class GP4File(gp3.GP3File):
             flags2 |= 0x20
         if noteEffect.vibrato:
             flags2 |= 0x40
-
+        print note, noteEffect.vibrato
         self.writeSignedByte(flags2)
 
         if flags1 & 0x01 != 0:

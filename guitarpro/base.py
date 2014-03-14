@@ -980,7 +980,8 @@ class BeatEffect(GPObject):
                 'mixTableChange',
                 'tapping',
                 'slapping',
-                'popping']
+                'popping',
+                'vibrato']
 
     def __init__(self, *args, **kwargs):
         self.fadeIn = False
@@ -988,7 +989,6 @@ class BeatEffect(GPObject):
         self.hasRasgueado = False
         self.pickStroke = 0
         self.popping = False
-        self.presence = False
         self.slapping = False
         self.stroke = BeatStroke()
         self.tapping = False
@@ -1293,7 +1293,6 @@ class NoteEffect(GPObject):
         self.isFingering = False
         self.leftHandFinger = -1
         self.rightHandFinger = -1
-        self.presence = False
         self.note = None
         GPObject.__init__(self, *args, **kwargs)
 

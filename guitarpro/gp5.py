@@ -191,9 +191,6 @@ class GP5File(gp4.GP4File):
 
         if flags & 0x08 != 0:
             self.readNoteEffects(note)
-            # as with BeatEffects, some effects like 'slide into' are not supported in GP3,
-            # but effect flag is still 1
-            note.effect.presence = True
 
         return note
 
@@ -905,7 +902,7 @@ class GP5File(gp4.GP4File):
             flags |= 0x02
         if note.effect.ghostNote:
             flags |= 0x04
-        if not note.effect.isDefault or note.effect.presence:
+        if not note.effect.isDefault:
             flags |= 0x08
         if note.velocity != gp.Velocities.DEFAULT:
             flags |= 0x10
