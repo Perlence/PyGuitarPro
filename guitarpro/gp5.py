@@ -566,6 +566,7 @@ class GP5File(gp4.GP4File):
 
         self.writeInfo(song)
         self.writeLyrics(song.lyrics)
+        self.writeRSEMasterEffect(song.masterEffect)
         self.writePageSetup(song.pageSetup)
 
         self.writeIntSizeCheckByteString(song.tempoName)
@@ -580,6 +581,7 @@ class GP5File(gp4.GP4File):
         self.writeMidiChannels(song.tracks)
 
         self.writeDirections(song.measureHeaders)
+        self.writeMasterReverb(song.masterEffect)
 
         measureCount = len(song.tracks[0].measures)
         trackCount = len(song.tracks)
@@ -621,7 +623,10 @@ class GP5File(gp4.GP4File):
         for name in order:
             self.writeShort(signs.get(name, -1))
 
-        self.placeholder(4)
+    def writeMasterReverb(self, masterEffect):
+        if masterEffect is not None:
+            self.writeByte(masterEffect.reverb)
+            self.placeholder(3)
 
     def writeInfo(self, song):
         self.writeIntSizeCheckByteString(song.title)
@@ -638,9 +643,21 @@ class GP5File(gp4.GP4File):
         for line in song.notice:
             self.writeIntSizeCheckByteString(line)
 
+    def writeRSEMasterEffect(self, masterEffect):
+        if masterEffect is not None and not self.version.endswith('5.00'):
+            self.writeByte(masterEffect.volume)
+            self.placeholder(7)
+            self.writeEqualizer(masterEffect.equalizer)
+
+    def writeEqualizer(self, equalizer):
+        for knob in equalizer.knobs:
+            self.writeSignedByte(self.packVolumeValue(knob))
+        self.writeSignedByte(self.packVolumeValue(equalizer.gain))
+
+    def packVolumeValue(self, value):
+        return int(-round(value, 1) * 10)
+
     def writePageSetup(self, setup):
-        if not self.version.endswith('5.00'):
-            self.placeholder(19)
         self.writeInt(setup.pageSize.x)
         self.writeInt(setup.pageSize.y)
 
