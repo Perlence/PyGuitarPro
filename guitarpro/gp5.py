@@ -2,6 +2,7 @@ from __future__ import division
 
 from . import base as gp
 from . import gp4
+from .utils import hexify
 
 
 class GP5File(gp4.GP4File):
@@ -280,7 +281,7 @@ class GP5File(gp4.GP4File):
     def readMixTableChange(self, measure):
         tableChange = gp.MixTableChange()
         tableChange.instrument.value = self.readSignedByte()
-        self.skip(16)  # RSE info
+        data = self.data.read(16)  # RSE info
         tableChange.volume.value = self.readSignedByte()
         tableChange.balance.value = self.readSignedByte()
         tableChange.chorus.value = self.readSignedByte()
@@ -382,6 +383,7 @@ class GP5File(gp4.GP4File):
         track.isVisible = bool(flags1 & 0x08)
         track.isSolo = bool(flags1 & 0x10)
         track.isMute = bool(flags1 & 0x20)
+        track.useRSE = bool(flags1 & 0x40)
         track.indicateTuning = bool(flags1 & 0x80)
         track.number = number
         track.name = self.readByteSizeString(40)
@@ -419,17 +421,33 @@ class GP5File(gp4.GP4File):
         trackSettings.extendRhythmic = bool(flags3 & 0x08)
         track.settings = trackSettings
 
-        # Always 0
-        self.skip(1)
+        trackRSE = gp.TrackRSE()
+        trackRSE.autoAccentuation = gp.Accentuation(self.readByte())
 
         bank = self.readByte()
         track.channel.bank = bank
 
-        self.skip(45 if not self.version.endswith('5.00') else 40)
-        if not self.version.endswith('5.00'):
-            self.readIntSizeCheckByteString()
-            self.readIntSizeCheckByteString()
+        track.rse = self.readTrackRSE(trackRSE)
         return track
+
+    def readTrackRSE(self, trackRSE):
+        if self.version.endswith('5.00'):
+            self.skip(40)
+        else:
+            trackRSE.humanize = self.readByte()
+            print hexify(self.data.read(24))  # ???
+            trackRSE.instrument = self.readRSEInstrument()
+            trackRSE.equalizer = self.readEqualizer(4)
+            trackRSE.instrument.effect = self.readIntSizeCheckByteString()
+            trackRSE.instrument.effectCategory = self.readIntSizeCheckByteString()
+
+    def readRSEInstrument(self):
+        instrument = gp.RSEInstrument()
+        instrument.instrument = self.readInt()
+        print self.readInt()  # ??? mostly 1
+        instrument.soundBank = self.readInt()
+        print self.readInt()  # ??? mostly -1
+        return instrument
 
     def readMeasureHeaders(self, song, measureCount, directions):
         super(GP5File, self).readMeasureHeaders(song, measureCount)

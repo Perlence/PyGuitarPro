@@ -649,7 +649,9 @@ class Track(GPObject):
                 'port',
                 'channel',
                 'color',
-                'settings')
+                'settings',
+                'useRSE',
+                'rse')
 
     def __init__(self, *args, **kwargs):
         self.number = 0
@@ -668,6 +670,7 @@ class Track(GPObject):
         self.isPercussionTrack = False
         self.isBanjoTrack = False
         self.is12StringedGuitarTrack = False
+        self.useRSE = False
         GPObject.__init__(self, *args, **kwargs)
 
     def __str__(self):
@@ -1729,29 +1732,59 @@ class Velocities(object):
     VELOCITY_INCREMENT = 16
     PIANO_PIANISSIMO = MIN_VELOCITY
     PIANISSIMO = MIN_VELOCITY + VELOCITY_INCREMENT
-    PIANO = MIN_VELOCITY + (VELOCITY_INCREMENT * 2)
-    MEZZO_PIANO = MIN_VELOCITY + (VELOCITY_INCREMENT * 3)
-    MEZZO_FORTE = MIN_VELOCITY + (VELOCITY_INCREMENT * 4)
-    FORTE = MIN_VELOCITY + (VELOCITY_INCREMENT * 5)
-    FORTISSIMO = MIN_VELOCITY + (VELOCITY_INCREMENT * 6)
-    FORTE_FORTISSIMO = MIN_VELOCITY + (VELOCITY_INCREMENT * 7)
+    PIANO = MIN_VELOCITY + VELOCITY_INCREMENT * 2
+    MEZZO_PIANO = MIN_VELOCITY + VELOCITY_INCREMENT * 3
+    MEZZO_FORTE = MIN_VELOCITY + VELOCITY_INCREMENT * 4
+    FORTE = MIN_VELOCITY + VELOCITY_INCREMENT * 5
+    FORTISSIMO = MIN_VELOCITY + VELOCITY_INCREMENT * 6
+    FORTE_FORTISSIMO = MIN_VELOCITY + VELOCITY_INCREMENT * 7
     DEFAULT = FORTE
 
 
 class RSEMasterEffect(GPObject):
 
-    '''
+    '''Master effect as seen on "Score information".
     '''
 
     __attr__ = ('volume',
                 'reverb',
-                'equalizer')       
+                'equalizer')
 
 
 class RSEEqualizer(GPObject):
 
-    '''
+    '''Equalizer found in master effect and track effect.
+
+    Attribute :attr:`RSEEqualizer.knobs` is a list of values in range from -6.0 to 5.9.
+    Master effect has 10 knobs, track effect has 3 knobs.
+    Gain is a value in range from -6.0 to 5.9 which can be found in both master and track
+    effects and is named as "PRE" in Guitar Pro 5.
     '''
 
     __attr__ = ('knobs',
                 'gain')
+
+
+class Accentuation(Enum):
+    none = 0
+    verySoft = 1
+    soft = 2
+    medium = 3
+    strong = 4
+    veryStrong = 5
+
+
+class RSEInstrument(GPObject):
+    __attr__ = ('instrument',
+                'soundBank',
+                'effectCategory',
+                'effect')
+
+
+class TrackRSE(GPObject):
+    __attr__ = ('instrument',
+                'equalizer',
+                'humanize',
+                'autoAccentuation')
+
+    instrument = RSEInstrument()
