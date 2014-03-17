@@ -281,7 +281,7 @@ class GP5File(gp4.GP4File):
     def readMixTableChange(self, measure):
         tableChange = gp.MixTableChange()
         tableChange.instrument.value = self.readSignedByte()
-        data = self.data.read(16)  # RSE info
+        tableChange.rseInstrument = self.readRSEInstrument()
         tableChange.volume.value = self.readSignedByte()
         tableChange.balance.value = self.readSignedByte()
         tableChange.chorus.value = self.readSignedByte()
@@ -360,8 +360,8 @@ class GP5File(gp4.GP4File):
             tableChange.wah = None
 
         if not self.version.endswith('5.00'):
-            self.readIntSizeCheckByteString()
-            self.readIntSizeCheckByteString()
+            tableChange.rseInstrument.effect = self.readIntSizeCheckByteString()
+            tableChange.rseInstrument.effectCategory = self.readIntSizeCheckByteString()
 
         return tableChange
 
@@ -435,7 +435,8 @@ class GP5File(gp4.GP4File):
             self.skip(40)
         else:
             trackRSE.humanize = self.readByte()
-            print hexify(self.data.read(24))  # ???
+            self.readInt(3)  # ???
+            data = self.data.read(12)  # ???
             trackRSE.instrument = self.readRSEInstrument()
             trackRSE.equalizer = self.readEqualizer(4)
             trackRSE.instrument.effect = self.readIntSizeCheckByteString()
@@ -444,9 +445,9 @@ class GP5File(gp4.GP4File):
     def readRSEInstrument(self):
         instrument = gp.RSEInstrument()
         instrument.instrument = self.readInt()
-        print self.readInt()  # ??? mostly 1
+        self.readInt()  # ??? mostly 1
         instrument.soundBank = self.readInt()
-        print self.readInt()  # ??? mostly -1
+        self.readInt()  # ??? mostly -1
         return instrument
 
     def readMeasureHeaders(self, song, measureCount, directions):
