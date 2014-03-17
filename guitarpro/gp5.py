@@ -27,6 +27,7 @@ class GP5File(gp4.GP4File):
         self.readInfo(song)
 
         self.readLyrics(song)
+        self.readRSEMasterEffect(song)
         self.readPageSetup(song)
 
         song.tempoName = self.readIntSizeCheckByteString()
@@ -43,6 +44,7 @@ class GP5File(gp4.GP4File):
         channels = self.readMidiChannels()
 
         directions = self.readDirections()
+        self.readMasterReverb(song)
 
         measureCount = self.readInt()
         trackCount = self.readInt()
@@ -77,11 +79,13 @@ class GP5File(gp4.GP4File):
             gp.DirectionSign('Da Coda'): self.readShort(),
             gp.DirectionSign('Da Double Coda'): self.readShort()
         }
+        return signs, fromSigns
+
+    def readMasterReverb(self, song):
         # Opeth - Baying of the Hounds.gp5: ffffffff
         # Mastodon - Colony of Birchmen.gp5: 01000000
         # Mostly 00000000
         self.skip(4)  # ???
-        return signs, fromSigns
 
     def readMeasure(self, measure, track):
         for voice in range(gp.Beat.MAX_VOICES):
@@ -491,11 +495,25 @@ class GP5File(gp4.GP4File):
 
         return header
 
+    def readRSEMasterEffect(self, song):
+        if not self.version.endswith('5.00'):
+            masterEffect = gp.RSEMasterEffect()
+            masterEffect.volume = self.readByte()
+            data = self.data.read(7)  # ???
+            if data != '\x00' * 7:
+                import ipdb; ipdb.set_trace()
+            masterEffect.equalizer = self.readEqualizer(11)
+            song.masterEffect = masterEffect
+
+    def readEqualizer(self, knobsNumber):
+        knobs = map(self.unpackVolumeValue, self.readSignedByte(count=knobsNumber))
+        return gp.RSEEqualizer(knobs=knobs[:-1], gain=knobs[-1])
+
+    def unpackVolumeValue(self, value):
+        return -value / 10
+        
     def readPageSetup(self, song):
         setup = gp.PageSetup()
-        if not self.version.endswith('5.00'):
-            # Master RSE info
-            self.skip(19)
         setup.pageSize = gp.Point(self.readInt(), self.readInt())
 
         l = self.readInt()

@@ -25,6 +25,7 @@ tests = [
     'Wah-m.gp5',
     'Chords.gp5',
     'Slides.gp5',
+    'RSE.gp5',
 ]
 
 for test in tests:
