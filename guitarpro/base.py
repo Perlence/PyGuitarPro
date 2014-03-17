@@ -1596,7 +1596,7 @@ class MixTableChange(GPObject):
     '''A MixTableChange describes several track changes.
     '''
     __attr__ = ('instrument',
-                'rseInstrument',
+                'rse',
                 'volume',
                 'balance',
                 'chorus',

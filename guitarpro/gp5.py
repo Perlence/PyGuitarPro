@@ -281,7 +281,7 @@ class GP5File(gp4.GP4File):
     def readMixTableChange(self, measure):
         tableChange = gp.MixTableChange()
         tableChange.instrument.value = self.readSignedByte()
-        tableChange.rseInstrument = self.readRSEInstrument()
+        tableChange.rse = self.readRSEInstrument()
         tableChange.volume.value = self.readSignedByte()
         tableChange.balance.value = self.readSignedByte()
         tableChange.chorus.value = self.readSignedByte()
@@ -360,8 +360,8 @@ class GP5File(gp4.GP4File):
             tableChange.wah = None
 
         if not self.version.endswith('5.00'):
-            tableChange.rseInstrument.effect = self.readIntSizeCheckByteString()
-            tableChange.rseInstrument.effectCategory = self.readIntSizeCheckByteString()
+            tableChange.rse.effect = self.readIntSizeCheckByteString()
+            tableChange.rse.effectCategory = self.readIntSizeCheckByteString()
 
         return tableChange
 
@@ -866,8 +866,7 @@ class GP5File(gp4.GP4File):
             self.placeholder(12)
             self.writeRSEInstrument(trackRSE.instrument)
             self.writeEqualizer(trackRSE.equalizer)
-            self.writeIntSizeCheckByteString(trackRSE.instrument.effect)
-            self.writeIntSizeCheckByteString(trackRSE.instrument.effectCategory)
+        self.writeRSEInstrumentEffect(trackRSE.instrument)
 
     def writeRSEInstrument(self, instrument):
         if instrument is None:
@@ -1115,19 +1114,19 @@ class GP5File(gp4.GP4File):
         self.writeByte(flags)
 
     def writeMixTableChange(self, tableChange):
-        items = [('instrument', tableChange.instrument, self.writeSignedByte),
-                 ('rse', (16, '\xff'), self.placeholder),  # RSE info
-                 ('volume', tableChange.volume, self.writeSignedByte),
-                 ('balance', tableChange.balance, self.writeSignedByte),
-                 ('chorus', tableChange.chorus, self.writeSignedByte),
-                 ('reverb', tableChange.reverb, self.writeSignedByte),
-                 ('phaser', tableChange.phaser, self.writeSignedByte),
-                 ('tremolo', tableChange.tremolo, self.writeSignedByte),
-                 ('tempoName', tableChange.tempoName,
-                  self.writeIntSizeCheckByteString),
-                 ('tempo', tableChange.tempo, self.writeInt)]
+        items = [('instrument', self.writeSignedByte),
+                 ('rse', self.writeRSEInstrument),
+                 ('volume', self.writeSignedByte),
+                 ('balance', self.writeSignedByte),
+                 ('chorus', self.writeSignedByte),
+                 ('reverb', self.writeSignedByte),
+                 ('phaser', self.writeSignedByte),
+                 ('tremolo', self.writeSignedByte),
+                 ('tempoName', self.writeIntSizeCheckByteString),
+                 ('tempo', self.writeInt)]
 
-        for _, item, write in items:
+        for name, write in items:
+            item = getattr(tableChange, name)
             if item is None:
                 write(-1)
             elif isinstance(item, tuple):
@@ -1138,7 +1137,8 @@ class GP5File(gp4.GP4File):
                 write(item)
 
         # instrument change doesn't have duration
-        for name, item, _ in items[2:]:
+        for name, __ in items[2:]:
+            item = getattr(tableChange, name)
             if isinstance(item, gp.MixTableItem):
                 self.writeSignedByte(item.duration)
                 if name == 'tempo':
@@ -1163,9 +1163,14 @@ class GP5File(gp4.GP4File):
         else:
             self.writeSignedByte(-1)
 
+        self.writeRSEInstrumentEffect(tableChange.rse)
+    
+    def writeRSEInstrumentEffect(self, rseInstrument):
         if not self.version.endswith('5.00'):
-            self.writeIntSizeCheckByteString('')
-            self.writeIntSizeCheckByteString('')
+            if rseInstrument is None:
+                rseInstrument = gp.RSEInstrument()
+            self.writeIntSizeCheckByteString(rseInstrument.effect)
+            self.writeIntSizeCheckByteString(rseInstrument.effectCategory)
 
     def writeMidiChannels(self, tracks):
         def getTrackChannelByChannel(channel):
