@@ -825,7 +825,7 @@ class Measure(GPObject):
 
     @property
     def isEmpty(self):
-        return (len(self.beats) == 0 or all(beat.isRestBeat()
+        return (len(self.beats) == 0 or all(beat.isRestBeat
                                             for beat in self.beats))
 
     @property
