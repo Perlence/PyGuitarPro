@@ -25,9 +25,8 @@ class GP3File(gp.GPFileBase):
         :returns: The song read from the given stream using the specified factory
         '''
         if not self.readVersion():
-            raise gp.GuitarProException(
-                "unsupported version '%s'" %
-                self.version)
+            raise gp.GuitarProException("unsupported version '%s'" %
+                                        self.version)
 
         song = gp.Song()
 
@@ -330,14 +329,14 @@ class GP3File(gp.GPFileBase):
                     chord.strings[i] = fret
             chord.barres = []
             barresCount = self.readInt()
-            barreFrets = [self.readInt() for __ in range(2)]
-            barreStarts = [self.readInt() for __ in range(2)]
-            barreEnds = [self.readInt() for __ in range(2)]
+            barreFrets = self.readInt(2)
+            barreStarts = self.readInt(2)
+            barreEnds = self.readInt(2)
             for fret, start, end, __ in zip(barreFrets, barreStarts, barreEnds,
                                             range(barresCount)):
                 barre = gp.Barre(fret, start, end)
                 chord.barres.append(barre)
-            chord.omissions = [self.readByte() for __ in range(7)]
+            chord.omissions = self.readByte(7)
             self.skip(1)
         if len(chord.notes) > 0:
             beat.setChord(chord)

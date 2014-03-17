@@ -19,9 +19,8 @@ class GP5File(gp4.GP4File):
 
     def readSong(self):
         if not self.readVersion():
-            raise gp.GuitarProException(
-                "unsupported version '%s'" %
-                self.version)
+            raise gp.GuitarProException("unsupported version '%s'" %
+                                        self.version)
 
         song = gp.Song()
         self.readInfo(song)
@@ -85,7 +84,8 @@ class GP5File(gp4.GP4File):
         # Opeth - Baying of the Hounds.gp5: ffffffff
         # Mastodon - Colony of Birchmen.gp5: 01000000
         # Mostly 00000000
-        self.skip(4)  # ???
+        song.masterEffect.reverb = self.readByte()
+        self.skip(3)  # ???
 
     def readMeasure(self, measure, track):
         for voice in range(gp.Beat.MAX_VOICES):
