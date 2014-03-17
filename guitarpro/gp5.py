@@ -430,9 +430,14 @@ class GP5File(gp4.GP4File):
         track.rse = self.readTrackRSE(trackRSE)
         return track
 
-    def readTrackRSE(self, trackRSE):
+    def readTrackRSE(self, trackRSE=None):
+        if trackRSE is None:
+            trackRSE = gp.TrackRSE()
         if self.version.endswith('5.00'):
-            self.skip(40)
+            trackRSE.humanize = self.readByte()
+            self.readInt(3)  # ???
+            data = self.data.read(12)  # ???
+            self.skip(15)
         else:
             trackRSE.humanize = self.readByte()
             self.readInt(3)  # ???
@@ -441,6 +446,7 @@ class GP5File(gp4.GP4File):
             trackRSE.equalizer = self.readEqualizer(4)
             trackRSE.instrument.effect = self.readIntSizeCheckByteString()
             trackRSE.instrument.effectCategory = self.readIntSizeCheckByteString()
+            return trackRSE
 
     def readRSEInstrument(self):
         instrument = gp.RSEInstrument()
@@ -784,6 +790,8 @@ class GP5File(gp4.GP4File):
             flags1 |= 0x10
         if track.isMute:
             flags1 |= 0x20
+        if track.useRSE:
+            flags1 |= 0x40
         if track.indicateTuning:
             flags1 |= 0x80
 
@@ -832,26 +840,42 @@ class GP5File(gp4.GP4File):
             flags3 |= 0x08
 
         self.writeByte(flags3)
-        self.placeholder(1)
+        if track.rse is not None and track.rse.autoAccentuation is not None:
+            self.writeByte(track.rse.autoAccentuation.value)
+        else:
+            self.writeByte(0)
         self.writeByte(track.channel.bank)
 
-        if self.version.endswith('5.00'):
-            self.data.write('\x00\x00\x00\x00\x00\x00\x00\x00'
-                            '\x00\x64\x00\x00\x00\x01\x02\x03'
-                            '\x04\x05\x06\x07\x08\x09\x0a\xff'
-                            '\x03\xff\xff\xff\xff\xff\xff\xff'
-                            '\xff\xff\xff\xff\xff\xff\xff\xff')
-        else:
-            self.data.write('\x00\x00\x00\x00\x00\x00\x00\x00'
-                            '\x00\x64\x00\x00\x00\x01\x02\x03'
-                            '\x04\x05\x06\x07\x08\x09\x0a\xff'
-                            '\x03\xff\xff\xff\xff\xff\xff\xff'
-                            '\xff\xff\xff\xff\xff\xff\xff\xff'
-                            '\xff\xff\xff\xff\xff')
+        self.writeTrackRSE(track.rse)
 
-        if not self.version.endswith('5.00'):
-            self.writeIntSizeCheckByteString('')
-            self.writeIntSizeCheckByteString('')
+    def writeTrackRSE(self, trackRSE):
+        if trackRSE is None:
+            trackRSE = gp.TrackRSE()
+        if self.version.endswith('5.00'):
+            self.writeByte(trackRSE.humanize)
+            self.writeInt(0)
+            self.writeInt(0)
+            self.writeInt(100)
+            self.placeholder(12)
+            self.placeholder(15, '\xff')
+        else:
+            self.writeByte(trackRSE.humanize)
+            self.writeInt(0)
+            self.writeInt(0)
+            self.writeInt(100)
+            self.placeholder(12)
+            self.writeRSEInstrument(trackRSE.instrument)
+            self.writeEqualizer(trackRSE.equalizer)
+            self.writeIntSizeCheckByteString(trackRSE.instrument.effect)
+            self.writeIntSizeCheckByteString(trackRSE.instrument.effectCategory)
+
+    def writeRSEInstrument(self, instrument):
+        if instrument is None:
+            instrument = gp.RSEInstrument()
+        self.writeInt(instrument.instrument)
+        self.writeInt(1)
+        self.writeInt(instrument.soundBank)
+        self.writeInt(-1)
 
     def writeMeasure(self, measure):
         sortedBeats = sorted(measure.beats, key=lambda y: y.start)

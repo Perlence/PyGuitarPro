@@ -1781,6 +1781,11 @@ class RSEInstrument(GPObject):
                 'effectCategory',
                 'effect')
 
+    instrument = -1
+    soundBank = -1
+    effectCategory = ''
+    effect = ''
+
 
 class TrackRSE(GPObject):
     __attr__ = ('instrument',
@@ -1789,3 +1794,6 @@ class TrackRSE(GPObject):
                 'autoAccentuation')
 
     instrument = RSEInstrument()
+    equalizer = RSEEqualizer(knobs=[0, 0, 0], gain=0)
+    humanize = 0
+    autoAccentuation = Accentuation.none
