@@ -242,7 +242,7 @@ class GP4File(gp3.GP3File):
         if self.readSignedByte() & 0x01 == 0:
             chord.name = self.readIntSizeCheckByteString()
             chord.firstFret = self.readInt()
-            if chord.firstFret:
+            if chord.firstFret != 0:
                 for i in range(6):
                     fret = self.readInt()
                     if i < len(chord.strings):
@@ -445,6 +445,8 @@ class GP4File(gp3.GP3File):
             flags2 |= 0x20
         if noteEffect.vibrato:
             flags2 |= 0x40
+
+        self.writeSignedByte(flags2)
 
         if flags1 & 0x01:
             self.writeBend(noteEffect.bend)
