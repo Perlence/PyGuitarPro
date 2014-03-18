@@ -1124,12 +1124,12 @@ class GP5File(gp4.GP4File):
 
         for name, write in items:
             item = getattr(tableChange, name)
-            if item is None:
-                write(-1)
-            elif isinstance(item, tuple):
-                write(*item)
+            if name == 'rse':
+                write(item)
             elif isinstance(item, gp.MixTableItem):
                 write(item.value)
+            elif item is None:
+                write(-1)
             else:
                 write(item)
 
