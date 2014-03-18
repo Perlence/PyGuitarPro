@@ -1136,19 +1136,17 @@ class GP5File(gp4.GP4File):
             else:
                 write(item)
 
+        allTracksFlags = 0x00
         # instrument change doesn't have duration
-        for name, __ in items[2:]:
+        for i, (name, __) in enumerate(items[2:]):
             item = getattr(tableChange, name)
             if isinstance(item, gp.MixTableItem):
                 self.writeSignedByte(item.duration)
                 if name == 'tempo':
                     if not self.version.endswith('5.00'):
                         self.writeBool(tableChange.hideTempo)
-
-        allTracksFlags = 0x00
-        for i, item in enumerate(items):
-            if isinstance(item, gp.MixTableItem) and item.allTracks:
-                allTracksFlags |= 1 << i
+                if item.allTracks:
+                    allTracksFlags |= 1 << i
 
         if tableChange.wah is not None and tableChange.wah.display:
             allTracksFlags |= 0x80
