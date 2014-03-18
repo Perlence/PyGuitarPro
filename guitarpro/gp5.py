@@ -2,6 +2,7 @@ from __future__ import division
 
 from . import base as gp
 from . import gp4
+from .utils import hexify
 
 
 class GP5File(gp4.GP4File):
@@ -19,14 +20,14 @@ class GP5File(gp4.GP4File):
 
     def readSong(self):
         if not self.readVersion():
-            raise gp.GuitarProException(
-                "unsupported version '%s'" %
-                self.version)
+            raise gp.GuitarProException("unsupported version '%s'" %
+                                        self.version)
 
         song = gp.Song()
         self.readInfo(song)
 
         self.readLyrics(song)
+        self.readRSEMasterEffect(song)
         self.readPageSetup(song)
 
         song.tempoName = self.readIntSizeCheckByteString()
@@ -43,6 +44,7 @@ class GP5File(gp4.GP4File):
         channels = self.readMidiChannels()
 
         directions = self.readDirections()
+        self.readMasterReverb(song)
 
         measureCount = self.readInt()
         trackCount = self.readInt()
@@ -77,11 +79,14 @@ class GP5File(gp4.GP4File):
             gp.DirectionSign('Da Coda'): self.readShort(),
             gp.DirectionSign('Da Double Coda'): self.readShort()
         }
+        return signs, fromSigns
+
+    def readMasterReverb(self, song):
         # Opeth - Baying of the Hounds.gp5: ffffffff
         # Mastodon - Colony of Birchmen.gp5: 01000000
         # Mostly 00000000
-        self.skip(4)  # ???
-        return signs, fromSigns
+        song.masterEffect.reverb = self.readByte()
+        self.skip(3)  # ???
 
     def readMeasure(self, measure, track):
         for voice in range(gp.Beat.MAX_VOICES):
@@ -276,7 +281,7 @@ class GP5File(gp4.GP4File):
     def readMixTableChange(self, measure):
         tableChange = gp.MixTableChange()
         tableChange.instrument.value = self.readSignedByte()
-        self.skip(16)  # RSE info
+        tableChange.rse = self.readRSEInstrument()
         tableChange.volume.value = self.readSignedByte()
         tableChange.balance.value = self.readSignedByte()
         tableChange.chorus.value = self.readSignedByte()
@@ -321,23 +326,23 @@ class GP5File(gp4.GP4File):
         else:
             tableChange.tempo = None
 
-        allTracksFlags = self.readByte()
+        flags = self.readByte()
         if tableChange.volume is not None:
-            tableChange.volume.allTracks = bool(allTracksFlags & 0x01)
+            tableChange.volume.allTracks = bool(flags & 0x01)
         if tableChange.balance is not None:
-            tableChange.balance.allTracks = bool(allTracksFlags & 0x02)
+            tableChange.balance.allTracks = bool(flags & 0x02)
         if tableChange.chorus is not None:
-            tableChange.chorus.allTracks = bool(allTracksFlags & 0x04)
+            tableChange.chorus.allTracks = bool(flags & 0x04)
         if tableChange.reverb is not None:
-            tableChange.reverb.allTracks = bool(allTracksFlags & 0x08)
+            tableChange.reverb.allTracks = bool(flags & 0x08)
         if tableChange.phaser is not None:
-            tableChange.phaser.allTracks = bool(allTracksFlags & 0x10)
+            tableChange.phaser.allTracks = bool(flags & 0x10)
         if tableChange.tremolo is not None:
-            tableChange.tremolo.allTracks = bool(allTracksFlags & 0x20)
+            tableChange.tremolo.allTracks = bool(flags & 0x20)
         if tableChange.tempo is not None:
             tableChange.tempo.allTracks = True
-        if allTracksFlags & 0x80:
-            tableChange.wah.display = True
+        tableChange.useRSE = bool(flags & 0x40)
+        tableChange.wah.display = bool(flags & 0x80)
 
         # Wah-Wah flag
         #  0: Open
@@ -355,8 +360,8 @@ class GP5File(gp4.GP4File):
             tableChange.wah = None
 
         if not self.version.endswith('5.00'):
-            self.readIntSizeCheckByteString()
-            self.readIntSizeCheckByteString()
+            tableChange.rse.effect = self.readIntSizeCheckByteString()
+            tableChange.rse.effectCategory = self.readIntSizeCheckByteString()
 
         return tableChange
 
@@ -378,6 +383,7 @@ class GP5File(gp4.GP4File):
         track.isVisible = bool(flags1 & 0x08)
         track.isSolo = bool(flags1 & 0x10)
         track.isMute = bool(flags1 & 0x20)
+        track.useRSE = bool(flags1 & 0x40)
         track.indicateTuning = bool(flags1 & 0x80)
         track.number = number
         track.name = self.readByteSizeString(40)
@@ -415,17 +421,40 @@ class GP5File(gp4.GP4File):
         trackSettings.extendRhythmic = bool(flags3 & 0x08)
         track.settings = trackSettings
 
-        # Always 0
-        self.skip(1)
+        trackRSE = gp.TrackRSE()
+        trackRSE.autoAccentuation = gp.Accentuation(self.readByte())
 
         bank = self.readByte()
         track.channel.bank = bank
 
-        self.skip(45 if not self.version.endswith('5.00') else 40)
-        if not self.version.endswith('5.00'):
-            self.readIntSizeCheckByteString()
-            self.readIntSizeCheckByteString()
+        track.rse = self.readTrackRSE(trackRSE)
         return track
+
+    def readTrackRSE(self, trackRSE=None):
+        if trackRSE is None:
+            trackRSE = gp.TrackRSE()
+        if self.version.endswith('5.00'):
+            trackRSE.humanize = self.readByte()
+            self.readInt(3)  # ???
+            data = self.data.read(12)  # ???
+            self.skip(15)
+        else:
+            trackRSE.humanize = self.readByte()
+            self.readInt(3)  # ???
+            data = self.data.read(12)  # ???
+            trackRSE.instrument = self.readRSEInstrument()
+            trackRSE.equalizer = self.readEqualizer(4)
+            trackRSE.instrument.effect = self.readIntSizeCheckByteString()
+            trackRSE.instrument.effectCategory = self.readIntSizeCheckByteString()
+            return trackRSE
+
+    def readRSEInstrument(self):
+        instrument = gp.RSEInstrument()
+        instrument.instrument = self.readInt()
+        self.readInt()  # ??? mostly 1
+        instrument.soundBank = self.readInt()
+        self.readInt()  # ??? mostly -1
+        return instrument
 
     def readMeasureHeaders(self, song, measureCount, directions):
         super(GP5File, self).readMeasureHeaders(song, measureCount)
@@ -491,11 +520,25 @@ class GP5File(gp4.GP4File):
 
         return header
 
+    def readRSEMasterEffect(self, song):
+        if not self.version.endswith('5.00'):
+            masterEffect = gp.RSEMasterEffect()
+            masterEffect.volume = self.readByte()
+            data = self.data.read(7)  # ???
+            if data != '\x00' * 7:
+                import ipdb; ipdb.set_trace()
+            masterEffect.equalizer = self.readEqualizer(11)
+            song.masterEffect = masterEffect
+
+    def readEqualizer(self, knobsNumber):
+        knobs = map(self.unpackVolumeValue, self.readSignedByte(count=knobsNumber))
+        return gp.RSEEqualizer(knobs=knobs[:-1], gain=knobs[-1])
+
+    def unpackVolumeValue(self, value):
+        return -value / 10
+        
     def readPageSetup(self, song):
         setup = gp.PageSetup()
-        if not self.version.endswith('5.00'):
-            # Master RSE info
-            self.skip(19)
         setup.pageSize = gp.Point(self.readInt(), self.readInt())
 
         l = self.readInt()
@@ -548,6 +591,7 @@ class GP5File(gp4.GP4File):
 
         self.writeInfo(song)
         self.writeLyrics(song.lyrics)
+        self.writeRSEMasterEffect(song.masterEffect)
         self.writePageSetup(song.pageSetup)
 
         self.writeIntSizeCheckByteString(song.tempoName)
@@ -562,6 +606,7 @@ class GP5File(gp4.GP4File):
         self.writeMidiChannels(song.tracks)
 
         self.writeDirections(song.measureHeaders)
+        self.writeMasterReverb(song.masterEffect)
 
         measureCount = len(song.tracks[0].measures)
         trackCount = len(song.tracks)
@@ -603,7 +648,12 @@ class GP5File(gp4.GP4File):
         for name in order:
             self.writeShort(signs.get(name, -1))
 
-        self.placeholder(4)
+    def writeMasterReverb(self, masterEffect):
+        if masterEffect is not None:
+            self.writeByte(masterEffect.reverb)
+        else:
+            self.writeByte(0)
+        self.placeholder(3)
 
     def writeInfo(self, song):
         self.writeIntSizeCheckByteString(song.title)
@@ -620,9 +670,26 @@ class GP5File(gp4.GP4File):
         for line in song.notice:
             self.writeIntSizeCheckByteString(line)
 
-    def writePageSetup(self, setup):
+    def writeRSEMasterEffect(self, masterEffect):
         if not self.version.endswith('5.00'):
-            self.placeholder(19)
+            if masterEffect is None:
+                masterEffect = gp.RSEMasterEffect()
+                masterEffect.volume = 100
+                masterEffect.reverb = 0
+                masterEffect.equalizer = gp.RSEEqualizer(knobs=[0] * 10, gain=0)
+            self.writeByte(masterEffect.volume)
+            self.placeholder(7)
+            self.writeEqualizer(masterEffect.equalizer)
+
+    def writeEqualizer(self, equalizer):
+        for knob in equalizer.knobs:
+            self.writeSignedByte(self.packVolumeValue(knob))
+        self.writeSignedByte(self.packVolumeValue(equalizer.gain))
+
+    def packVolumeValue(self, value):
+        return int(-round(value, 1) * 10)
+
+    def writePageSetup(self, setup):
         self.writeInt(setup.pageSize.x)
         self.writeInt(setup.pageSize.y)
 
@@ -730,6 +797,8 @@ class GP5File(gp4.GP4File):
             flags1 |= 0x10
         if track.isMute:
             flags1 |= 0x20
+        if track.useRSE:
+            flags1 |= 0x40
         if track.indicateTuning:
             flags1 |= 0x80
 
@@ -778,36 +847,48 @@ class GP5File(gp4.GP4File):
             flags3 |= 0x08
 
         self.writeByte(flags3)
-        self.placeholder(1)
+        if track.rse is not None and track.rse.autoAccentuation is not None:
+            self.writeByte(track.rse.autoAccentuation.value)
+        else:
+            self.writeByte(0)
         self.writeByte(track.channel.bank)
 
-        if self.version.endswith('5.00'):
-            self.data.write('\x00\x00\x00\x00\x00\x00\x00\x00'
-                            '\x00\x64\x00\x00\x00\x01\x02\x03'
-                            '\x04\x05\x06\x07\x08\x09\x0a\xff'
-                            '\x03\xff\xff\xff\xff\xff\xff\xff'
-                            '\xff\xff\xff\xff\xff\xff\xff\xff')
-        else:
-            self.data.write('\x00\x00\x00\x00\x00\x00\x00\x00'
-                            '\x00\x64\x00\x00\x00\x01\x02\x03'
-                            '\x04\x05\x06\x07\x08\x09\x0a\xff'
-                            '\x03\xff\xff\xff\xff\xff\xff\xff'
-                            '\xff\xff\xff\xff\xff\xff\xff\xff'
-                            '\xff\xff\xff\xff\xff')
+        self.writeTrackRSE(track.rse)
 
-        if not self.version.endswith('5.00'):
-            self.writeIntSizeCheckByteString('')
-            self.writeIntSizeCheckByteString('')
+    def writeTrackRSE(self, trackRSE):
+        if trackRSE is None:
+            trackRSE = gp.TrackRSE()
+        if self.version.endswith('5.00'):
+            self.writeByte(trackRSE.humanize)
+            self.writeInt(0)
+            self.writeInt(0)
+            self.writeInt(100)
+            self.placeholder(12)
+            self.placeholder(15, '\xff')
+        else:
+            self.writeByte(trackRSE.humanize)
+            self.writeInt(0)
+            self.writeInt(0)
+            self.writeInt(100)
+            self.placeholder(12)
+            self.writeRSEInstrument(trackRSE.instrument)
+            self.writeEqualizer(trackRSE.equalizer)
+        self.writeRSEInstrumentEffect(trackRSE.instrument)
+
+    def writeRSEInstrument(self, instrument):
+        if instrument is None:
+            instrument = gp.RSEInstrument()
+        self.writeInt(instrument.instrument)
+        self.writeInt(1)
+        self.writeInt(instrument.soundBank)
+        self.writeInt(-1)
 
     def writeMeasure(self, measure):
-        sortedBeats = sorted(measure.beats, key=lambda y: y.start)
-        for voice in range(gp.Beat.MAX_VOICES):
-            beatsOfVoice = filter(lambda x: not x.voices[voice].isEmpty,
-                                  sortedBeats)
-            beatCount = len(beatsOfVoice)
-            self.writeInt(beatCount)
-            for beat in beatsOfVoice:
-                self.writeBeat(beat, voice)
+        for index in range(gp.Beat.MAX_VOICES):
+            beats = measure.voice(index)
+            self.writeInt(len(beats))
+            for beat in beats:
+                self.writeBeat(beat, index)
         self.writeByte(measure.lineBreak.value)
 
     def writeBeat(self, beat, voiceIndex=0):
@@ -1037,45 +1118,46 @@ class GP5File(gp4.GP4File):
         self.writeByte(flags)
 
     def writeMixTableChange(self, tableChange):
-        items = [('instrument', tableChange.instrument, self.writeSignedByte),
-                 ('rse', (16, '\xff'), self.placeholder),  # RSE info
-                 ('volume', tableChange.volume, self.writeSignedByte),
-                 ('balance', tableChange.balance, self.writeSignedByte),
-                 ('chorus', tableChange.chorus, self.writeSignedByte),
-                 ('reverb', tableChange.reverb, self.writeSignedByte),
-                 ('phaser', tableChange.phaser, self.writeSignedByte),
-                 ('tremolo', tableChange.tremolo, self.writeSignedByte),
-                 ('tempoName', tableChange.tempoName,
-                  self.writeIntSizeCheckByteString),
-                 ('tempo', tableChange.tempo, self.writeInt)]
+        items = [('instrument', self.writeSignedByte),
+                 ('rse', self.writeRSEInstrument),
+                 ('volume', self.writeSignedByte),
+                 ('balance', self.writeSignedByte),
+                 ('chorus', self.writeSignedByte),
+                 ('reverb', self.writeSignedByte),
+                 ('phaser', self.writeSignedByte),
+                 ('tremolo', self.writeSignedByte),
+                 ('tempoName', self.writeIntSizeCheckByteString),
+                 ('tempo', self.writeInt)]
 
-        for _, item, write in items:
-            if item is None:
-                write(-1)
-            elif isinstance(item, tuple):
-                write(*item)
+        for name, write in items:
+            item = getattr(tableChange, name)
+            if name == 'rse':
+                write(item)
             elif isinstance(item, gp.MixTableItem):
                 write(item.value)
+            elif item is None:
+                write(-1)
             else:
                 write(item)
 
+        flags = 0x00
         # instrument change doesn't have duration
-        for name, item, _ in items[2:]:
+        for i, (name, __) in enumerate(items[2:]):
+            item = getattr(tableChange, name)
             if isinstance(item, gp.MixTableItem):
                 self.writeSignedByte(item.duration)
                 if name == 'tempo':
                     if not self.version.endswith('5.00'):
                         self.writeBool(tableChange.hideTempo)
+                if item.allTracks:
+                    flags |= 1 << i
 
-        allTracksFlags = 0x00
-        for i, item in enumerate(items):
-            if isinstance(item, gp.MixTableItem) and item.allTracks:
-                allTracksFlags |= 1 << i
-
+        if tableChange.useRSE:
+            flags |= 0x40
         if tableChange.wah is not None and tableChange.wah.display:
-            allTracksFlags |= 0x80
+            flags |= 0x80
 
-        self.writeByte(allTracksFlags)
+        self.writeByte(flags)
 
         if tableChange.wah is not None:
             if tableChange.wah.enabled:
@@ -1085,9 +1167,14 @@ class GP5File(gp4.GP4File):
         else:
             self.writeSignedByte(-1)
 
+        self.writeRSEInstrumentEffect(tableChange.rse)
+    
+    def writeRSEInstrumentEffect(self, rseInstrument):
         if not self.version.endswith('5.00'):
-            self.writeIntSizeCheckByteString('')
-            self.writeIntSizeCheckByteString('')
+            if rseInstrument is None:
+                rseInstrument = gp.RSEInstrument()
+            self.writeIntSizeCheckByteString(rseInstrument.effect)
+            self.writeIntSizeCheckByteString(rseInstrument.effectCategory)
 
     def writeMidiChannels(self, tracks):
         def getTrackChannelByChannel(channel):

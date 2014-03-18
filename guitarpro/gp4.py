@@ -21,9 +21,8 @@ class GP4File(gp3.GP3File):
 
     def readSong(self):
         if not self.readVersion():
-            raise gp.GuitarProException(
-                "unsupported version '%s'" %
-                self.version)
+            raise gp.GuitarProException("unsupported version '%s'" %
+                                        self.version)
 
         song = gp.Song()
 
@@ -268,17 +267,16 @@ class GP4File(gp3.GP3File):
                     chord.strings[i] = fret
             chord.barres = []
             barresCount = self.readByte()
-            barreFrets = [self.readByte() for __ in range(5)]
-            barreStarts = [self.readByte() for __ in range(5)]
-            barreEnds = [self.readByte() for __ in range(5)]
+            barreFrets = self.readByte(5)
+            barreStarts = self.readByte(5)
+            barreEnds = self.readByte(5)
             for fret, start, end, __ in zip(barreFrets, barreStarts, barreEnds,
                                             range(barresCount)):
                 barre = gp.Barre(fret, start, end)
                 chord.barres.append(barre)
-            chord.omissions = [self.readByte() for __ in range(7)]
+            chord.omissions = self.readByte(7)
             self.skip(1)
-            chord.fingerings = [gp.Fingering(self.readSignedByte())
-                                for __ in range(7)]
+            chord.fingerings = map(gp.Fingering, self.readSignedByte(7))
             chord.show = self.readBool()
         if len(chord.notes) > 0:
             beat.setChord(chord)

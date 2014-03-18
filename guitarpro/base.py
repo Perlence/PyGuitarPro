@@ -45,26 +45,33 @@ class GPFileBase(object):
             else:
                 raise e
 
-    def readByte(self, default=None):
-        return self.read('B', 1, default)
+    def readByte(self, count=1, default=None):
+        read = lambda: self.read('B', 1, default=default)
+        return read() if count == 1 else [read() for i in range(count)]
 
-    def readSignedByte(self, default=None):
-        return self.read('b', 1, default)
+    def readSignedByte(self, count=1, default=None):
+        read = lambda: self.read('b', 1, default=default)
+        return read() if count == 1 else [read() for i in range(count)]
 
-    def readBool(self, default=None):
-        return self.read('?', 1, default)
+    def readBool(self, count=1, default=None):
+        read = lambda: self.read('?', 1, default=default)
+        return read() if count == 1 else [read() for i in range(count)]
 
-    def readShort(self, default=None):
-        return self.read('<h', 2, default)
+    def readShort(self, count=1, default=None):
+        read = lambda: self.read('<h', 2, default=default)
+        return read() if count == 1 else [read() for i in range(count)]
 
-    def readInt(self, default=None):
-        return self.read('<i', 4, default)
+    def readInt(self, count=1, default=None):
+        read = lambda: self.read('<i', 4, default=default)
+        return read() if count == 1 else [read() for i in range(count)]
 
-    def readFloat(self, default=None):
-        return self.read('<f', 4, default)
+    def readFloat(self, count=1, default=None):
+        read = lambda: self.read('<f', 4, default=default)
+        return read() if count == 1 else [read() for i in range(count)]
 
-    def readDouble(self, default=None):
-        return self.read('<d', 8, default)
+    def readDouble(self, count=1, default=None):
+        read = lambda: self.read('<d', 8, default=default)
+        return read() if count == 1 else [read() for i in range(count)]
 
     def readString(self, size, length=None):
         if length == None:
@@ -182,7 +189,7 @@ class GPFileBase(object):
 
 
 class GPObject(object):
-    __attr__ = []
+    __attr__ = ()
 
     class __metaclass__(type):
 
@@ -263,7 +270,7 @@ class Song(GPObject):
 
     It contains basic information about the stored song.
     '''
-    __attr__ = ['title',
+    __attr__ = ('title',
                 'subtitle',
                 'artist',
                 'album',
@@ -279,7 +286,8 @@ class Song(GPObject):
                 'tempo',
                 'hideTempo',
                 'key',
-                'tracks']
+                'tracks',
+                'masterEffect')
 
     def __init__(self, *args, **kwargs):
         self.measureHeaders = []
@@ -321,8 +329,8 @@ class LyricLine(GPObject):
 
     '''A lyrics line.
     '''
-    __attr__ = ['startingMeasure',
-                'lyrics']
+    __attr__ = ('startingMeasure',
+                'lyrics')
 
     def __init__(self, *args, **kwargs):
         self.startingMeasure = -1
@@ -334,8 +342,8 @@ class Lyrics(GPObject):
 
     '''Represents a collection of lyrics lines for a track.
     '''
-    __attr__ = ['trackChoice',
-                'lines']
+    __attr__ = ('trackChoice',
+                'lines')
 
     MAX_LINE_COUNT = 5
 
@@ -359,7 +367,7 @@ class Point(GPObject):
 
     '''A point construct using floating point coordinates.
     '''
-    __attr__ = ['x', 'y']
+    __attr__ = ('x', 'y')
 
     def __repr__(self):
         return 'Point({x}, {y})'.format(**vars(self))
@@ -369,10 +377,10 @@ class Padding(GPObject):
 
     '''A padding construct.
     '''
-    __attr__ = ['right',
+    __attr__ = ('right',
                 'top',
                 'left',
-                'bottom']
+                'bottom')
 
     def __init__(self, *args, **kwargs):
         GPObject.__init__(self, *args, **kwargs)
@@ -417,7 +425,7 @@ class PageSetup(GPObject):
        %N% - Will get replaced with the current page number (if supported by layout)
        %P% - Will get replaced with the number of pages (if supported by layout)
     '''
-    __attr__ = ['pageSize',
+    __attr__ = ('pageSize',
                 'pageMargin',
                 'scoreSizeProportion',
                 'headerAndFooter',
@@ -429,7 +437,7 @@ class PageSetup(GPObject):
                 'music',
                 'wordsAndMusic',
                 'copyright',
-                'pageNumber']
+                'pageNumber')
 
     def __init__(self, *args, **kwargs):
         self.pageSize = Point(210, 297)
@@ -453,7 +461,7 @@ class Tempo(GPObject):
 
     '''A song tempo in BPM.
     '''
-    __attr__ = ['value']
+    __attr__ = ('value')
 
     def __init__(self, *args, **kwargs):
         self.value = 120
@@ -467,7 +475,7 @@ class MidiChannel(GPObject):
 
     '''A MIDI channel describes playing data for a track.
     '''
-    __attr__ = ['channel',
+    __attr__ = ('channel',
                 'effectChannel',
                 'instrument',
                 'volume',
@@ -476,7 +484,7 @@ class MidiChannel(GPObject):
                 'reverb',
                 'phaser',
                 'tremolo',
-                'bank']
+                'bank')
 
     DEFAULT_PERCUSSION_CHANNEL = 9
 
@@ -502,7 +510,7 @@ class DirectionSign(GPObject):
 
     '''A navigation sign like Coda or Segno.
     '''
-    __attr__ = ['name']
+    __attr__ = ('name',)
 
     def __init__(self, *args, **kwargs):
         self.name = ''
@@ -513,7 +521,7 @@ class MeasureHeader(GPObject):
 
     '''A measure header contains metadata for measures over multiple tracks.
     '''
-    __attr__ = ['hasDoubleBar',
+    __attr__ = ('hasDoubleBar',
                 'keySignature',
                 'keySignatureType',
                 # 'number',
@@ -527,7 +535,7 @@ class MeasureHeader(GPObject):
                 'repeatClose',
                 'tripletFeel',
                 'direction',
-                'fromDirection']
+                'fromDirection')
 
     DEFAULT_KEY_SIGNATURE = 0
 
@@ -561,7 +569,7 @@ class Color(GPObject):
 
     '''An RGB Color.
     '''
-    __attr__ = ['r', 'g', 'b', 'a']
+    __attr__ = ('r', 'g', 'b', 'a')
 
     def __init__(self, *args, **kwargs):
         self.a = 1
@@ -581,8 +589,8 @@ class Marker(GPObject):
 
     '''A marker annotation for beats.
     '''
-    __attr__ = ['title',
-                'color']
+    __attr__ = ('title',
+                'color')
 
     def __init__(self, *args, **kwargs):
         self.title = 'Section'
@@ -595,7 +603,7 @@ class TrackSettings(GPObject):
 
     '''Settings of the track.
     '''
-    __attr__ = ['tablature',
+    __attr__ = ('tablature',
                 'notation',
                 'diagramsAreBelow',
                 'showRhythm',
@@ -605,7 +613,7 @@ class TrackSettings(GPObject):
                 'diagramsInScore',
                 'autoLetRing',
                 'autoBrush',
-                'extendRhythmic']
+                'extendRhythmic')
 
     def __init__(self, *args, **kwargs):
         self.tablature = True
@@ -626,7 +634,7 @@ class Track(GPObject):
 
     '''A track contains multiple measures.
     '''
-    __attr__ = ['fretCount',
+    __attr__ = ('fretCount',
                 'offset',
                 'isPercussionTrack',
                 'is12StringedGuitarTrack',
@@ -641,7 +649,9 @@ class Track(GPObject):
                 'port',
                 'channel',
                 'color',
-                'settings']
+                'settings',
+                'useRSE',
+                'rse')
 
     def __init__(self, *args, **kwargs):
         self.number = 0
@@ -660,6 +670,7 @@ class Track(GPObject):
         self.isPercussionTrack = False
         self.isBanjoTrack = False
         self.is12StringedGuitarTrack = False
+        self.useRSE = False
         GPObject.__init__(self, *args, **kwargs)
 
     def __str__(self):
@@ -674,8 +685,8 @@ class GuitarString(GPObject):
 
     '''A guitar string with a special tuning.
     '''
-    __attr__ = ['number',
-                'value']
+    __attr__ = ('number',
+                'value')
 
     def __str__(self):
         notes = 'C C# D D# E F F# G G# A A# B'.split()
@@ -687,8 +698,8 @@ class Tuplet(GPObject):
 
     '''Represents a n:m tuplet.
     '''
-    __attr__ = ['enters',
-                'times']
+    __attr__ = ('enters',
+                'times')
 
     def __init__(self, *args, **kwargs):
         self.enters = 1
@@ -703,10 +714,10 @@ class Duration(GPObject):
 
     '''A duration.
     '''
-    __attr__ = ['value',
+    __attr__ = ('value',
                 'isDotted',
                 'isDoubleDotted',
-                'tuplet']
+                'tuplet')
 
     QUARTER_TIME = 960
 
@@ -800,10 +811,10 @@ class Measure(GPObject):
 
     '''A measure contains multiple beats
     '''
-    __attr__ = ['clef',
+    __attr__ = ('clef',
                 'beats',
                 'header',
-                'lineBreak']
+                'lineBreak')
 
     def __init__(self, header, *args, **kwargs):
         self.header = header
@@ -876,6 +887,12 @@ class Measure(GPObject):
     def marker(self):
         return self.header.marker
 
+    def voice(self, index):
+        sortedBeats = sorted(self.beats, key=lambda x: x.start)
+        return filter(lambda x: x.effect.mixTableChange is not None or 
+                                not x.voices[index].isEmpty,
+                      sortedBeats)
+
     def addBeat(self, beat):
         beat.measure = self
         beat.index = len(self.beats)
@@ -895,11 +912,11 @@ class Voice(GPObject):
 
     '''A voice contains multiple notes.
     '''
-    __attr__ = ['index',
+    __attr__ = ('index',
                 'duration',
                 'notes',
                 'direction',
-                'isEmpty']
+                'isEmpty')
 
     def __init__(self, *args, **kwargs):
         self.duration = Duration()
@@ -944,8 +961,8 @@ class BeatStroke(GPObject):
 
     '''A stroke effect for beats.
     '''
-    __attr__ = ['direction',
-                'value']
+    __attr__ = ('direction',
+                'value')
 
     def __init__(self, *args, **kwargs):
         self.direction = BeatStrokeDirection.none
@@ -971,7 +988,7 @@ class BeatEffect(GPObject):
 
     '''This class contains all beat effects.
     '''
-    __attr__ = ['stroke',
+    __attr__ = ('stroke',
                 'hasRasgueado',
                 'pickStroke',
                 'chord',
@@ -981,7 +998,7 @@ class BeatEffect(GPObject):
                 'tapping',
                 'slapping',
                 'popping',
-                'vibrato']
+                'vibrato')
 
     def __init__(self, *args, **kwargs):
         self.fadeIn = False
@@ -1031,13 +1048,13 @@ class BeatDisplay(GPObject):
 
     '''Parameters of beat display.
     '''
-    __attr__ = ['breakBeam',
+    __attr__ = ('breakBeam',
                 'forceBeam',
                 'beamDirection',
                 'tupletBracket',
                 'breakSecondary',
                 'breakSecondaryTuplet',
-                'forceBracket']
+                'forceBracket')
     # 0x01: break beam with previous beat
     # 0x04: force beam with previous beat
     # 0x02: beam is down
@@ -1075,13 +1092,13 @@ class Beat(GPObject):
 
     '''A beat contains multiple voices.
     '''
-    __attr__ = ['voices',
+    __attr__ = ('voices',
                 'text',
                 'start',
                 'effect',
                 'index',
                 'octave',
-                'display']
+                'display')
 
     MAX_VOICES = 2
 
@@ -1148,31 +1165,31 @@ class Beat(GPObject):
 class HarmonicEffect(GPObject):
     '''A harmonic note effect.
     '''
-    __attr__ = ['type']
+    __attr__ = ('type',)
 
 
 class NaturalHarmonic(HarmonicEffect):
-    __attr__ = ['type']
+    __attr__ = ('type',)
     type = 1
 
 
 class ArtificialHarmonic(HarmonicEffect):
-    __attr__ = ['pitch', 'octave', 'type']
+    __attr__ = ('pitch', 'octave', 'type')
     type = 2
 
 
 class TappedHarmonic(HarmonicEffect):
-    __attr__ = ['fret', 'type']
+    __attr__ = ('fret', 'type')
     type = 3
 
 
 class PinchHarmonic(HarmonicEffect):
-    __attr__ = ['type']
+    __attr__ = ('type',)
     type = 4
 
 
 class SemiHarmonic(HarmonicEffect):
-    __attr__ = ['type']
+    __attr__ = ('type',)
     type = 5
 
 
@@ -1194,12 +1211,12 @@ class GraceEffect(GPObject):
 
     '''A grace note effect.
     '''
-    __attr__ = ['isDead',
+    __attr__ = ('isDead',
                 'duration',
                 'velocity',
                 'fret',
                 'isOnBeat',
-                'transition']
+                'transition')
 
     def __init__(self, *args, **kwargs):
         '''Initializes a new instance of the GraceEffect class.
@@ -1223,8 +1240,8 @@ class TrillEffect(GPObject):
 
     '''A trill effect.
     '''
-    __attr__ = ['fret',
-                'duration']
+    __attr__ = ('fret',
+                'duration')
 
     def __init__(self, *args, **kwargs):
         self.fret = 0
@@ -1236,7 +1253,7 @@ class TremoloPickingEffect(GPObject):
 
     '''A tremolo picking effect.
     '''
-    __attr__ = ['duration']
+    __attr__ = ('duration',)
 
     def __init__(self, *args, **kwargs):
         self.duration = Duration()
@@ -1260,7 +1277,7 @@ class NoteEffect(GPObject):
 
     '''Contains all effects which can be applied to one note.
     '''
-    __attr__ = ['leftHandFinger',
+    __attr__ = ('leftHandFinger',
                 'rightHandFinger',
                 'isFingering',
                 'bend',
@@ -1277,7 +1294,7 @@ class NoteEffect(GPObject):
                 'heavyAccentuatedNote',
                 'palmMute',
                 'staccato',
-                'letRing']
+                'letRing')
 
     def __init__(self, *args, **kwargs):
         self.vibrato = False
@@ -1338,13 +1355,13 @@ class Note(GPObject):
 
     '''Describes a single note.
     '''
-    __attr__ = ['value',
+    __attr__ = ('value',
                 'velocity',
                 'string',
                 'isTiedNote',
                 'effect',
                 'durationPercent',
-                'swapAccidentals']
+                'swapAccidentals')
 
     def __init__(self, *args, **kwargs):
         self.value = 0
@@ -1366,7 +1383,7 @@ class Chord(GPObject):
 
     '''A chord annotation for beats.
     '''
-    __attr__ = ['sharp',
+    __attr__ = ('sharp',
                 'root',
                 'type',
                 'extension',
@@ -1382,7 +1399,7 @@ class Chord(GPObject):
                 'barres',
                 'omissions',
                 'fingerings',
-                'show']
+                'show')
 
     def __init__(self, length, *args, **kwargs):
         self.strings = [-1] * length
@@ -1418,7 +1435,7 @@ class Barre(GPObject):
     :param start: first string from the bottom of the barre.
     :param end: last string on the top of the barre.
     '''
-    __attr__ = ['fret', 'start', 'end']
+    __attr__ = ('fret', 'start', 'end')
 
     def __init__(self, *args, **kwargs):
         self.start = 0
@@ -1546,7 +1563,7 @@ class BeatText(GPObject):
 
     '''A text annotation for beats.
     '''
-    __attr__ = ['value']
+    __attr__ = ('value',)
 
     def __init__(self, *args, **kwargs):
         self.value = ''
@@ -1557,9 +1574,9 @@ class MixTableItem(GPObject):
 
     '''A mixtablechange describes several track changes.
     '''
-    __attr__ = ['value',
+    __attr__ = ('value',
                 'duration',
-                'allTracks']
+                'allTracks')
 
     def __init__(self, *args, **kwargs):
         self.value = 0
@@ -1569,9 +1586,9 @@ class MixTableItem(GPObject):
 
 
 class WahEffect(GPObject):
-    __attr__ = ['value',
+    __attr__ = ('value',
                 'enabled',
-                'display']
+                'display')
 
     def __init__(self, *args, **kwargs):
         self.value = 0
@@ -1584,7 +1601,8 @@ class MixTableChange(GPObject):
 
     '''A MixTableChange describes several track changes.
     '''
-    __attr__ = ['instrument',
+    __attr__ = ('instrument',
+                'rse',
                 'volume',
                 'balance',
                 'chorus',
@@ -1594,7 +1612,8 @@ class MixTableChange(GPObject):
                 'tempoName',
                 'tempo',
                 'hideTempo',
-                'wah']
+                'wah',
+                'useRSE')
 
     def __init__(self, *args, **kwargs):
         self.instrument = MixTableItem()
@@ -1608,6 +1627,7 @@ class MixTableChange(GPObject):
         self.tempo = MixTableItem()
         self.hideTempo = True
         self.wah = WahEffect()
+        self.useRSE = False
         GPObject.__init__(self, *args, **kwargs)
 
 
@@ -1648,9 +1668,9 @@ class BendPoint(GPObject):
 
     '''A single point within the BendEffect.
     '''
-    __attr__ = ['position',
+    __attr__ = ('position',
                 'value',
-                'vibrato']
+                'vibrato')
 
     def __init__(self, *args, **kwargs):
         '''Initializes a new instance of the BendPoint class.
@@ -1671,9 +1691,9 @@ class BendEffect(GPObject):
 
     '''This effect is used to describe string bends and tremolo bars.
     '''
-    __attr__ = ['type',
+    __attr__ = ('type',
                 'value',
-                'points']
+                'points')
 
     #: The note offset per bend point offset.
     SEMITONE_LENGTH = 1
@@ -1702,9 +1722,9 @@ class TimeSignature(GPObject):
 
     '''A time signature.
     '''
-    __attr__ = ['numerator',
+    __attr__ = ('numerator',
                 'denominator',
-                'beams']
+                'beams')
 
     def __init__(self, *args, **kwargs):
         self.numerator = 4
@@ -1721,10 +1741,67 @@ class Velocities(object):
     VELOCITY_INCREMENT = 16
     PIANO_PIANISSIMO = MIN_VELOCITY
     PIANISSIMO = MIN_VELOCITY + VELOCITY_INCREMENT
-    PIANO = MIN_VELOCITY + (VELOCITY_INCREMENT * 2)
-    MEZZO_PIANO = MIN_VELOCITY + (VELOCITY_INCREMENT * 3)
-    MEZZO_FORTE = MIN_VELOCITY + (VELOCITY_INCREMENT * 4)
-    FORTE = MIN_VELOCITY + (VELOCITY_INCREMENT * 5)
-    FORTISSIMO = MIN_VELOCITY + (VELOCITY_INCREMENT * 6)
-    FORTE_FORTISSIMO = MIN_VELOCITY + (VELOCITY_INCREMENT * 7)
+    PIANO = MIN_VELOCITY + VELOCITY_INCREMENT * 2
+    MEZZO_PIANO = MIN_VELOCITY + VELOCITY_INCREMENT * 3
+    MEZZO_FORTE = MIN_VELOCITY + VELOCITY_INCREMENT * 4
+    FORTE = MIN_VELOCITY + VELOCITY_INCREMENT * 5
+    FORTISSIMO = MIN_VELOCITY + VELOCITY_INCREMENT * 6
+    FORTE_FORTISSIMO = MIN_VELOCITY + VELOCITY_INCREMENT * 7
     DEFAULT = FORTE
+
+
+class RSEMasterEffect(GPObject):
+
+    '''Master effect as seen on "Score information".
+    '''
+
+    __attr__ = ('volume',
+                'reverb',
+                'equalizer')
+
+
+class RSEEqualizer(GPObject):
+
+    '''Equalizer found in master effect and track effect.
+
+    Attribute :attr:`RSEEqualizer.knobs` is a list of values in range from -6.0 to 5.9.
+    Master effect has 10 knobs, track effect has 3 knobs.
+    Gain is a value in range from -6.0 to 5.9 which can be found in both master and track
+    effects and is named as "PRE" in Guitar Pro 5.
+    '''
+
+    __attr__ = ('knobs',
+                'gain')
+
+
+class Accentuation(Enum):
+    none = 0
+    verySoft = 1
+    soft = 2
+    medium = 3
+    strong = 4
+    veryStrong = 5
+
+
+class RSEInstrument(GPObject):
+    __attr__ = ('instrument',
+                'soundBank',
+                'effectCategory',
+                'effect')
+
+    instrument = -1
+    soundBank = -1
+    effectCategory = ''
+    effect = ''
+
+
+class TrackRSE(GPObject):
+    __attr__ = ('instrument',
+                'equalizer',
+                'humanize',
+                'autoAccentuation')
+
+    instrument = RSEInstrument()
+    equalizer = RSEEqualizer(knobs=[0, 0, 0], gain=0)
+    humanize = 0
+    autoAccentuation = Accentuation.none
