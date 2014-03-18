@@ -759,7 +759,9 @@ class GP3File(gp.GPFileBase):
                 self.writeMeasure(measure)
 
     def writeMeasure(self, measure):
-        for beat in measure.voice(0):
+        beats = measure.voice(0)
+        self.writeInt(len(beats))
+        for beat in beats:
             self.writeBeat(beat)
 
     def writeBeat(self, beat, voiceIndex=0):
