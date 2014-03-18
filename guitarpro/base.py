@@ -16,6 +16,7 @@ class GPFileBase(object):
 
     _supportedVersions = []
     version = None
+    versionTuple = ()
 
     def __init__(self, data=None):
         self.data = data
@@ -96,7 +97,11 @@ class GPFileBase(object):
     def readVersion(self):
         if self.version is None:
             self.version = self.readByteSizeString(30)
-        return self.version in self._supportedVersions
+        if self.version in self._supportedVersions:
+            self.versionTuple = map(int, self.version[-4:].split('.'))
+            return True
+        else:
+            return False
 
     # Writing
     # =======
