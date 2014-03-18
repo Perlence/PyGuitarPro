@@ -219,9 +219,8 @@ class GPObject(object):
 
 class RepeatGroup(object):
 
-    '''This class can store the information about a group of measures which are
-    repeated.
-    '''
+    """This class can store the information about a group of measures which are
+    repeated."""
 
     def __init__(self):
         self.measureHeaders = []
@@ -248,10 +247,11 @@ class RepeatGroup(object):
 
 class Song(GPObject):
 
-    '''This is the toplevel node of the song model.
+    """This is the toplevel node of the song model.
 
     It contains basic information about the stored song.
-    '''
+
+    """
     __attr__ = ('title',
                 'subtitle',
                 'artist',
@@ -309,8 +309,7 @@ class Song(GPObject):
 
 class LyricLine(GPObject):
 
-    '''A lyrics line.
-    '''
+    """A lyrics line."""
     __attr__ = ('startingMeasure',
                 'lyrics')
 
@@ -322,8 +321,7 @@ class LyricLine(GPObject):
 
 class Lyrics(GPObject):
 
-    '''Represents a collection of lyrics lines for a track.
-    '''
+    """Represents a collection of lyrics lines for a track."""
     __attr__ = ('trackChoice',
                 'lines')
 
@@ -349,8 +347,7 @@ class Lyrics(GPObject):
 
 class Point(GPObject):
 
-    '''A point construct using floating point coordinates.
-    '''
+    """A point construct using floating point coordinates."""
     __attr__ = ('x', 'y')
 
     def __repr__(self):
@@ -359,8 +356,7 @@ class Point(GPObject):
 
 class Padding(GPObject):
 
-    '''A padding construct.
-    '''
+    """A padding construct."""
     __attr__ = ('right',
                 'top',
                 'left',
@@ -375,9 +371,12 @@ class Padding(GPObject):
 
 class HeaderFooterElements(object):
 
-    '''A list of the elements which can be shown in the header and footer
-    of a rendered song sheet. All values can be combined using bit-operators as they are flags.
-    '''
+    """A list of the elements which can be shown in the header and footer of a
+    rendered song sheet.
+
+    All values can be combined using bit-operators as they are flags.
+
+    """
     NONE = 0x0
     TITLE = 0x1
     SUBTITLE = 0x2
@@ -394,8 +393,8 @@ class HeaderFooterElements(object):
 
 class PageSetup(GPObject):
 
-    '''The page setup describes how the document is rendered.
-    It contains page size, margins, paddings, and how the title elements are rendered.
+    """The page setup describes how the document is rendered. It contains page
+    size, margins, paddings, and how the title elements are rendered.
 
     Following template vars are available for defining the page texts:
        %TITLE% - Will get replaced with Song.title
@@ -408,7 +407,8 @@ class PageSetup(GPObject):
        %COPYRIGHT% - Will get replaced with Song.copyright
        %N% - Will get replaced with the current page number (if supported by layout)
        %P% - Will get replaced with the number of pages (if supported by layout)
-    '''
+
+    """
     __attr__ = ('pageSize',
                 'pageMargin',
                 'scoreSizeProportion',
@@ -443,8 +443,7 @@ class PageSetup(GPObject):
 
 class Tempo(GPObject):
 
-    '''A song tempo in BPM.
-    '''
+    """A song tempo in BPM."""
     __attr__ = ('value')
 
     def __init__(self, *args, **kwargs):
@@ -457,8 +456,7 @@ class Tempo(GPObject):
 
 class MidiChannel(GPObject):
 
-    '''A MIDI channel describes playing data for a track.
-    '''
+    """A MIDI channel describes playing data for a track."""
     __attr__ = ('channel',
                 'effectChannel',
                 'instrument',
@@ -492,8 +490,7 @@ class MidiChannel(GPObject):
 
 class DirectionSign(GPObject):
 
-    '''A navigation sign like Coda or Segno.
-    '''
+    """A navigation sign like Coda or Segno."""
     __attr__ = ('name',)
 
     def __init__(self, *args, **kwargs):
@@ -503,8 +500,7 @@ class DirectionSign(GPObject):
 
 class MeasureHeader(GPObject):
 
-    '''A measure header contains metadata for measures over multiple tracks.
-    '''
+    """A measure header contains metadata for measures over multiple tracks."""
     __attr__ = ('hasDoubleBar',
                 'keySignature',
                 'keySignatureType',
@@ -551,8 +547,7 @@ class MeasureHeader(GPObject):
 
 class Color(GPObject):
 
-    '''An RGB Color.
-    '''
+    """An RGB Color."""
     __attr__ = ('r', 'g', 'b', 'a')
 
     def __init__(self, *args, **kwargs):
@@ -571,8 +566,7 @@ Color.Red = Color(255, 0, 0)
 
 class Marker(GPObject):
 
-    '''A marker annotation for beats.
-    '''
+    """A marker annotation for beats."""
     __attr__ = ('title',
                 'color')
 
@@ -585,8 +579,7 @@ class Marker(GPObject):
 
 class TrackSettings(GPObject):
 
-    '''Settings of the track.
-    '''
+    """Settings of the track."""
     __attr__ = ('tablature',
                 'notation',
                 'diagramsAreBelow',
@@ -616,8 +609,7 @@ class TrackSettings(GPObject):
 
 class Track(GPObject):
 
-    '''A track contains multiple measures.
-    '''
+    """A track contains multiple measures."""
     __attr__ = ('fretCount',
                 'offset',
                 'isPercussionTrack',
@@ -667,8 +659,7 @@ class Track(GPObject):
 
 class GuitarString(GPObject):
 
-    '''A guitar string with a special tuning.
-    '''
+    """A guitar string with a special tuning."""
     __attr__ = ('number',
                 'value')
 
@@ -696,8 +687,7 @@ class Tuplet(GPObject):
 
 class Duration(GPObject):
 
-    '''A duration.
-    '''
+    """A duration."""
     __attr__ = ('value',
                 'isDotted',
                 'isDoubleDotted',
@@ -774,8 +764,7 @@ class Duration(GPObject):
 
 class MeasureClef(Enum):
 
-    '''A list of available clefs.
-    '''
+    """A list of available clefs."""
     treble = 0
     bass = 1
     tenor = 2
@@ -784,8 +773,7 @@ class MeasureClef(Enum):
 
 class LineBreak(Enum):
 
-    '''A line break directive.
-    '''
+    """A line break directive."""
     none = 0
     break_ = 1
     protect = 2
@@ -793,8 +781,7 @@ class LineBreak(Enum):
 
 class Measure(GPObject):
 
-    '''A measure contains multiple beats
-    '''
+    """A measure contains multiple beats."""
     __attr__ = ('clef',
                 'beats',
                 'header',
@@ -885,8 +872,7 @@ class Measure(GPObject):
 
 class VoiceDirection(Enum):
 
-    '''Voice directions indicating the direction of beams.
-    '''
+    """Voice directions indicating the direction of beams."""
     none = 0
     up = 1
     down = 2
@@ -894,8 +880,7 @@ class VoiceDirection(Enum):
 
 class Voice(GPObject):
 
-    '''A voice contains multiple notes.
-    '''
+    """A voice contains multiple notes."""
     __attr__ = ('index',
                 'duration',
                 'notes',
@@ -934,8 +919,7 @@ class Voice(GPObject):
 
 class BeatStrokeDirection(Enum):
 
-    '''All beat stroke directions
-    '''
+    """All beat stroke directions."""
     none = 0
     up = 1
     down = 2
@@ -943,8 +927,7 @@ class BeatStrokeDirection(Enum):
 
 class BeatStroke(GPObject):
 
-    '''A stroke effect for beats.
-    '''
+    """A stroke effect for beats."""
     __attr__ = ('direction',
                 'value')
 
@@ -970,8 +953,7 @@ class BeatStroke(GPObject):
 
 class BeatEffect(GPObject):
 
-    '''This class contains all beat effects.
-    '''
+    """This class contains all beat effects."""
     __attr__ = ('stroke',
                 'hasRasgueado',
                 'pickStroke',
@@ -1030,8 +1012,7 @@ class TupletBracket(Enum):
 
 class BeatDisplay(GPObject):
 
-    '''Parameters of beat display.
-    '''
+    """Parameters of beat display."""
     __attr__ = ('breakBeam',
                 'forceBeam',
                 'beamDirection',
@@ -1063,8 +1044,7 @@ class BeatDisplay(GPObject):
 
 class Octave(Enum):
 
-    '''Octave signs.
-    '''
+    """Octave signs."""
     none = 0
     ottava = 1
     quindicesima = 2
@@ -1074,8 +1054,7 @@ class Octave(Enum):
 
 class Beat(GPObject):
 
-    '''A beat contains multiple voices.
-    '''
+    """A beat contains multiple voices."""
     __attr__ = ('voices',
                 'text',
                 'start',
@@ -1148,8 +1127,7 @@ class Beat(GPObject):
 
 class HarmonicEffect(GPObject):
 
-    '''A harmonic note effect.
-    '''
+    """A harmonic note effect."""
     __attr__ = ('type',)
 
 
@@ -1180,8 +1158,7 @@ class SemiHarmonic(HarmonicEffect):
 
 class GraceEffectTransition(Enum):
 
-    '''All transition types for grace notes.
-    '''
+    """All transition types for grace notes."""
     #: No transition
     none = 0
     #: Slide from the grace note to the real one
@@ -1194,8 +1171,7 @@ class GraceEffectTransition(Enum):
 
 class GraceEffect(GPObject):
 
-    '''A grace note effect.
-    '''
+    """A grace note effect."""
     __attr__ = ('isDead',
                 'duration',
                 'velocity',
@@ -1204,8 +1180,7 @@ class GraceEffect(GPObject):
                 'transition')
 
     def __init__(self, *args, **kwargs):
-        '''Initializes a new instance of the GraceEffect class.
-        '''
+        """Initializes a new instance of the GraceEffect class."""
         self.fret = 0
         self.duration = 1
         self.velocity = Velocities.DEFAULT
@@ -1216,15 +1191,13 @@ class GraceEffect(GPObject):
 
     @property
     def durationTime(self):
-        '''Get the duration of the effect.
-        '''
+        """Get the duration of the effect."""
         return int(Duration.QUARTER_TIME / 16 * self.duration)
 
 
 class TrillEffect(GPObject):
 
-    '''A trill effect.
-    '''
+    """A trill effect."""
     __attr__ = ('fret',
                 'duration')
 
@@ -1236,8 +1209,7 @@ class TrillEffect(GPObject):
 
 class TremoloPickingEffect(GPObject):
 
-    '''A tremolo picking effect.
-    '''
+    """A tremolo picking effect."""
     __attr__ = ('duration',)
 
     def __init__(self, *args, **kwargs):
@@ -1247,8 +1219,7 @@ class TremoloPickingEffect(GPObject):
 
 class SlideType(Enum):
 
-    '''Lists all supported slide types.
-    '''
+    """Lists all supported slide types."""
     intoFromAbove = -2
     intoFromBelow = -1
     none = 0
@@ -1260,8 +1231,7 @@ class SlideType(Enum):
 
 class NoteEffect(GPObject):
 
-    '''Contains all effects which can be applied to one note.
-    '''
+    """Contains all effects which can be applied to one note."""
     __attr__ = ('leftHandFinger',
                 'rightHandFinger',
                 'isFingering',
@@ -1338,8 +1308,7 @@ class NoteEffect(GPObject):
 
 class Note(GPObject):
 
-    '''Describes a single note.
-    '''
+    """Describes a single note."""
     __attr__ = ('value',
                 'velocity',
                 'string',
@@ -1366,8 +1335,7 @@ class Note(GPObject):
 
 class Chord(GPObject):
 
-    '''A chord annotation for beats.
-    '''
+    """A chord annotation for beats."""
     __attr__ = ('sharp',
                 'root',
                 'type',
@@ -1416,11 +1384,12 @@ class ChordType(Enum):
 
 class Barre(GPObject):
 
-    '''A single barre.
+    """A single barre.
 
     :param start: first string from the bottom of the barre.
     :param end: last string on the top of the barre.
-    '''
+
+    """
     __attr__ = ('fret', 'start', 'end')
 
     def __init__(self, *args, **kwargs):
@@ -1458,7 +1427,7 @@ class ChordExtension(Enum):
 
 class PitchClass(object):
 
-    '''A pitch class.
+    """A pitch class.
 
     Constructor provides several overloads. Each overload provides keyword argument
     ``intonation`` that may be either 'sharp' or 'flat'.
@@ -1498,7 +1467,7 @@ class PitchClass(object):
     >>> print p
     D#
 
-    '''
+    """
 
     _notes = {
         'sharp': 'C C# D D# E F F# G G# A A# B'.split(),
@@ -1547,8 +1516,7 @@ class PitchClass(object):
 
 class BeatText(GPObject):
 
-    '''A text annotation for beats.
-    '''
+    """A text annotation for beats."""
     __attr__ = ('value',)
 
     def __init__(self, *args, **kwargs):
@@ -1558,8 +1526,7 @@ class BeatText(GPObject):
 
 class MixTableItem(GPObject):
 
-    '''A mixtablechange describes several track changes.
-    '''
+    """A mixtablechange describes several track changes."""
     __attr__ = ('value',
                 'duration',
                 'allTracks')
@@ -1585,8 +1552,7 @@ class WahEffect(GPObject):
 
 class MixTableChange(GPObject):
 
-    '''A MixTableChange describes several track changes.
-    '''
+    """A MixTableChange describes several track changes."""
     __attr__ = ('instrument',
                 'rse',
                 'volume',
@@ -1619,8 +1585,7 @@ class MixTableChange(GPObject):
 
 class BendType(Enum):
 
-    '''All Bend presets.
-    '''
+    """All Bend presets."""
     # Bends
     #: No Preset
     none = 0
@@ -1652,31 +1617,29 @@ class BendType(Enum):
 
 class BendPoint(GPObject):
 
-    '''A single point within the BendEffect.
-    '''
+    """A single point within the BendEffect."""
     __attr__ = ('position',
                 'value',
                 'vibrato')
 
     def __init__(self, *args, **kwargs):
-        '''Initializes a new instance of the BendPoint class.
-        '''
+        """Initializes a new instance of the BendPoint class."""
         self.position = 0
         self.vibrato = False
         GPObject.__init__(self, *args, **kwargs)
 
     def getTime(self, duration):
-        '''Gets the exact time when the point need to be played (MIDI).
+        """Gets the exact time when the point need to be played (MIDI).
 
         :param duration: the full duration of the effect.
-        '''
+
+        """
         return int(duration * self.position / BendEffect.MAX_POSITION)
 
 
 class BendEffect(GPObject):
 
-    '''This effect is used to describe string bends and tremolo bars.
-    '''
+    """This effect is used to describe string bends and tremolo bars."""
     __attr__ = ('type',
                 'value',
                 'points')
@@ -1697,8 +1660,7 @@ class BendEffect(GPObject):
 
 class TripletFeel(Enum):
 
-    '''A list of different triplet feels.
-    '''
+    """A list of different triplet feels."""
     none = 0
     eighth = 1
     sixteenth = 2
@@ -1706,8 +1668,7 @@ class TripletFeel(Enum):
 
 class TimeSignature(GPObject):
 
-    '''A time signature.
-    '''
+    """A time signature."""
     __attr__ = ('numerator',
                 'denominator',
                 'beams')
@@ -1721,8 +1682,7 @@ class TimeSignature(GPObject):
 
 class Velocities(object):
 
-    '''A list of velocities / dynamics.
-    '''
+    """A list of velocities / dynamics."""
     MIN_VELOCITY = 15
     VELOCITY_INCREMENT = 16
     PIANO_PIANISSIMO = MIN_VELOCITY
@@ -1738,8 +1698,7 @@ class Velocities(object):
 
 class RSEMasterEffect(GPObject):
 
-    '''Master effect as seen on "Score information".
-    '''
+    """Master effect as seen on "Score information"."""
 
     __attr__ = ('volume',
                 'reverb',
@@ -1748,13 +1707,14 @@ class RSEMasterEffect(GPObject):
 
 class RSEEqualizer(GPObject):
 
-    '''Equalizer found in master effect and track effect.
+    """Equalizer found in master effect and track effect.
 
     Attribute :attr:`RSEEqualizer.knobs` is a list of values in range from -6.0 to 5.9.
     Master effect has 10 knobs, track effect has 3 knobs.
     Gain is a value in range from -6.0 to 5.9 which can be found in both master and track
     effects and is named as "PRE" in Guitar Pro 5.
-    '''
+
+    """
 
     __attr__ = ('knobs',
                 'gain')
