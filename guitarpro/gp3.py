@@ -30,20 +30,12 @@ class GP3File(gp.GPFileBase):
                                         self.version)
 
         song = gp.Song()
-
         self.readInfo(song)
 
         self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
                              else gp.TripletFeel.none)
 
-        self.readLyrics(song)
-
-        self.readPageSetup(song)
-
-        song.tempoName = ''
         song.tempo = self.readInt()
-        song.hideTempo = False
-
         song.key = self.readInt()
 
         channels = self.readMidiChannels()
@@ -58,6 +50,11 @@ class GP3File(gp.GPFileBase):
         return song
 
     def readInfo(self, song):
+        '''Read score information.
+
+        Sequentially reads title, subtitle, artist, album, words, copyright, 
+        tabbed by, instructions and notice.
+        '''
         song.title = self.readIntSizeCheckByteString()
         song.subtitle = self.readIntSizeCheckByteString()
         song.artist = self.readIntSizeCheckByteString()
@@ -68,21 +65,10 @@ class GP3File(gp.GPFileBase):
         song.tab = self.readIntSizeCheckByteString()
         song.instructions = self.readIntSizeCheckByteString()
 
-        iNotes = self.readInt()
+        notesCount = self.readInt()
         song.notice = []
-        for i in range(iNotes):
+        for __ in range(notesCount):
             song.notice.append(self.readIntSizeCheckByteString())
-
-    def readLyrics(self, song):
-        song.lyrics = gp.Lyrics()
-        for i in range(gp.Lyrics.MAX_LINE_COUNT):
-            line = gp.LyricLine()
-            line.startingMeasure = 1
-            line.lyrics = ''
-            song.lyrics.lines.append(line)
-
-    def readPageSetup(self, song):
-        song.pageSetup = gp.PageSetup()
 
     def readMidiChannels(self):
         channels = []
@@ -584,9 +570,6 @@ class GP3File(gp.GPFileBase):
         self._tripletFeel = song.tracks[0].measures[0].tripletFeel.value
         self.writeBool(self._tripletFeel)
 
-        self.writeLyrics(None)
-        self.writePageSetup(None)
-
         self.writeInt(song.tempo)
         self.writeInt(song.key)
         self.writeMidiChannels(song.tracks)
@@ -615,12 +598,6 @@ class GP3File(gp.GPFileBase):
         self.writeInt(len(song.notice))
         for line in song.notice:
             self.writeIntSizeCheckByteString(line)
-
-    def writeLyrics(self, lyrics):
-        pass
-
-    def writePageSetup(self, setup):
-        pass
 
     def writeMidiChannels(self, tracks):
         def getTrackChannelByChannel(channel):

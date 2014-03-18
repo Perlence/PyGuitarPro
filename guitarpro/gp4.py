@@ -25,42 +25,34 @@ class GP4File(gp3.GP3File):
                                         self.version)
 
         song = gp.Song()
-
         self.readInfo(song)
 
         self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
                              else gp.TripletFeel.none)
 
         self.readLyrics(song)
-
-        self.readPageSetup(song)
-
-        song.tempoName = ''
+        
         song.tempo = self.readInt()
-        song.hideTempo = False
-
         song.key = self.readInt()
         self.readSignedByte()  # octave
-
+        
         channels = self.readMidiChannels()
-
+        
         measureCount = self.readInt()
         trackCount = self.readInt()
-
+        
         self.readMeasureHeaders(song, measureCount)
         self.readTracks(song, trackCount, channels)
         self.readMeasures(song)
-
+        
         return song
 
     def readLyrics(self, song):
         song.lyrics = gp.Lyrics()
         song.lyrics.trackChoice = self.readInt()
-        for i in range(gp.Lyrics.MAX_LINE_COUNT):
-            line = gp.LyricLine()
+        for line in song.lyrics.lines:
             line.startingMeasure = self.readInt()
             line.lyrics = self.readIntSizeString()
-            song.lyrics.lines.append(line)
 
     def readBeat(self, start, measure, track, voiceIndex):
         flags = self.readSignedByte()
@@ -292,7 +284,6 @@ class GP4File(gp3.GP3File):
         self.writeBool(self._tripletFeel)
 
         self.writeLyrics(song.lyrics)
-        self.writePageSetup(None)
 
         self.writeInt(song.tempo)
         self.writeInt(song.key)
@@ -310,6 +301,8 @@ class GP4File(gp3.GP3File):
         self.writeMeasures(song.tracks)
 
     def writeLyrics(self, lyrics):
+        if lyrics is None:
+            lyrics = gp.Lyrics()
         self.writeInt(lyrics.trackChoice)
         for line in lyrics.lines:
             self.writeInt(line.startingMeasure)

@@ -651,6 +651,9 @@ class GP5File(gp4.GP4File):
         return int(-round(value, 1) * 10)
 
     def writePageSetup(self, setup):
+        if setup is None:
+            setup = gp.PageSetup()
+
         self.writeInt(setup.pageSize.x)
         self.writeInt(setup.pageSize.y)
 

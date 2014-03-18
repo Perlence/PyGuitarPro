@@ -333,7 +333,7 @@ class LyricLine(GPObject):
                 'lyrics')
 
     def __init__(self, *args, **kwargs):
-        self.startingMeasure = -1
+        self.startingMeasure = 1
         self.lyrics = ''
         GPObject.__init__(self, *args, **kwargs)
 
@@ -350,6 +350,8 @@ class Lyrics(GPObject):
     def __init__(self, *args, **kwargs):
         self.trackChoice = -1
         self.lines = []
+        for __ in range(Lyrics.MAX_LINE_COUNT):
+            self.lines.append(LyricLine())
         GPObject.__init__(self, *args, **kwargs)
 
     def __str__(self):
