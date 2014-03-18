@@ -98,10 +98,6 @@ class GPFileBase(object):
             self.version = self.readByteSizeString(30)
         return self.version in self._supportedVersions
 
-    def toChannelShort(self, data):
-        value = max(-32768, min(32767, (data << 3) - 1))
-        return max(value, -1) + 1
-
     # Writing
     # =======
 
@@ -165,27 +161,6 @@ class GPFileBase(object):
             self.writeByteSizeString(self.version, 30)
         else:
             self.writeByteSizeString(self._supportedVersions[index], 30)
-
-    def fromChannelShort(self, data):
-        value = max(-128, min(127, (data >> 3) - 1))
-        return value + 1
-
-    # Misc
-    # ====
-
-    def getTiedNoteValue(self, stringIndex, track):
-        measureCount = len(track.measures)
-        if measureCount > 0:
-            for m2 in range(measureCount):
-                m = measureCount - 1 - m2
-                measure = track.measures[m]
-                for beat in reversed(measure.beats):
-                    for voice in beat.voices:
-                        if not voice.isEmpty:
-                            for note in voice.notes:
-                                if note.string == stringIndex:
-                                    return note.value
-        return -1
 
 
 class GPObject(object):

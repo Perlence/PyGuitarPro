@@ -93,6 +93,10 @@ class GP3File(gp.GPFileBase):
 
         return channels
 
+    def toChannelShort(self, data):
+        value = max(-32768, min(32767, (data << 3) - 1))
+        return max(value, -1) + 1
+
     def readMeasureHeaders(self, song, measureCount):
         previous = None
         for number in range(1, measureCount + 1):
@@ -513,6 +517,20 @@ class GP3File(gp.GPFileBase):
                 gp.Velocities.VELOCITY_INCREMENT * dyn -
                 gp.Velocities.VELOCITY_INCREMENT)
 
+    def getTiedNoteValue(self, stringIndex, track):
+        measureCount = len(track.measures)
+        if measureCount > 0:
+            for m2 in range(measureCount):
+                m = measureCount - 1 - m2
+                measure = track.measures[m]
+                for beat in reversed(measure.beats):
+                    for voice in beat.voices:
+                        if not voice.isEmpty:
+                            for note in voice.notes:
+                                if note.string == stringIndex:
+                                    return note.value
+        return -1
+
     def readNoteEffects(self, note):
         noteEffect = note.effect
         flags1 = self.readByte()
@@ -625,6 +643,10 @@ class GP3File(gp.GPFileBase):
             self.writeSignedByte(self.fromChannelShort(channel.tremolo))
             # Backward compatibility with version 3.0
             self.placeholder(2)
+
+    def fromChannelShort(self, data):
+        value = max(-128, min(127, (data >> 3) - 1))
+        return value + 1
 
     def writeMeasureHeaders(self, measures):
         previous = None
