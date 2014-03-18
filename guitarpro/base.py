@@ -887,6 +887,12 @@ class Measure(GPObject):
     def marker(self):
         return self.header.marker
 
+    def voice(self, index):
+        sortedBeats = sorted(self.beats, key=lambda x: x.start)
+        return filter(lambda x: x.effect.mixTableChange is not None or 
+                                not x.voices[index].isEmpty,
+                      sortedBeats)
+
     def addBeat(self, beat):
         beat.measure = self
         beat.index = len(self.beats)

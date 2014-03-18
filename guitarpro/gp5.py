@@ -877,14 +877,11 @@ class GP5File(gp4.GP4File):
         self.writeInt(-1)
 
     def writeMeasure(self, measure):
-        sortedBeats = sorted(measure.beats, key=lambda y: y.start)
-        for voice in range(gp.Beat.MAX_VOICES):
-            beatsOfVoice = filter(lambda x: not x.voices[voice].isEmpty,
-                                  sortedBeats)
-            beatCount = len(beatsOfVoice)
-            self.writeInt(beatCount)
-            for beat in beatsOfVoice:
-                self.writeBeat(beat, voice)
+        for index in range(gp.Beat.MAX_VOICES):
+            beats = measure.voice(index)
+            self.writeInt(len(beats))
+            for beat in beats:
+                self.writeBeat(beat, index)
         self.writeByte(measure.lineBreak.value)
 
     def writeBeat(self, beat, voiceIndex=0):
