@@ -524,9 +524,7 @@ class GP5File(gp4.GP4File):
         if not self.version.endswith('5.00'):
             masterEffect = gp.RSEMasterEffect()
             masterEffect.volume = self.readByte()
-            data = self.data.read(7)  # ???
-            if data != '\x00' * 7:
-                import ipdb; ipdb.set_trace()
+            self.skip(7)  # ???
             masterEffect.equalizer = self.readEqualizer(11)
             song.masterEffect = masterEffect
 
