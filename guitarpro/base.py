@@ -1612,7 +1612,8 @@ class MixTableChange(GPObject):
                 'tempoName',
                 'tempo',
                 'hideTempo',
-                'wah')
+                'wah',
+                'useRSE')
 
     def __init__(self, *args, **kwargs):
         self.instrument = MixTableItem()
@@ -1626,6 +1627,7 @@ class MixTableChange(GPObject):
         self.tempo = MixTableItem()
         self.hideTempo = True
         self.wah = WahEffect()
+        self.useRSE = False
         GPObject.__init__(self, *args, **kwargs)
 
 

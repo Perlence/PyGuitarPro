@@ -326,23 +326,23 @@ class GP5File(gp4.GP4File):
         else:
             tableChange.tempo = None
 
-        allTracksFlags = self.readByte()
+        flags = self.readByte()
         if tableChange.volume is not None:
-            tableChange.volume.allTracks = bool(allTracksFlags & 0x01)
+            tableChange.volume.allTracks = bool(flags & 0x01)
         if tableChange.balance is not None:
-            tableChange.balance.allTracks = bool(allTracksFlags & 0x02)
+            tableChange.balance.allTracks = bool(flags & 0x02)
         if tableChange.chorus is not None:
-            tableChange.chorus.allTracks = bool(allTracksFlags & 0x04)
+            tableChange.chorus.allTracks = bool(flags & 0x04)
         if tableChange.reverb is not None:
-            tableChange.reverb.allTracks = bool(allTracksFlags & 0x08)
+            tableChange.reverb.allTracks = bool(flags & 0x08)
         if tableChange.phaser is not None:
-            tableChange.phaser.allTracks = bool(allTracksFlags & 0x10)
+            tableChange.phaser.allTracks = bool(flags & 0x10)
         if tableChange.tremolo is not None:
-            tableChange.tremolo.allTracks = bool(allTracksFlags & 0x20)
+            tableChange.tremolo.allTracks = bool(flags & 0x20)
         if tableChange.tempo is not None:
             tableChange.tempo.allTracks = True
-        if allTracksFlags & 0x80:
-            tableChange.wah.display = True
+        tableChange.useRSE = bool(flags & 0x40)
+        tableChange.wah.display = bool(flags & 0x80)
 
         # Wah-Wah flag
         #  0: Open
@@ -1133,7 +1133,7 @@ class GP5File(gp4.GP4File):
             else:
                 write(item)
 
-        allTracksFlags = 0x00
+        flags = 0x00
         # instrument change doesn't have duration
         for i, (name, __) in enumerate(items[2:]):
             item = getattr(tableChange, name)
@@ -1143,12 +1143,14 @@ class GP5File(gp4.GP4File):
                     if not self.version.endswith('5.00'):
                         self.writeBool(tableChange.hideTempo)
                 if item.allTracks:
-                    allTracksFlags |= 1 << i
+                    flags |= 1 << i
 
+        if tableChange.useRSE:
+            flags |= 0x40
         if tableChange.wah is not None and tableChange.wah.display:
-            allTracksFlags |= 0x80
+            flags |= 0x80
 
-        self.writeByte(allTracksFlags)
+        self.writeByte(flags)
 
         if tableChange.wah is not None:
             if tableChange.wah.enabled:
