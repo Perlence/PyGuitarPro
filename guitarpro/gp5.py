@@ -32,7 +32,7 @@ class GP5File(gp4.GP4File):
         song.tempoName = self.readIntSizeCheckByteString()
         song.tempo = self.readInt()
 
-        if not self.version.endswith('5.00'):
+        if self.versionTuple > (5, 0):
             song.hideTempo = self.readBool()
         else:
             song.hideTempo = False
@@ -71,7 +71,7 @@ class GP5File(gp4.GP4File):
             song.notice.append(self.readIntSizeCheckByteString())
 
     def readRSEMasterEffect(self, song):
-        if not self.version.endswith('5.00'):
+        if self.versionTuple > (5, 0):
             masterEffect = gp.RSEMasterEffect()
             masterEffect.volume = self.readByte()
             self.skip(7)  # ???
@@ -215,10 +215,10 @@ class GP5File(gp4.GP4File):
         for i in range(trackCount):
             song.addTrack(self.readTrack(i + 1, channels))
         # Always 0
-        self.skip(2 if self.version.endswith('5.00') else 1)
+        self.skip(2 if self.versionTuple == (5, 0) else 1)
 
     def readTrack(self, number, channels):
-        if number == 1 or self.version.endswith('5.00'):
+        if number == 1 or self.versionTuple == (5, 0):
             # Always 0
             self.skip(1)
         flags1 = self.readByte()
@@ -279,7 +279,7 @@ class GP5File(gp4.GP4File):
     def readTrackRSE(self, trackRSE=None):
         if trackRSE is None:
             trackRSE = gp.TrackRSE()
-        if self.version.endswith('5.00'):
+        if self.versionTuple == (5, 0):
             trackRSE.humanize = self.readByte()
             self.readInt(3)  # ???
             self.skip(12)  # ???
@@ -302,7 +302,7 @@ class GP5File(gp4.GP4File):
         return instrument
 
     def readRSEInstrumentEffect(self, rseInstrument):
-        if not self.version.endswith('5.00'):
+        if self.versionTuple > (5, 0):
             rseInstrument.effect = self.readIntSizeCheckByteString()
             rseInstrument.effectCategory = self.readIntSizeCheckByteString()
         return rseInstrument
@@ -425,8 +425,7 @@ class GP5File(gp4.GP4File):
         if tableChange.tempo.value >= 0:
             tableChange.tempo.duration = self.readSignedByte()
             measure.tempo.value = tableChange.tempo.value
-            tableChange.hideTempo = (not self.version.endswith('5.00') and
-                                     self.readBool())
+            tableChange.hideTempo = self.versionTuple > (5, 0) and self.readBool()
         else:
             tableChange.tempo = None
 
@@ -596,7 +595,7 @@ class GP5File(gp4.GP4File):
         self.writeIntSizeCheckByteString(song.tempoName)
         self.writeInt(song.tempo)
 
-        if not self.version.endswith('5.00'):
+        if self.versionTuple > (5, 0):
             self.writeBool(song.hideTempo)
 
         self.writeByte(song.key)
@@ -632,7 +631,7 @@ class GP5File(gp4.GP4File):
             self.writeIntSizeCheckByteString(line)
 
     def writeRSEMasterEffect(self, masterEffect):
-        if not self.version.endswith('5.00'):
+        if self.versionTuple > (5, 0):
             if masterEffect is None:
                 masterEffect = gp.RSEMasterEffect()
                 masterEffect.volume = 100
@@ -780,10 +779,10 @@ class GP5File(gp4.GP4File):
 
     def writeTracks(self, tracks):
         super(GP5File, self).writeTracks(tracks)
-        self.placeholder(2 if self.version.endswith('5.00') else 1)
+        self.placeholder(2 if self.versionTuple == (5, 0) else 1)
 
     def writeTrack(self, track):
-        if track.number == 1 or self.version.endswith('5.00'):
+        if track.number == 1 or self.versionTuple == (5, 0):
             self.placeholder(1)
 
         flags1 = 0x00
@@ -860,7 +859,7 @@ class GP5File(gp4.GP4File):
     def writeTrackRSE(self, trackRSE):
         if trackRSE is None:
             trackRSE = gp.TrackRSE()
-        if self.version.endswith('5.00'):
+        if self.versionTuple == (5, 0):
             self.writeByte(trackRSE.humanize)
             self.writeInt(0)
             self.writeInt(0)
@@ -886,7 +885,7 @@ class GP5File(gp4.GP4File):
         self.writeInt(-1)
     
     def writeRSEInstrumentEffect(self, rseInstrument):
-        if not self.version.endswith('5.00'):
+        if self.versionTuple > (5, 0):
             if rseInstrument is None:
                 rseInstrument = gp.RSEInstrument()
             self.writeIntSizeCheckByteString(rseInstrument.effect)
@@ -1014,7 +1013,7 @@ class GP5File(gp4.GP4File):
             if isinstance(item, gp.MixTableItem):
                 self.writeSignedByte(item.duration)
                 if name == 'tempo':
-                    if not self.version.endswith('5.00'):
+                    if self.versionTuple > (5, 0):
                         self.writeBool(tableChange.hideTempo)
                 if item.allTracks:
                     flags |= 1 << i
