@@ -651,7 +651,9 @@ class GP5File(gp4.GP4File):
     def writeMasterReverb(self, masterEffect):
         if masterEffect is not None:
             self.writeByte(masterEffect.reverb)
-            self.placeholder(3)
+        else:
+            self.writeByte(0)
+        self.placeholder(3)
 
     def writeInfo(self, song):
         self.writeIntSizeCheckByteString(song.title)
@@ -669,7 +671,12 @@ class GP5File(gp4.GP4File):
             self.writeIntSizeCheckByteString(line)
 
     def writeRSEMasterEffect(self, masterEffect):
-        if masterEffect is not None and not self.version.endswith('5.00'):
+        if not self.version.endswith('5.00'):
+            if masterEffect is None:
+                masterEffect = gp.RSEMasterEffect()
+                masterEffect.volume = 100
+                masterEffect.reverb = 0
+                masterEffect.equalizer = gp.RSEEqualizer(knobs=[0] * 10, gain=0)
             self.writeByte(masterEffect.volume)
             self.placeholder(7)
             self.writeEqualizer(masterEffect.equalizer)
