@@ -877,7 +877,7 @@ class GP3File(gp.GPFileBase):
             flags1 |= 0x01
         if noteEffect.hammer:
             flags1 |= 0x02
-        if (gp.SlideType.shiftSlideTo in noteEffect.slides or 
+        if (gp.SlideType.shiftSlideTo in noteEffect.slides or
                 gp.SlideType.legatoSlideTo in noteEffect.slides):
             flags1 |= 0x04
         if noteEffect.letRing:

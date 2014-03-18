@@ -74,7 +74,7 @@ class GPFileBase(object):
         return read() if count == 1 else [read() for i in range(count)]
 
     def readString(self, size, length=None):
-        if length == None:
+        if length is None:
             length = size
         count = size if size > 0 else length
         s = self.data.read(count)
@@ -1163,6 +1163,7 @@ class Beat(GPObject):
 
 
 class HarmonicEffect(GPObject):
+
     '''A harmonic note effect.
     '''
     __attr__ = ('type',)
@@ -1430,6 +1431,7 @@ class ChordType(Enum):
 
 
 class Barre(GPObject):
+
     '''A single barre.
 
     :param start: first string from the bottom of the barre.
@@ -1474,7 +1476,7 @@ class PitchClass(object):
 
     '''A pitch class.
 
-    Constructor provides several overloads. Each overload provides keyword argument 
+    Constructor provides several overloads. Each overload provides keyword argument
     ``intonation`` that may be either 'sharp' or 'flat'.
 
     First of overloads is (tone, accidental):
