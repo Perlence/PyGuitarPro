@@ -88,9 +88,6 @@ class GPFileBase(object):
         d = self.readInt() - 1
         return self.readByteSizeString(d)
 
-    def readByteSizeCheckByteString(self):
-        return self.readByteSizeString(self.readByte() - 1)
-
     def readIntSizeString(self):
         return self.readString(self.readInt())
 
@@ -397,16 +394,17 @@ class PageSetup(GPObject):
     size, margins, paddings, and how the title elements are rendered.
 
     Following template vars are available for defining the page texts:
-       %TITLE% - Will get replaced with Song.title
-       %SUBTITLE% - Will get replaced with Song.subtitle
-       %ARTIST% - Will get replaced with Song.artist
-       %ALBUM% - Will get replaced with Song.album
-       %WORDS% - Will get replaced with Song.words
-       %MUSIC% - Will get replaced with Song.music
-       %WORDSANDMUSIC% - Will get replaced with the according word and music values
-       %COPYRIGHT% - Will get replaced with Song.copyright
-       %N% - Will get replaced with the current page number (if supported by layout)
-       %P% - Will get replaced with the number of pages (if supported by layout)
+
+    -   ``%TITLE%``: Will get replaced with Song.title
+    -   ``%SUBTITLE%``: Will get replaced with Song.subtitle
+    -   ``%ARTIST%``: Will get replaced with Song.artist
+    -   ``%ALBUM%``: Will get replaced with Song.album
+    -   ``%WORDS%``: Will get replaced with Song.words
+    -   ``%MUSIC%``: Will get replaced with Song.music
+    -   ``%WORDSANDMUSIC%``: Will get replaced with the according word and music values
+    -   ``%COPYRIGHT%``: Will get replaced with Song.copyright
+    -   ``%N%``: Will get replaced with the current page number (if supported by layout)
+    -   ``%P%``: Will get replaced with the number of pages (if supported by layout)
 
     """
     __attr__ = ('pageSize',

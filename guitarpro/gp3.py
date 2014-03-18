@@ -8,8 +8,7 @@ from .utils import clamp
 
 class GP3File(gp.GPFileBase):
 
-    '''A reader for GuitarPro 3 files.
-    '''
+    """A reader for GuitarPro 3 files."""
 
     _supportedVersions = ['FICHIER GUITAR PRO v3.00']
     _tripletFeel = gp.TripletFeel.none
@@ -21,10 +20,13 @@ class GP3File(gp.GPFileBase):
     # =======
 
     def readSong(self):
-        '''Read the song. Sequentially reads song info, triplet feel, lyrics,
-        tempo, song key, MIDI channels, measure and track count, measure headers,
+        """Read the song.
+
+        Sequentially reads song info, triplet feel, lyrics, tempo, song
+        key, MIDI channels, measure and track count, measure headers,
         tracks, measure.
-        '''
+
+        """
         if not self.readVersion():
             raise gp.GuitarProException("unsupported version '%s'" %
                                         self.version)
@@ -50,11 +52,12 @@ class GP3File(gp.GPFileBase):
         return song
 
     def readInfo(self, song):
-        '''Read score information.
+        """Read score information.
 
-        Sequentially reads title, subtitle, artist, album, words, copyright, 
-        tabbed by, instructions and notice.
-        '''
+        Sequentially reads title, subtitle, artist, album, words,
+        copyright, tabbed by, instructions and notice.
+
+        """
         song.title = self.readIntSizeCheckByteString()
         song.subtitle = self.readIntSizeCheckByteString()
         song.artist = self.readIntSizeCheckByteString()
@@ -71,6 +74,31 @@ class GP3File(gp.GPFileBase):
             song.notice.append(self.readIntSizeCheckByteString())
 
     def readMidiChannels(self):
+        """Read MIDI channels.
+
+        Guitar Pro format provides 64 channels (4 MIDI ports by 16 channels), the channels are stored in this order:
+
+        -   port1/channel1,
+        -   port1/channel2,
+        -   ...
+        -   port1/channel16,
+        -   port2/channel1,
+        -   ...
+        -   port4/channel16.
+
+        Each channel has the following form:
+
+        -   Instrument: *Integer*.
+        -   Volume: *Byte*.
+        -   Balance: *Byte*.
+        -   Chorus: *Byte*.
+        -   Reverb: *Byte*.
+        -   Phaser: *Byte*.
+        -   Tremolo: *Byte*.
+        -   blank1: *Byte*.
+        -   blank2: *Byte*.
+
+        """
         channels = []
         for i in range(64):
             newChannel = gp.MidiChannel()
@@ -98,6 +126,13 @@ class GP3File(gp.GPFileBase):
         return max(value, -1) + 1
 
     def readMeasureHeaders(self, song, measureCount):
+        """Read measure headers.
+
+        The *measures* are written one after another, their number having been specified previously.
+
+        :param measureCount: number of measures to expect.
+
+        """
         previous = None
         for number in range(1, measureCount + 1):
             header = self.readMeasureHeader(number, song, previous)
@@ -105,6 +140,38 @@ class GP3File(gp.GPFileBase):
             previous = header
 
     def readMeasureHeader(self, number, song, previous=None):
+        """Read measure header.
+
+        The first byte is the measure's flags.
+        It lists the data given in the current measure.
+
+        -   *0x01*: Numerator of the (key) signature;
+        -   *0x02*: Denominator of the (key) signature;
+        -   *0x04*: Beginning of repeat;
+        -   *0x08*: End of repeat;
+        -   *0x10*: Number of alternate ending;
+        -   *0x20*: Presence of a marker;
+        -   *0x40*: Tonality of the measure;
+        -   *0x80*: Presence of a double bar.
+
+        Each of these elements is present only if the corresponding bit is a 1.
+
+        The different elements are written (if they are present) from lowest to highest bit.
+
+        Exceptions are made for the double bar and the beginning of repeat whose sole presence is enough, complementary data is not necessary.
+
+        -   Numerator of the key signature: :ref:`byte`.
+        -   Denominator of the key signature: :ref:`byte`.
+        -   End of repeat: :ref:`byte`.
+            Number of repeats until the previous beginning of repeat.
+        -   Number of alternate ending: :ref:`byte`.
+            The number of alternate ending.
+        -   Marker: see :meth:`GP3File.readMarker`.
+        -   Tonality of the measure: :ref:`byte`.
+            This value encodes a key (signature) change on the current piece.
+            See :meth:`GP3File.toKeySignature`.
+
+        """
         flags = self.readByte()
 
         header = gp.MeasureHeader()
@@ -164,6 +231,14 @@ class GP3File(gp.GPFileBase):
         return repeatAlternative
 
     def readMarker(self, header):
+        """Read marker.
+
+        The markers are written in two steps. First is written an
+        integer equal to the marker's name length + 1, then a string
+        containing the marker's name. Finally the marker's color is
+        written.
+
+        """
         marker = gp.Marker()
         marker.measureHeader = header
         marker.title = self.readIntSizeCheckByteString()
@@ -171,6 +246,12 @@ class GP3File(gp.GPFileBase):
         return marker
 
     def readColor(self):
+        """Read color.
+
+        Colors are used by :class:`guitarpro.base.Marker` and :class:`guitarpro.base.Track`.
+        They consist of 3 consecutive bytes and one blank byte.
+
+        """
         r = self.readByte()
         g = self.readByte()
         b = self.readByte()
@@ -178,13 +259,57 @@ class GP3File(gp.GPFileBase):
         return gp.Color(r, g, b)
 
     def toKeySignature(self, p):
-        return 7 + abs(p) if p < 0 else p
+        """Convert integer value to :class:`KeySignature`."""
+        return 7 - p if p < 0 else p
 
     def readTracks(self, song, trackCount, channels):
+        """Read tracks.
+
+        The tracks are written one after another, their number having been specified previously in :meth:`GP3File.readSong`.
+
+        :param trackCount: number of tracks to expect.
+
+        """
         for i in range(trackCount):
             song.addTrack(self.readTrack(i + 1, channels))
 
     def readTrack(self, number, channels):
+        """Read track.
+
+        :param number: 1-based number of track.
+        :param channels: list of :class:`guitarpro.base.MidiChannel` instances.
+
+        The first byte is the track's flags.
+        It presides the track's attributes:
+
+        -   *0x01*: Drums track;
+        -   *0x02*: 12 stringed guitar track;
+        -   *0x04*: Banjo track;
+        -   *0x08*: Blank bit;
+        -   *0x10*: Blank bit;
+        -   *0x20*: Blank bit;
+        -   *0x40*: Blank bit;
+        -   *0x80*: Blank bit.
+
+        Flags are followed by:
+
+        -   Name: `String`.
+            A 40 characters long string containing the track's name.
+        -   Number of strings: :ref:`int`.
+            An integer equal to the number of strings of the track.
+        -   Tuning of the strings: `Table of integers`.
+            The tuning of the strings is stored as a 7-integers table, the "Number of strings" first integers being really used. The strings are stored from the highest to the lowest.
+        -   Port: :ref:`int`.
+            The number of the MIDI port used.
+        -   Channel: :class:`guitarpro.base.MidiChannel`. See :meth:`GP3File.readChannel`.
+        -   Number of frets: :ref:`int`.
+            The number of frets of the instrument.
+        -   Height of the capo: :ref:`int`.
+            The number of the fret on which a capo is present. If no capo is used, the value is ``0x00000000``.
+        -   Track's color: :class:`guitarpro.base.Color`.
+            The track's displayed color in Guitar Pro.
+
+        """
         flags = self.readByte()
         track = gp.Track()
         track.isPercussionTrack = bool(flags & 0x1)
@@ -211,6 +336,12 @@ class GP3File(gp.GPFileBase):
         return track
 
     def readChannel(self, track, channels):
+        """Read MIDI channel.
+
+        MIDI channel in Guitar Pro is represented by two integers.
+        First is zero-based number of channel, second is zero-based number of channel used for effects.
+
+        """
         index = self.readInt() - 1
         effectChannel = self.readInt() - 1
         if 0 <= index < len(channels):
@@ -221,6 +352,24 @@ class GP3File(gp.GPFileBase):
                 track.channel.effectChannel = effectChannel
 
     def readMeasures(self, song):
+        """Read measures.
+
+        Measures are written in the following order.
+
+        -   Measure 1/Track 1
+        -   Measure 1/Track 2
+        -   ...
+        -   Measure 1/Track M
+        -   Measure 2/Track 1
+        -   ...
+        -   Measure 2/Track M
+        -   ...
+        -   Measure N/Track 1
+        -   Measure N/Track 2
+        -   ...
+        -   Measure N/Track M
+
+        """
         tempo = gp.Tempo(song.tempo)
         start = gp.Duration.QUARTER_TIME
         for header in song.measureHeaders:
@@ -235,6 +384,12 @@ class GP3File(gp.GPFileBase):
             start += header.length
 
     def readMeasure(self, measure, track):
+        """Read measure.
+
+        Measure is written as number of beats followed by sequence of
+        beats.
+
+        """
         start = measure.start
         beats = self.readInt()
         for beat in range(beats):
@@ -580,8 +735,7 @@ class GP3File(gp.GPFileBase):
     # =======
 
     def writeSong(self, song):
-        '''Writes the song
-        '''
+        """Writes the song."""
         self.writeVersion(0)
         self.writeInfo(song)
 
