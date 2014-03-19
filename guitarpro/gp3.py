@@ -230,12 +230,10 @@ class GP3File(gp.GPFileBase):
             header.timeSignature.denominator.value = previous.timeSignature.denominator.value
         header.isRepeatOpen = bool(flags & 0x04)
         if flags & 0x08:
-            header.repeatClose = (self.readSignedByte() - 1)
+            header.repeatClose = self.readSignedByte()
         if flags & 0x10:
-            header.repeatAlternative = self.unpackRepeatAlternative(
-                song,
-                header.number,
-                self.readByte())
+            value = self.readByte()
+            header.repeatAlternative = self.unpackRepeatAlternative(song, value)
         if flags & 0x20:
             header.marker = self.readMarker(header)
         if flags & 0x40:
@@ -248,19 +246,14 @@ class GP3File(gp.GPFileBase):
         header.hasDoubleBar = bool(flags & 0x80)
         return header
 
-    def unpackRepeatAlternative(self, song, measure, value):
+    def unpackRepeatAlternative(self, song, value):
         repeatAlternative = 0
-        existentAlternatives = 0
-        for header in song.measureHeaders:
-            if header.number == measure:
-                break
+        existingAlternatives = 0
+        for header in reversed(song.measureHeaders):
             if header.isRepeatOpen:
-                existentAlternatives = 0
-            existentAlternatives |= header.repeatAlternative
-        for i in range(8):
-            if value > i and (existentAlternatives & (1 << i)) == 0:
-                repeatAlternative |= (1 << i)
-        return repeatAlternative
+                break
+            existingAlternatives |= header.repeatAlternative
+        return (1 << value) - 1 ^ existingAlternatives
 
     def readMarker(self, header):
         """Read marker.
@@ -1148,7 +1141,7 @@ class GP3File(gp.GPFileBase):
         if flags & 0x02:
             self.writeSignedByte(header.timeSignature.denominator.value)
         if flags & 0x08:
-            self.writeSignedByte(header.repeatClose + 1)
+            self.writeSignedByte(header.repeatClose)
         if flags & 0x10:
             self.writeByte(
                 self.packRepeatAlternative(header.repeatAlternative))
@@ -1159,7 +1152,13 @@ class GP3File(gp.GPFileBase):
             self.writeSignedByte(header.keySignature.value[1])
 
     def packRepeatAlternative(self, value):
-        return value.bit_length()
+        first_one = False
+        for i in range(value.bit_length() + 1):
+            if value & 1 << i:
+                first_one = True
+            elif first_one:
+                return i
+        return i
 
     def writeMarker(self, marker):
         self.writeIntByteSizeString(marker.title)
