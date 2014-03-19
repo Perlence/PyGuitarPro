@@ -84,12 +84,12 @@ class GPFileBase(object):
     def readByteSizeString(self, size):
         return self.readString(size, self.readByte())
 
-    def readIntSizeCheckByteString(self):
-        d = self.readInt() - 1
-        return self.readByteSizeString(d)
-
     def readIntSizeString(self):
         return self.readString(self.readInt())
+
+    def readIntByteSizeString(self):
+        d = self.readInt() - 1
+        return self.readByteSizeString(d)
 
     def readVersion(self):
         if self.version is None:
@@ -148,17 +148,13 @@ class GPFileBase(object):
         self.writeByte(len(data))
         return self.writeString(data, size)
 
-    def writeIntSizeCheckByteString(self, data):
-        self.writeInt(len(data) + 1)
-        return self.writeByteSizeString(data)
-
-    def writeByteSizeCheckByteString(self, data):
-        self.writeByte(len(data) + 1)
-        return self.writeByteSizeString(data)
-
     def writeIntSizeString(self, data):
         self.writeInt(len(data))
         return self.writeString(data)
+
+    def writeIntByteSizeString(self, data):
+        self.writeInt(len(data) + 1)
+        return self.writeByteSizeString(data)
 
     def writeVersion(self, index=None):
         if self.version is not None:

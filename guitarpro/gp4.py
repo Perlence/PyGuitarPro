@@ -93,7 +93,7 @@ class GP4File(gp3.GP3File):
     def readChord(self, stringCount, beat):
         chord = gp.Chord(stringCount)
         if self.readSignedByte() & 0x01 == 0:
-            chord.name = self.readIntSizeCheckByteString()
+            chord.name = self.readIntByteSizeString()
             chord.firstFret = self.readInt()
             if chord.firstFret != 0:
                 for i in range(6):

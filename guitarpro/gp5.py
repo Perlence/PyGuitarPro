@@ -29,7 +29,7 @@ class GP5File(gp4.GP4File):
         self.readRSEMasterEffect(song)
         self.readPageSetup(song)
 
-        song.tempoName = self.readIntSizeCheckByteString()
+        song.tempoName = self.readIntByteSizeString()
         song.tempo = self.readInt()
 
         if self.versionTuple > (5, 0):
@@ -55,20 +55,20 @@ class GP5File(gp4.GP4File):
         return song
 
     def readInfo(self, song):
-        song.title = self.readIntSizeCheckByteString()
-        song.subtitle = self.readIntSizeCheckByteString()
-        song.artist = self.readIntSizeCheckByteString()
-        song.album = self.readIntSizeCheckByteString()
-        song.words = self.readIntSizeCheckByteString()
-        song.music = self.readIntSizeCheckByteString()
-        song.copyright = self.readIntSizeCheckByteString()
-        song.tab = self.readIntSizeCheckByteString()
-        song.instructions = self.readIntSizeCheckByteString()
+        song.title = self.readIntByteSizeString()
+        song.subtitle = self.readIntByteSizeString()
+        song.artist = self.readIntByteSizeString()
+        song.album = self.readIntByteSizeString()
+        song.words = self.readIntByteSizeString()
+        song.music = self.readIntByteSizeString()
+        song.copyright = self.readIntByteSizeString()
+        song.tab = self.readIntByteSizeString()
+        song.instructions = self.readIntByteSizeString()
 
         iNotes = self.readInt()
         song.notice = []
         for __ in range(iNotes):
-            song.notice.append(self.readIntSizeCheckByteString())
+            song.notice.append(self.readIntByteSizeString())
 
     def readRSEMasterEffect(self, song):
         if self.versionTuple > (5, 0):
@@ -102,16 +102,16 @@ class GP5File(gp4.GP4File):
         if flags2 & 0x01:
             setup.headerAndFooter |= gp.HeaderFooterElements.PAGE_NUMBER
 
-        setup.title = self.readIntSizeCheckByteString()
-        setup.subtitle = self.readIntSizeCheckByteString()
-        setup.artist = self.readIntSizeCheckByteString()
-        setup.album = self.readIntSizeCheckByteString()
-        setup.words = self.readIntSizeCheckByteString()
-        setup.music = self.readIntSizeCheckByteString()
-        setup.wordsAndMusic = self.readIntSizeCheckByteString()
-        setup.copyright = (self.readIntSizeCheckByteString() + '\n' +
-                           self.readIntSizeCheckByteString())
-        setup.pageNumber = self.readIntSizeCheckByteString()
+        setup.title = self.readIntByteSizeString()
+        setup.subtitle = self.readIntByteSizeString()
+        setup.artist = self.readIntByteSizeString()
+        setup.album = self.readIntByteSizeString()
+        setup.words = self.readIntByteSizeString()
+        setup.music = self.readIntByteSizeString()
+        setup.wordsAndMusic = self.readIntByteSizeString()
+        setup.copyright = (self.readIntByteSizeString() + '\n' +
+                           self.readIntByteSizeString())
+        setup.pageNumber = self.readIntByteSizeString()
         song.pageSetup = setup
 
     def readDirections(self):
@@ -303,8 +303,8 @@ class GP5File(gp4.GP4File):
 
     def readRSEInstrumentEffect(self, rseInstrument):
         if self.versionTuple > (5, 0):
-            rseInstrument.effect = self.readIntSizeCheckByteString()
-            rseInstrument.effectCategory = self.readIntSizeCheckByteString()
+            rseInstrument.effect = self.readIntByteSizeString()
+            rseInstrument.effectCategory = self.readIntByteSizeString()
         return rseInstrument
 
     def readMeasure(self, measure, track):
@@ -392,7 +392,7 @@ class GP5File(gp4.GP4File):
         tableChange.reverb.value = self.readSignedByte()
         tableChange.phaser.value = self.readSignedByte()
         tableChange.tremolo.value = self.readSignedByte()
-        tableChange.tempoName = self.readIntSizeCheckByteString()
+        tableChange.tempoName = self.readIntByteSizeString()
         tableChange.tempo.value = self.readInt()
 
         if tableChange.instrument.value < 0:
@@ -592,7 +592,7 @@ class GP5File(gp4.GP4File):
         self.writeRSEMasterEffect(song.masterEffect)
         self.writePageSetup(song.pageSetup)
 
-        self.writeIntSizeCheckByteString(song.tempoName)
+        self.writeIntByteSizeString(song.tempoName)
         self.writeInt(song.tempo)
 
         if self.versionTuple > (5, 0):
@@ -616,19 +616,19 @@ class GP5File(gp4.GP4File):
         self.writeMeasures(song.tracks)
 
     def writeInfo(self, song):
-        self.writeIntSizeCheckByteString(song.title)
-        self.writeIntSizeCheckByteString(song.subtitle)
-        self.writeIntSizeCheckByteString(song.artist)
-        self.writeIntSizeCheckByteString(song.album)
-        self.writeIntSizeCheckByteString(song.words)
-        self.writeIntSizeCheckByteString(song.music)
-        self.writeIntSizeCheckByteString(song.copyright)
-        self.writeIntSizeCheckByteString(song.tab)
-        self.writeIntSizeCheckByteString(song.instructions)
+        self.writeIntByteSizeString(song.title)
+        self.writeIntByteSizeString(song.subtitle)
+        self.writeIntByteSizeString(song.artist)
+        self.writeIntByteSizeString(song.album)
+        self.writeIntByteSizeString(song.words)
+        self.writeIntByteSizeString(song.music)
+        self.writeIntByteSizeString(song.copyright)
+        self.writeIntByteSizeString(song.tab)
+        self.writeIntByteSizeString(song.instructions)
 
         self.writeInt(len(song.notice))
         for line in song.notice:
-            self.writeIntSizeCheckByteString(line)
+            self.writeIntByteSizeString(line)
 
     def writeRSEMasterEffect(self, masterEffect):
         if self.versionTuple > (5, 0):
@@ -669,17 +669,17 @@ class GP5File(gp4.GP4File):
             flags2 |= 0x01
         self.writeByte(flags2)
 
-        self.writeIntSizeCheckByteString(setup.title)
-        self.writeIntSizeCheckByteString(setup.subtitle)
-        self.writeIntSizeCheckByteString(setup.artist)
-        self.writeIntSizeCheckByteString(setup.album)
-        self.writeIntSizeCheckByteString(setup.words)
-        self.writeIntSizeCheckByteString(setup.music)
-        self.writeIntSizeCheckByteString(setup.wordsAndMusic)
+        self.writeIntByteSizeString(setup.title)
+        self.writeIntByteSizeString(setup.subtitle)
+        self.writeIntByteSizeString(setup.artist)
+        self.writeIntByteSizeString(setup.album)
+        self.writeIntByteSizeString(setup.words)
+        self.writeIntByteSizeString(setup.music)
+        self.writeIntByteSizeString(setup.wordsAndMusic)
         copyrighta, copyrightb = setup.copyright.split('\n', 1)
-        self.writeIntSizeCheckByteString(copyrighta)
-        self.writeIntSizeCheckByteString(copyrightb)
-        self.writeIntSizeCheckByteString(setup.pageNumber)
+        self.writeIntByteSizeString(copyrighta)
+        self.writeIntByteSizeString(copyrightb)
+        self.writeIntByteSizeString(setup.pageNumber)
 
     def writeDirections(self, measureHeaders):
         order = ['Coda',
@@ -888,8 +888,8 @@ class GP5File(gp4.GP4File):
         if self.versionTuple > (5, 0):
             if rseInstrument is None:
                 rseInstrument = gp.RSEInstrument()
-            self.writeIntSizeCheckByteString(rseInstrument.effect)
-            self.writeIntSizeCheckByteString(rseInstrument.effectCategory)
+            self.writeIntByteSizeString(rseInstrument.effect)
+            self.writeIntByteSizeString(rseInstrument.effectCategory)
 
     def writeMeasure(self, measure):
         for index in range(gp.Beat.MAX_VOICES):
@@ -992,7 +992,7 @@ class GP5File(gp4.GP4File):
                  ('reverb', self.writeSignedByte),
                  ('phaser', self.writeSignedByte),
                  ('tremolo', self.writeSignedByte),
-                 ('tempoName', self.writeIntSizeCheckByteString),
+                 ('tempoName', self.writeIntByteSizeString),
                  ('tempo', self.writeInt)]
 
         for name, write in items:

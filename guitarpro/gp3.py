@@ -90,19 +90,19 @@ class GP3File(gp.GPFileBase):
         Each line is encoded in :ref:`int-byte-size-string`.
 
         """
-        song.title = self.readIntSizeCheckByteString()
-        song.subtitle = self.readIntSizeCheckByteString()
-        song.artist = self.readIntSizeCheckByteString()
-        song.album = self.readIntSizeCheckByteString()
-        song.words = self.readIntSizeCheckByteString()
+        song.title = self.readIntByteSizeString()
+        song.subtitle = self.readIntByteSizeString()
+        song.artist = self.readIntByteSizeString()
+        song.album = self.readIntByteSizeString()
+        song.words = self.readIntByteSizeString()
         song.music = song.words
-        song.copyright = self.readIntSizeCheckByteString()
-        song.tab = self.readIntSizeCheckByteString()
-        song.instructions = self.readIntSizeCheckByteString()
+        song.copyright = self.readIntByteSizeString()
+        song.tab = self.readIntByteSizeString()
+        song.instructions = self.readIntByteSizeString()
         notesCount = self.readInt()
         song.notice = []
         for __ in range(notesCount):
-            song.notice.append(self.readIntSizeCheckByteString())
+            song.notice.append(self.readIntByteSizeString())
 
     def readMidiChannels(self):
         """Read MIDI channels.
@@ -273,7 +273,7 @@ class GP3File(gp.GPFileBase):
         """
         marker = gp.Marker()
         marker.measureHeader = header
-        marker.title = self.readIntSizeCheckByteString()
+        marker.title = self.readIntByteSizeString()
         marker.color = self.readColor()
         return marker
 
@@ -637,7 +637,7 @@ class GP3File(gp.GPFileBase):
         """
         chord = gp.Chord(stringCount)
         if self.readByte() & 0x01 == 0:
-            chord.name = self.readIntSizeCheckByteString()
+            chord.name = self.readIntByteSizeString()
             chord.firstFret = self.readInt()
             if chord.firstFret:
                 for i in range(6):
@@ -684,7 +684,7 @@ class GP3File(gp.GPFileBase):
 
         """
         text = gp.BeatText()
-        text.value = self.readIntSizeCheckByteString()
+        text.value = self.readIntByteSizeString()
         beat.setText(text)
 
     def readBeatEffects(self, beat, effect):
@@ -1061,18 +1061,18 @@ class GP3File(gp.GPFileBase):
         self.writeInt(0)
 
     def writeInfo(self, song):
-        self.writeIntSizeCheckByteString(song.title)
-        self.writeIntSizeCheckByteString(song.subtitle)
-        self.writeIntSizeCheckByteString(song.artist)
-        self.writeIntSizeCheckByteString(song.album)
-        self.writeIntSizeCheckByteString(song.words)
-        self.writeIntSizeCheckByteString(song.copyright)
-        self.writeIntSizeCheckByteString(song.tab)
-        self.writeIntSizeCheckByteString(song.instructions)
+        self.writeIntByteSizeString(song.title)
+        self.writeIntByteSizeString(song.subtitle)
+        self.writeIntByteSizeString(song.artist)
+        self.writeIntByteSizeString(song.album)
+        self.writeIntByteSizeString(song.words)
+        self.writeIntByteSizeString(song.copyright)
+        self.writeIntByteSizeString(song.tab)
+        self.writeIntByteSizeString(song.instructions)
 
         self.writeInt(len(song.notice))
         for line in song.notice:
-            self.writeIntSizeCheckByteString(line)
+            self.writeIntByteSizeString(line)
 
     def writeMidiChannels(self, tracks):
         def getTrackChannelByChannel(channel):
@@ -1164,7 +1164,7 @@ class GP3File(gp.GPFileBase):
         return value.bit_length()
 
     def writeMarker(self, marker):
-        self.writeIntSizeCheckByteString(marker.title)
+        self.writeIntByteSizeString(marker.title)
         self.writeColor(marker.color)
 
     def writeColor(self, color):
@@ -1332,7 +1332,7 @@ class GP3File(gp.GPFileBase):
         self.placeholder(1)
 
     def writeText(self, text):
-        self.writeIntSizeCheckByteString(text.value)
+        self.writeIntByteSizeString(text.value)
 
     def writeBeatEffects(self, beatEffect, voice):
         flags1 = 0x00
