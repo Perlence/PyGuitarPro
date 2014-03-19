@@ -62,7 +62,7 @@ class GP3File(gp.GPFileBase):
         self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
                              else gp.TripletFeel.none)
         song.tempo = self.readInt()
-        song.key = self.readInt()
+        song.key = gp.KeySignature((self.readInt(), 0))
         channels = self.readMidiChannels()
         measureCount = self.readInt()
         trackCount = self.readInt()
@@ -182,8 +182,8 @@ class GP3File(gp.GPFileBase):
         The first byte is the measure's flags.
         It lists the data given in the current measure.
 
-        -   *0x01*: numerator of the (key) signature
-        -   *0x02*: denominator of the (key) signature
+        -   *0x01*: numerator of the key signature
+        -   *0x02*: denominator of the key signature
         -   *0x04*: beginning of repeat
         -   *0x08*: end of repeat
         -   *0x10*: number of alternate ending
@@ -209,9 +209,9 @@ class GP3File(gp.GPFileBase):
 
         -   Marker: see :meth:`GP3File.readMarker`.
 
-        -   Tonality of the measure: :ref:`byte`.
-            This value encodes a key (signature) change on the current piece.
-            See :meth:`GP3File.toKeySignature`.
+        -   Tonality of the measure: 2 :ref:`Bytes <byte>`.
+            These values encode a key signature change on the current piece.
+            First byte is key signature root, second is key signature type.
 
         """
         flags = self.readByte()
@@ -239,12 +239,12 @@ class GP3File(gp.GPFileBase):
         if flags & 0x20:
             header.marker = self.readMarker(header)
         if flags & 0x40:
-            header.keySignature = self.toKeySignature(self.readSignedByte())
-            header.keySignatureType = self.readSignedByte()
+            root = self.readSignedByte()
+            type_ = self.readSignedByte()
+            header.keySignature = gp.KeySignature((root, type_))
             header.keySignaturePresence = True
         elif header.number > 1:
             header.keySignature = previous.keySignature
-            header.keySignatureType = previous.keySignatureType
         header.hasDoubleBar = bool(flags & 0x80)
         return header
 
@@ -289,10 +289,6 @@ class GP3File(gp.GPFileBase):
         b = self.readByte()
         self.skip(1)
         return gp.Color(r, g, b)
-
-    def toKeySignature(self, p):
-        """Convert integer value to :class:`KeySignature`."""
-        return 7 - p if p < 0 else p
 
     def readTracks(self, song, trackCount, channels):
         """Read tracks.
@@ -1046,7 +1042,7 @@ class GP3File(gp.GPFileBase):
         self.writeBool(self._tripletFeel)
 
         self.writeInt(song.tempo)
-        self.writeInt(song.key)
+        self.writeInt(song.key.value[0])
         self.writeMidiChannels(song.tracks)
 
         measureCount = len(song.tracks[0].measures)
@@ -1157,8 +1153,8 @@ class GP3File(gp.GPFileBase):
             self.writeMarker(header.marker)
 
         if flags & 0x40:
-            self.writeSignedByte(self.fromKeySignature(header.keySignature))
-            self.writeSignedByte(header.keySignatureType)
+            self.writeSignedByte(header.keySignature.value[0])
+            self.writeSignedByte(header.keySignature.value[1])
 
     def packRepeatAlternative(self, value):
         return value.bit_length()
@@ -1172,9 +1168,6 @@ class GP3File(gp.GPFileBase):
         self.writeByte(color.g)
         self.writeByte(color.b)
         self.placeholder(1)
-
-    def fromKeySignature(self, p):
-        return -(p - 7) if p > 7 else p
 
     def writeTracks(self, tracks):
         for track in tracks:

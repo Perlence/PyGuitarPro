@@ -33,7 +33,7 @@ class GP4File(gp3.GP3File):
         self.readLyrics(song)
         
         song.tempo = self.readInt()
-        song.key = self.readInt()
+        song.key = gp.KeySignature((self.readInt(), 0))
         self.readSignedByte()  # octave
         
         channels = self.readMidiChannels()
@@ -286,7 +286,7 @@ class GP4File(gp3.GP3File):
         self.writeLyrics(song.lyrics)
 
         self.writeInt(song.tempo)
-        self.writeInt(song.key)
+        self.writeInt(song.key.value[0])
         self.writeSignedByte(0)  # octave
 
         self.writeMidiChannels(song.tracks)

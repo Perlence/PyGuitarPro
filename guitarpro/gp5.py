@@ -37,7 +37,7 @@ class GP5File(gp4.GP4File):
         else:
             song.hideTempo = False
 
-        song.key = self.readByte()
+        song.key = gp.KeySignature((self.readSignedByte(), 0))
         self.readInt()  # octave
 
         channels = self.readMidiChannels()
@@ -190,11 +190,11 @@ class GP5File(gp4.GP4File):
             header.repeatAlternative = self.readByte()
 
         if flags & 0x40:
-            header.keySignature = self.toKeySignature(self.readSignedByte())
-            header.keySignatureType = self.readByte()
+            root = self.readSignedByte()
+            type_ = self.readByte()
+            header.keySignature = gp.KeySignature((root, type_))
         elif previous is not None:
             header.keySignature = previous.keySignature
-            header.keySignatureType = previous.keySignatureType
 
         header.hasDoubleBar = bool(flags & 0x80)
 
@@ -598,7 +598,7 @@ class GP5File(gp4.GP4File):
         if self.versionTuple > (5, 0):
             self.writeBool(song.hideTempo)
 
-        self.writeByte(song.key)
+        self.writeSignedByte(song.key.value[0])
         self.writeInt(0)  # octave
 
         self.writeMidiChannels(song.tracks)
@@ -765,8 +765,8 @@ class GP5File(gp4.GP4File):
             self.writeByte(header.repeatAlternative)
 
         if flags & 0x40:
-            self.writeSignedByte(self.fromKeySignature(header.keySignature))
-            self.writeByte(header.keySignatureType)
+            self.writeSignedByte(header.keySignature.value[0])
+            self.writeByte(header.keySignature.value[1])
 
         if flags & 0x01:
             for beam in header.timeSignature.beams:
