@@ -7,8 +7,7 @@ PyGuitarPro documentation contents
    :maxdepth: 2
 
    intro
-   base
-   spec35
+   api
 
 Indices and tables
 ==================

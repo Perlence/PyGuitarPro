@@ -81,7 +81,7 @@ class GP4File(gp3.GP3File):
         stringFlags = self.readSignedByte()
         for j in range(7):
             i = 6 - j
-            if stringFlags & (1 << i) and (6 - i) < len(track.strings):
+            if stringFlags & 1 << i and (6 - i) < len(track.strings):
                 guitarString = track.strings[6 - i]
                 note = gp.Note()
                 voice.addNote(note)

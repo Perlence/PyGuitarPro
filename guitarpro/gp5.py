@@ -343,7 +343,7 @@ class GP5File(gp4.GP4File):
         stringFlags = self.readByte()
         for j in range(7):
             i = 6 - j
-            if stringFlags & (1 << i) and (6 - i) < len(track.strings):
+            if stringFlags & 1 << i and (6 - i) < len(track.strings):
                 guitarString = track.strings[6 - i]
                 note = gp.Note()
                 voice.addNote(note)
