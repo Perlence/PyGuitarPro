@@ -1527,16 +1527,18 @@ class MixTableItem(GPObject):
         GPObject.__init__(self, *args, **kwargs)
 
 
-class WahEffect(GPObject):
-    __attr__ = ('value',
-                'enabled',
-                'display')
+class WahState(Enum):
+    off = -2
+    none = -1
+    opened = 0
+    closed = 100
 
-    def __init__(self, *args, **kwargs):
-        self.value = -1
-        self.enabled = False
-        self.display = False
-        GPObject.__init__(self, *args, **kwargs)
+
+class WahEffect(GPObject):
+    __attr__ = ('state', 'display')
+
+    state = WahState.none
+    display = False
 
 
 class MixTableChange(GPObject):

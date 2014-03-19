@@ -438,22 +438,7 @@ class GP5File(gp4.GP4File):
             tableChange.tempo.allTracks = True
         tableChange.useRSE = bool(flags & 0x40)
         tableChange.wah.display = bool(flags & 0x80)
-
-        # Wah-Wah flag
-        #  0: Open
-        # 64: Close
-        # -2: Off
-        # -1: No wah info
-        wahValue = self.readSignedByte()
-        if wahValue > -1:
-            tableChange.wah.value = wahValue
-            tableChange.wah.enabled = True
-        elif wahValue == -2:
-            tableChange.wah.value = 0
-            tableChange.wah.enabled = False
-        else:
-            tableChange.wah = None
-
+        tableChange.wah.state = gp.WahState(self.readSignedByte())
         self.readRSEInstrumentEffect(tableChange.rse)
         return tableChange
 
@@ -1010,15 +995,7 @@ class GP5File(gp4.GP4File):
             flags |= 0x80
 
         self.writeByte(flags)
-
-        if tableChange.wah is not None:
-            if tableChange.wah.enabled:
-                self.writeSignedByte(tableChange.wah.value)
-            else:
-                self.writeSignedByte(-2)
-        else:
-            self.writeSignedByte(-1)
-
+        self.writeSignedByte(tableChange.wah.state.value)
         self.writeRSEInstrumentEffect(tableChange.rse)
 
     def writeNote(self, note):
