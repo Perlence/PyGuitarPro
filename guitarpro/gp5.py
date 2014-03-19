@@ -482,7 +482,6 @@ class GP5File(gp4.GP4File):
         if flags & 0x80:
             note.effect.leftHandFinger = self.readSignedByte()
             note.effect.rightHandFinger = self.readSignedByte()
-            note.effect.isFingering = True
 
         if flags & 0x01:
             note.durationPercent = self.readDouble()

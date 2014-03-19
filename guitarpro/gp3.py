@@ -923,7 +923,6 @@ class GP3File(gp.GPFileBase):
         if flags & 0x80:
             note.effect.leftHandFinger = self.readSignedByte()
             note.effect.rightHandFinger = self.readSignedByte()
-            note.effect.isFingering = True
         if flags & 0x08:
             self.readNoteEffects(note)
             if note.effect.isHarmonic and isinstance(note.effect.harmonic, gp.TappedHarmonic):

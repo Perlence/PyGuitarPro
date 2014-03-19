@@ -1213,7 +1213,6 @@ class NoteEffect(GPObject):
     """Contains all effects which can be applied to one note."""
     __attr__ = ('leftHandFinger',
                 'rightHandFinger',
-                'isFingering',
                 'bend',
                 'harmonic',
                 'grace',
@@ -1241,7 +1240,6 @@ class NoteEffect(GPObject):
         self.palmMute = False
         self.staccato = False
         self.letRing = False
-        self.isFingering = False
         self.leftHandFinger = -1
         self.rightHandFinger = -1
         self.note = None
@@ -1266,6 +1264,10 @@ class NoteEffect(GPObject):
     @property
     def isTremoloPicking(self):
         return self.tremoloPicking is not None
+
+    @property
+    def isFingering(self):
+        return self.leftHandFinger > 0 or self.rightHandFinger >  0
 
     @property
     def isDefault(self):
@@ -1531,7 +1533,7 @@ class WahEffect(GPObject):
                 'display')
 
     def __init__(self, *args, **kwargs):
-        self.value = 0
+        self.value = -1
         self.enabled = False
         self.display = False
         GPObject.__init__(self, *args, **kwargs)
