@@ -187,7 +187,7 @@ class GP5File(gp4.GP4File):
             header.marker = self.readMarker(header)
 
         if flags & 0x10:
-            header.repeatAlternative = self.readByte()
+            header.repeatAlternative = self.readRepeatAlternative(song.measureHeaders)
 
         if flags & 0x40:
             root = self.readSignedByte()
@@ -199,7 +199,7 @@ class GP5File(gp4.GP4File):
         header.hasDoubleBar = bool(flags & 0x80)
 
         if flags & 0x03:
-            header.timeSignature.beams = [self.readByte() for __ in range(4)]
+            header.timeSignature.beams = self.readByte(4)
         else:
             header.timeSignature.beams = previous.timeSignature.beams
 
@@ -210,6 +210,9 @@ class GP5File(gp4.GP4File):
         header.tripletFeel = gp.TripletFeel(self.readByte())
 
         return header
+
+    def readRepeatAlternative(self, measureHeaders):
+        return self.readByte()
 
     def readTracks(self, song, trackCount, channels):
         for i in range(trackCount):
@@ -739,7 +742,7 @@ class GP5File(gp4.GP4File):
             self.writeMarker(header.marker)
 
         if flags & 0x10:
-            self.writeByte(header.repeatAlternative)
+            self.writeRepeatAlternative(header.repeatAlternative)
 
         if flags & 0x40:
             self.writeSignedByte(header.keySignature.value[0])
@@ -753,6 +756,9 @@ class GP5File(gp4.GP4File):
             self.placeholder(1)
 
         self.writeByte(header.tripletFeel.value)
+
+    def writeRepeatAlternative(self, repeatAlternative):
+        self.writeByte(repeatAlternative)
 
     def writeTracks(self, tracks):
         super(GP5File, self).writeTracks(tracks)

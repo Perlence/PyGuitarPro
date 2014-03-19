@@ -232,8 +232,7 @@ class GP3File(gp.GPFileBase):
         if flags & 0x08:
             header.repeatClose = self.readSignedByte()
         if flags & 0x10:
-            value = self.readByte()
-            header.repeatAlternative = self.unpackRepeatAlternative(song, value)
+            header.repeatAlternative = self.readRepeatAlternative(song.measureHeaders)
         if flags & 0x20:
             header.marker = self.readMarker(header)
         if flags & 0x40:
@@ -246,10 +245,11 @@ class GP3File(gp.GPFileBase):
         header.hasDoubleBar = bool(flags & 0x80)
         return header
 
-    def unpackRepeatAlternative(self, song, value):
+    def readRepeatAlternative(self, measureHeaders):
+        value = self.readByte()
         repeatAlternative = 0
         existingAlternatives = 0
-        for header in reversed(song.measureHeaders):
+        for header in reversed(measureHeaders):
             if header.isRepeatOpen:
                 break
             existingAlternatives |= header.repeatAlternative
@@ -1143,22 +1143,21 @@ class GP3File(gp.GPFileBase):
         if flags & 0x08:
             self.writeSignedByte(header.repeatClose)
         if flags & 0x10:
-            self.writeByte(
-                self.packRepeatAlternative(header.repeatAlternative))
+            self.writeRepeatAlternative(header.repeatAlternative)
         if flags & 0x20:
             self.writeMarker(header.marker)
         if flags & 0x40:
             self.writeSignedByte(header.keySignature.value[0])
             self.writeSignedByte(header.keySignature.value[1])
 
-    def packRepeatAlternative(self, value):
+    def writeRepeatAlternative(self, value):
         first_one = False
         for i in range(value.bit_length() + 1):
             if value & 1 << i:
                 first_one = True
             elif first_one:
-                return i
-        return i
+                break
+        self.writeByte(i)
 
     def writeMarker(self, marker):
         self.writeIntByteSizeString(marker.title)
