@@ -5,7 +5,7 @@ import struct
 from enum import Enum
 
 
-class GuitarProException(Exception):
+class GPException(Exception):
     pass
 
 
@@ -1105,18 +1105,6 @@ class Beat(GPObject):
             for note in voice.notes:
                 notes.append(note)
         return notes
-
-
-# class HarmonicType(Enum):
-
-#     '''All harmonic effect types.
-#     '''
-#     none = 0
-#     natural = 1
-#     artificial = 2
-#     tapped = 3
-#     pinch = 4
-#     semi = 5
 
 
 class HarmonicEffect(GPObject):

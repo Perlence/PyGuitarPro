@@ -55,7 +55,7 @@ class GP3File(gp.GPFileBase):
 
         """
         if not self.readVersion():
-            raise gp.GuitarProException("unsupported version '%s'" %
+            raise gp.GPException("unsupported version '%s'" %
                                         self.version)
         song = gp.Song()
         self.readInfo(song)

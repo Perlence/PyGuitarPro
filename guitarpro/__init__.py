@@ -65,7 +65,7 @@ def open(filename, mode='rb', format=None):
     try:
         GPFile = GPFILES[version]
     except KeyError:
-        raise GuitarProException("unsupported version '%s'" %
+        raise GPException("unsupported version '%s'" %
                                  gpfilebase.version)
     gpfile = GPFile(fp)
     if mode == 'wb':
