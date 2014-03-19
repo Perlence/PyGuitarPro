@@ -1240,8 +1240,8 @@ class NoteEffect(GPObject):
         self.palmMute = False
         self.staccato = False
         self.letRing = False
-        self.leftHandFinger = -1
-        self.rightHandFinger = -1
+        self.leftHandFinger = Fingering.open
+        self.rightHandFinger = Fingering.open
         self.note = None
         GPObject.__init__(self, *args, **kwargs)
 
@@ -1267,7 +1267,7 @@ class NoteEffect(GPObject):
 
     @property
     def isFingering(self):
-        return self.leftHandFinger > 0 or self.rightHandFinger >  0
+        return self.leftHandFinger.value > -1 or self.rightHandFinger.value > -1
 
     @property
     def isDefault(self):

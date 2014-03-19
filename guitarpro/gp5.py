@@ -465,8 +465,8 @@ class GP5File(gp4.GP4File):
             note.value = value if 0 <= value < 100 else 0
 
         if flags & 0x80:
-            note.effect.leftHandFinger = self.readSignedByte()
-            note.effect.rightHandFinger = self.readSignedByte()
+            note.effect.leftHandFinger = gp.Fingering(self.readSignedByte())
+            note.effect.rightHandFinger = gp.Fingering(self.readSignedByte())
 
         if flags & 0x01:
             note.durationPercent = self.readDouble()
@@ -1030,8 +1030,8 @@ class GP5File(gp4.GP4File):
             self.writeSignedByte(fret)
 
         if flags & 0x80:
-            self.writeSignedByte(note.effect.leftHandFinger)
-            self.writeSignedByte(note.effect.rightHandFinger)
+            self.writeSignedByte(note.effect.leftHandFinger.value)
+            self.writeSignedByte(note.effect.rightHandFinger.value)
 
         if flags & 0x01:
             self.writeDouble(note.durationPercent)

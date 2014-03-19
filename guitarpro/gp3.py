@@ -921,8 +921,8 @@ class GP3File(gp.GPFileBase):
                 value = fret
             note.value = max(0, min(99, value))
         if flags & 0x80:
-            note.effect.leftHandFinger = self.readSignedByte()
-            note.effect.rightHandFinger = self.readSignedByte()
+            note.effect.leftHandFinger = gp.Fingering(self.readSignedByte())
+            note.effect.rightHandFinger = gp.Fingering(self.readSignedByte())
         if flags & 0x08:
             self.readNoteEffects(note)
             if note.effect.isHarmonic and isinstance(note.effect.harmonic, gp.TappedHarmonic):
@@ -1419,8 +1419,8 @@ class GP3File(gp.GPFileBase):
             fret = note.value if note.type != gp.NoteType.tie else 0
             self.writeSignedByte(fret)
         if flags & 0x80:
-            self.writeSignedByte(note.effect.leftHandFinger)
-            self.writeSignedByte(note.effect.rightHandFinger)
+            self.writeSignedByte(note.effect.leftHandFinger.value)
+            self.writeSignedByte(note.effect.rightHandFinger.value)
         if flags & 0x08:
             self.writeNoteEffects(note)
 
