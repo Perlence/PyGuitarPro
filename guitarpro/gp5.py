@@ -464,9 +464,8 @@ class GP5File(gp4.GP4File):
         note.effect.heavyAccentuatedNote = bool(flags & 0x02)
         note.effect.ghostNote = bool(flags & 0x04)
         if flags & 0x20:
-            noteType = self.readByte()
-            note.isTiedNote = noteType == 0x02
-            note.effect.deadNote = noteType == 0x03
+            note.type = gp.NoteType(self.readByte())
+            note.effect.deadNote = note.type == gp.NoteType.dead
 
         if flags & 0x10:
             dyn = self.readSignedByte()
@@ -474,8 +473,10 @@ class GP5File(gp4.GP4File):
 
         if flags & 0x20:
             fret = self.readSignedByte()
-            value = self.getTiedNoteValue(guitarString.number,
-                                          track) if note.isTiedNote else fret
+            if note.type == gp.NoteType.tie:
+                value = self.getTiedNoteValue(guitarString.number, track)
+            else:
+                value = fret
             note.value = value if 0 <= value < 100 else 0
 
         if flags & 0x80:
@@ -1033,7 +1034,6 @@ class GP5File(gp4.GP4File):
             flags |= 0x08
         if note.velocity != gp.Velocities.default:
             flags |= 0x10
-        # if note.isTiedNote or note.effect.deadNote:
         flags |= 0x20
         if note.effect.accentuatedNote:
             flags |= 0x40
@@ -1043,20 +1043,14 @@ class GP5File(gp4.GP4File):
         self.writeByte(flags)
 
         if flags & 0x20:
-            if note.isTiedNote:
-                noteType = 0x02
-            elif note.effect.deadNote:
-                noteType = 0x03
-            else:
-                noteType = 0x01
-            self.writeByte(noteType)
+            self.writeByte(note.type.value)
 
         if flags & 0x10:
             value = self.packVelocity(note.velocity)
             self.writeSignedByte(value)
 
         if flags & 0x20:
-            fret = note.value if not note.isTiedNote else 0
+            fret = note.value if note.type != gp.NoteType.tie else 0
             self.writeSignedByte(fret)
 
         if flags & 0x80:

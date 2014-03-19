@@ -1285,6 +1285,13 @@ class NoteEffect(GPObject):
                 self.letRing == default.letRing)
 
 
+class NoteType(Enum):
+    rest = 0
+    normal = 1
+    dead = 2
+    tie = 3
+
+
 class Note(GPObject):
 
     """Describes a single note."""
@@ -1294,16 +1301,17 @@ class Note(GPObject):
                 'isTiedNote',
                 'effect',
                 'durationPercent',
-                'swapAccidentals')
+                'swapAccidentals',
+                'type')
 
     def __init__(self, *args, **kwargs):
         self.value = 0
         self.velocity = Velocities.default
         self.string = 0
-        self.isTiedNote = False
         self.swapAccidentals = False
         self.effect = NoteEffect()
         self.durationPercent = 1.0
+        self.type = NoteType.rest
         GPObject.__init__(self, *args, **kwargs)
 
     @property
