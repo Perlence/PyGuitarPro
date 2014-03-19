@@ -340,15 +340,7 @@ class GP5File(gp4.GP4File):
             mixTableChange = self.readMixTableChange(measure)
             beat.effect.mixTableChange = mixTableChange
 
-        stringFlags = self.readByte()
-        for j in range(7):
-            i = 6 - j
-            if stringFlags & 1 << i and (6 - i) < len(track.strings):
-                guitarString = track.strings[6 - i]
-                note = gp.Note()
-                voice.addNote(note)
-                self.readNote(note, guitarString, track, gp.NoteEffect())
-            voice.duration = duration
+        self.readNotes(track, voice, duration)
 
         flags2 = self.readByte()
         flags3 = self.readByte()
@@ -938,13 +930,7 @@ class GP5File(gp4.GP4File):
         if flags1 & 0x10:
             self.writeMixTableChange(beat.effect.mixTableChange)
 
-        stringFlags = 0x00
-        for note in voice.notes:
-            stringFlags |= 1 << (7 - note.string)
-        self.writeByte(stringFlags)
-
-        for note in voice.notes:
-            self.writeNote(note)
+        self.writeNotes(voice)
 
         flags2 = 0x00
         if beat.display.breakBeam:

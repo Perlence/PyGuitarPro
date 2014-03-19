@@ -78,15 +78,7 @@ class GP4File(gp3.GP3File):
             mixTableChange = self.readMixTableChange(measure)
             beat.effect.mixTableChange = mixTableChange
 
-        stringFlags = self.readSignedByte()
-        for j in range(7):
-            i = 6 - j
-            if stringFlags & 1 << i and (6 - i) < len(track.strings):
-                guitarString = track.strings[6 - i]
-                note = gp.Note()
-                voice.addNote(note)
-                self.readNote(note, guitarString, track, gp.NoteEffect())
-            voice.duration = duration
+        self.readNotes(track, voice, duration)
 
         return duration.time if not voice.isEmpty else 0
 
@@ -347,13 +339,7 @@ class GP4File(gp3.GP3File):
         if flags & 0x10:
             self.writeMixTableChange(beat.effect.mixTableChange)
 
-        stringFlags = 0x00
-        for note in voice.notes:
-            stringFlags |= 1 << (7 - note.string)
-        self.writeSignedByte(stringFlags)
-
-        for note in voice.notes:
-            self.writeNote(note)
+        self.writeNotes(voice)
 
     def writeChord(self, chord):
         self.writeSignedByte(1)  # signify GP4 chord format
