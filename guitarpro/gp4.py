@@ -159,9 +159,9 @@ class GP4File(gp3.GP3File):
         barEffect.value = self.readInt()
         pointCount = self.readInt()
         for i in range(pointCount):
-            pointPosition = round(self.readInt() * gp.BendEffect.MAX_POSITION /
-                                  self.BEND_POSITION)
-            pointValue = round(self.readInt() / (self.BEND_SEMITONE * 2.0))
+            pointPosition = round(self.readInt() * gp.BendEffect.maxPosition /
+                                  self.bendPosition)
+            pointValue = round(self.readInt() / (self.bendSemitone * 2.0))
             vibrato = self.readBool()
             barEffect.points.append(gp.BendPoint(pointPosition, pointValue,
                                                  vibrato))
@@ -219,11 +219,11 @@ class GP4File(gp3.GP3File):
 
     def fromTremoloValue(self, value):
         if value == 1:
-            return gp.Duration.EIGHTH
+            return gp.Duration.eighth
         elif value == 2:
-            return gp.Duration.SIXTEENTH
+            return gp.Duration.sixteenth
         elif value == 3:
-            return gp.Duration.THIRTY_SECOND
+            return gp.Duration.thirtySecond
 
     def readHarmonic(self, note):
         harmonicType = self.readSignedByte()
@@ -259,11 +259,11 @@ class GP4File(gp3.GP3File):
 
     def fromTrillPeriod(self, period):
         if period == 1:
-            return gp.Duration.SIXTEENTH
+            return gp.Duration.sixteenth
         elif period == 2:
-            return gp.Duration.THIRTY_SECOND
+            return gp.Duration.thirtySecond
         elif period == 3:
-            return gp.Duration.SIXTY_FOURTH
+            return gp.Duration.sixtyFourth
 
     # Writing
     # =======
@@ -431,9 +431,9 @@ class GP4File(gp3.GP3File):
         self.writeInt(tremoloBar.value)
         self.writeInt(len(tremoloBar.points))
         for point in tremoloBar.points:
-            self.writeInt(round(point.position * self.BEND_POSITION /
-                                gp.BendEffect.MAX_POSITION))
-            self.writeInt(round(point.value * (self.BEND_SEMITONE * 2.0)))
+            self.writeInt(round(point.position * self.bendPosition /
+                                gp.BendEffect.maxPosition))
+            self.writeInt(round(point.value * (self.bendSemitone * 2.0)))
             self.writeBool(point.vibrato)
 
     def writeMixTableChange(self, tableChange):
@@ -503,11 +503,11 @@ class GP4File(gp3.GP3File):
             self.toTremoloValue(tremoloPicking.duration.value))
 
     def toTremoloValue(self, value):
-        if value == gp.Duration.EIGHTH:
+        if value == gp.Duration.eighth:
             return 1
-        elif value == gp.Duration.SIXTEENTH:
+        elif value == gp.Duration.sixteenth:
             return 2
-        elif value == gp.Duration.THIRTY_SECOND:
+        elif value == gp.Duration.thirtySecond:
             return 3
 
     def writeHarmonic(self, note, harmonic):
@@ -535,9 +535,9 @@ class GP4File(gp3.GP3File):
         self.writeSignedByte(self.toTrillPeriod(trill.duration.value))
 
     def toTrillPeriod(self, value):
-        if value == gp.Duration.SIXTEENTH:
+        if value == gp.Duration.sixteenth:
             return 1
-        if value == gp.Duration.THIRTY_SECOND:
+        if value == gp.Duration.thirtySecond:
             return 2
-        if value == gp.Duration.SIXTY_FOURTH:
+        if value == gp.Duration.sixtyFourth:
             return 3

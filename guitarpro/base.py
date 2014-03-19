@@ -10,9 +10,9 @@ class GPException(Exception):
 
 
 class GPFileBase(object):
-    DEFAULT_CHARSET = 'UTF-8'
-    BEND_POSITION = 60
-    BEND_SEMITONE = 25
+    defaultCharset = 'UTF-8'
+    bendPosition = 60
+    bendSemitone = 25
 
     _supportedVersions = []
     _versionTuple = None
@@ -371,18 +371,18 @@ class HeaderFooterElements(object):
     All values can be combined using bit-operators as they are flags.
 
     """
-    NONE = 0x0
-    TITLE = 0x1
-    SUBTITLE = 0x2
-    ARTIST = 0x4
-    ALBUM = 0x8
-    WORDS = 0x10
-    MUSIC = 0x20
-    WORDS_AND_MUSIC = 0x40
-    COPYRIGHT = 0x80
-    PAGE_NUMBER = 0x100
-    ALL = (NONE | TITLE | SUBTITLE | ARTIST | ALBUM | WORDS | MUSIC |
-           WORDS_AND_MUSIC | COPYRIGHT | PAGE_NUMBER)
+    none          = 0x000
+    title         = 0x001
+    subtitle      = 0x002
+    artist        = 0x004
+    album         = 0x008
+    words         = 0x010
+    music         = 0x020
+    wordsAndMusic = 0x040
+    copyright     = 0x080
+    pageNumber    = 0x100
+    all = (title | subtitle | artist | album | words | music | wordsAndMusic |
+           copyright | pageNumber)
 
 
 class PageSetup(GPObject):
@@ -392,14 +392,14 @@ class PageSetup(GPObject):
 
     Following template vars are available for defining the page texts:
 
-    -   ``%TITLE%``: Will get replaced with Song.title
-    -   ``%SUBTITLE%``: Will get replaced with Song.subtitle
-    -   ``%ARTIST%``: Will get replaced with Song.artist
-    -   ``%ALBUM%``: Will get replaced with Song.album
-    -   ``%WORDS%``: Will get replaced with Song.words
-    -   ``%MUSIC%``: Will get replaced with Song.music
+    -   ``%title%``: Will get replaced with Song.title
+    -   ``%subtitle%``: Will get replaced with Song.subtitle
+    -   ``%artist%``: Will get replaced with Song.artist
+    -   ``%album%``: Will get replaced with Song.album
+    -   ``%words%``: Will get replaced with Song.words
+    -   ``%music%``: Will get replaced with Song.music
     -   ``%WORDSANDMUSIC%``: Will get replaced with the according word and music values
-    -   ``%COPYRIGHT%``: Will get replaced with Song.copyright
+    -   ``%copyright%``: Will get replaced with Song.copyright
     -   ``%N%``: Will get replaced with the current page number (if supported by layout)
     -   ``%P%``: Will get replaced with the number of pages (if supported by layout)
 
@@ -422,15 +422,15 @@ class PageSetup(GPObject):
         self.pageSize = Point(210, 297)
         self.pageMargin = Padding(10, 15, 10, 10)
         self.scoreSizeProportion = 1
-        self.headerAndFooter = HeaderFooterElements.ALL
-        self.title = '%TITLE%'
-        self.subtitle = '%SUBTITLE%'
-        self.artist = '%ARTIST%'
-        self.album = '%ALBUM%'
-        self.words = 'Words by %WORDS%'
-        self.music = 'Music by %MUSIC%'
+        self.headerAndFooter = HeaderFooterElements.all
+        self.title = '%title%'
+        self.subtitle = '%subtitle%'
+        self.artist = '%artist%'
+        self.album = '%album%'
+        self.words = 'Words by %words%'
+        self.music = 'Music by %music%'
         self.wordsAndMusic = 'Words & Music by %WORDSMUSIC%'
-        self.copyright = ('Copyright %COPYRIGHT%\n'
+        self.copyright = ('Copyright %copyright%\n'
                           'All Rights Reserved - International Copyright Secured')
         self.pageNumber = 'Page %N%/%P%'
         GPObject.__init__(self, *args, **kwargs)
@@ -513,7 +513,7 @@ class MeasureHeader(GPObject):
 
     def __init__(self, *args, **kwargs):
         self.number = 0
-        self.start = Duration.QUARTER_TIME
+        self.start = Duration.quarterTime
         self.timeSignature = TimeSignature()
         self.keySignature = KeySignature.CMajor
         self.keySignaturePresence = False
@@ -551,8 +551,8 @@ class Color(GPObject):
         else:
             return 'Color({r}, {g}, {b}, {a})'.format(**vars(self))
 
-Color.Black = Color(0, 0, 0)
-Color.Red = Color(255, 0, 0)
+Color.black = Color(0, 0, 0)
+Color.red = Color(255, 0, 0)
 
 
 class Marker(GPObject):
@@ -563,7 +563,7 @@ class Marker(GPObject):
 
     def __init__(self, *args, **kwargs):
         self.title = 'Section'
-        self.color = Color.Red
+        self.color = Color.red
         self.measureHeader = None
         GPObject.__init__(self, *args, **kwargs)
 
@@ -684,21 +684,21 @@ class Duration(GPObject):
                 'isDoubleDotted',
                 'tuplet')
 
-    QUARTER_TIME = 960
+    quarterTime = 960
 
-    WHOLE = 1
-    HALF = 2
-    QUARTER = 4
-    EIGHTH = 8
-    SIXTEENTH = 16
-    THIRTY_SECOND = 32
-    SIXTY_FOURTH = 64
+    whole = 1
+    half = 2
+    quarter = 4
+    eighth = 8
+    sixteenth = 16
+    thirtySecond = 32
+    sixtyFourth = 64
 
     # The time resulting with a 64th note and a 3/2 tuplet
-    MIN_TIME = int(int(QUARTER_TIME * (4.0 / SIXTY_FOURTH)) * 2 / 3)
+    minTime = int(int(quarterTime * (4.0 / sixtyFourth)) * 2 / 3)
 
     def __init__(self, *args, **kwargs):
-        self.value = self.QUARTER
+        self.value = self.quarter
         self.isDotted = False
         self.isDoubleDotted = False
         self.tuplet = Tuplet()
@@ -706,7 +706,7 @@ class Duration(GPObject):
 
     @property
     def time(self):
-        result = int(self.QUARTER_TIME * (4.0 / self.value))
+        result = int(self.quarterTime * (4.0 / self.value))
         if self.isDotted:
             result += int(result / 2)
         elif self.isDoubleDotted:
@@ -731,7 +731,7 @@ class Duration(GPObject):
             minimum = Duration()
         duration = minimum
         tmp = Duration()
-        tmp.value = cls.WHOLE
+        tmp.value = cls.whole
         tmp.isDotted = True
         while True:
             tmpTime = tmp.time
@@ -748,7 +748,7 @@ class Duration(GPObject):
                 tmp.isDotted = True
                 tmp.tuplet.enters = 1
                 tmp.tuplet.times = 1
-            if tmp.value > cls.SIXTY_FOURTH:
+            if tmp.value > cls.sixtyFourth:
                 break
         return duration
 
@@ -935,8 +935,8 @@ class BeatStroke(GPObject):
                     continue
                 currentDuration = voice.duration.time()
                 if duration == 0 or currentDuration < duration:
-                    duration = (currentDuration if currentDuration <= Duration.QUARTER_TIME
-                                else Duration.QUARTER_TIME)
+                    duration = (currentDuration if currentDuration <= Duration.quarterTime
+                                else Duration.quarterTime)
             if duration > 0:
                 return round((duration / 8.0) * (4.0 / self.value))
         return 0
@@ -1054,15 +1054,15 @@ class Beat(GPObject):
                 'octave',
                 'display')
 
-    MAX_VOICES = 2
+    maxVoices = 2
 
     def __init__(self, *args, **kwargs):
-        self.start = Duration.QUARTER_TIME
+        self.start = Duration.quarterTime
         self.effect = BeatEffect()
         self.octave = Octave.none
         self.display = BeatDisplay()
         self.voices = []
-        for i in range(Beat.MAX_VOICES):
+        for i in range(Beat.maxVoices):
             voice = Voice(i)
             voice.beat = self
             self.voices.append(voice)
@@ -1162,7 +1162,7 @@ class GraceEffect(GPObject):
         """Initializes a new instance of the GraceEffect class."""
         self.fret = 0
         self.duration = 1
-        self.velocity = Velocities.DEFAULT
+        self.velocity = Velocities.default
         self.transition = GraceEffectTransition.none
         self.isOnBeat = False
         self.isDead = False
@@ -1171,7 +1171,7 @@ class GraceEffect(GPObject):
     @property
     def durationTime(self):
         """Get the duration of the effect."""
-        return int(Duration.QUARTER_TIME / 16 * self.duration)
+        return int(Duration.quarterTime / 16 * self.duration)
 
 
 class TrillEffect(GPObject):
@@ -1298,7 +1298,7 @@ class Note(GPObject):
 
     def __init__(self, *args, **kwargs):
         self.value = 0
-        self.velocity = Velocities.DEFAULT
+        self.velocity = Velocities.default
         self.string = 0
         self.isTiedNote = False
         self.swapAccidentals = False
@@ -1613,7 +1613,7 @@ class BendPoint(GPObject):
         :param duration: the full duration of the effect.
 
         """
-        return int(duration * self.position / BendEffect.MAX_POSITION)
+        return int(duration * self.position / BendEffect.maxPosition)
 
 
 class BendEffect(GPObject):
@@ -1624,11 +1624,11 @@ class BendEffect(GPObject):
                 'points')
 
     #: The note offset per bend point offset.
-    SEMITONE_LENGTH = 1
+    semitoneLength = 1
     #: The max position of the bend points (x axis)
-    MAX_POSITION = 12
+    maxPosition = 12
     #: The max value of the bend points (y axis)
-    MAX_VALUE = SEMITONE_LENGTH * 12
+    maxValue = semitoneLength * 12
 
     def __init__(self, *args, **kwargs):
         self.type = BendType.none
@@ -1662,17 +1662,17 @@ class TimeSignature(GPObject):
 class Velocities(object):
 
     """A list of velocities / dynamics."""
-    MIN_VELOCITY = 15
-    VELOCITY_INCREMENT = 16
-    PIANO_PIANISSIMO = MIN_VELOCITY
-    PIANISSIMO = MIN_VELOCITY + VELOCITY_INCREMENT
-    PIANO = MIN_VELOCITY + VELOCITY_INCREMENT * 2
-    MEZZO_PIANO = MIN_VELOCITY + VELOCITY_INCREMENT * 3
-    MEZZO_FORTE = MIN_VELOCITY + VELOCITY_INCREMENT * 4
-    FORTE = MIN_VELOCITY + VELOCITY_INCREMENT * 5
-    FORTISSIMO = MIN_VELOCITY + VELOCITY_INCREMENT * 6
-    FORTE_FORTISSIMO = MIN_VELOCITY + VELOCITY_INCREMENT * 7
-    DEFAULT = FORTE
+    minVelocity = 15
+    velocityIncrement = 16
+    pianoPianissimo = minVelocity
+    pianissimo = minVelocity + velocityIncrement
+    piano = minVelocity + velocityIncrement * 2
+    mezzoPiano = minVelocity + velocityIncrement * 3
+    mezzoForte = minVelocity + velocityIncrement * 4
+    forte = minVelocity + velocityIncrement * 5
+    fortissimo = minVelocity + velocityIncrement * 6
+    forteFortissimo = minVelocity + velocityIncrement * 7
+    default = forte
 
 
 class RSEMasterEffect(GPObject):
@@ -1731,41 +1731,6 @@ class TrackRSE(GPObject):
     humanize = 0
     autoAccentuation = Accentuation.none
 
-
-
-# class KeySignatureRoot(Enum):
-#     Fflat  = -8
-#     Cflat  = -7
-#     Gflat  = -6
-#     Dflat  = -5
-#     Aflat  = -4
-#     Eflat  = -3
-#     Bflat  = -2
-#     F      = -1
-#     C      =  0
-#     G      =  1
-#     D      =  2
-#     A      =  3
-#     E      =  4
-#     B      =  5
-#     Fsharp =  6
-#     Csharp =  7
-#     Gsharp =  8
-
-# class KeySignatureType(Enum):
-#     major = 0
-#     minor = 1
-
-# class KeySignature(GPObject):
-#     __attr__ = ('type', 'root')
-
-#     def __init__(self, root, type_='major'):
-#         if not isinstance(root, KeySignatureRoot):
-#             root = KeySignatureRoot(root)
-#         if not isinstance(type_, KeySignatureType):
-#             type_ = KeySignatureType(type_)
-#         self.root = root
-#         self.type = type_
 
 class KeySignature(Enum):
     FMajorFlat  = (-8, 0)

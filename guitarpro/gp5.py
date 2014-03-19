@@ -100,7 +100,7 @@ class GP5File(gp4.GP4File):
 
         flags2 = self.readByte()
         if flags2 & 0x01:
-            setup.headerAndFooter |= gp.HeaderFooterElements.PAGE_NUMBER
+            setup.headerAndFooter |= gp.HeaderFooterElements.pageNumber
 
         setup.title = self.readIntByteSizeString()
         setup.subtitle = self.readIntByteSizeString()
@@ -308,7 +308,7 @@ class GP5File(gp4.GP4File):
         return rseInstrument
 
     def readMeasure(self, measure, track):
-        for voice in range(gp.Beat.MAX_VOICES):
+        for voice in range(gp.Beat.maxVoices):
             start = measure.start
             beats = self.readInt()
             for __ in range(beats):
@@ -657,7 +657,7 @@ class GP5File(gp4.GP4File):
         self.writeByte(setup.headerAndFooter & 0xff)
 
         flags2 = 0x00
-        if setup.headerAndFooter & gp.HeaderFooterElements.PAGE_NUMBER != 0:
+        if setup.headerAndFooter & gp.HeaderFooterElements.pageNumber != 0:
             flags2 |= 0x01
         self.writeByte(flags2)
 
@@ -884,7 +884,7 @@ class GP5File(gp4.GP4File):
             self.writeIntByteSizeString(rseInstrument.effectCategory)
 
     def writeMeasure(self, measure):
-        for index in range(gp.Beat.MAX_VOICES):
+        for index in range(gp.Beat.maxVoices):
             beats = measure.voice(index)
             self.writeInt(len(beats))
             for beat in beats:
@@ -1031,7 +1031,7 @@ class GP5File(gp4.GP4File):
             flags |= 0x04
         if not note.effect.isDefault:
             flags |= 0x08
-        if note.velocity != gp.Velocities.DEFAULT:
+        if note.velocity != gp.Velocities.default:
             flags |= 0x10
         # if note.isTiedNote or note.effect.deadNote:
         flags |= 0x20

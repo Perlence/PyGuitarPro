@@ -406,7 +406,7 @@ class GP3File(gp.GPFileBase):
 
         """
         tempo = gp.Tempo(song.tempo)
-        start = gp.Duration.QUARTER_TIME
+        start = gp.Duration.quarterTime
         for header in song.measureHeaders:
             header.start = start
             for track in song.tracks:
@@ -741,9 +741,9 @@ class GP3File(gp.GPFileBase):
         barEffect.value = self.readInt()
         barEffect.points.append(gp.BendPoint(0, 0))
         barEffect.points.append(
-            gp.BendPoint(round(gp.BendEffect.MAX_POSITION / 2),
-                         round(barEffect.value / (self.BEND_SEMITONE * 2))))
-        barEffect.points.append(gp.BendPoint(gp.BendEffect.MAX_POSITION, 0))
+            gp.BendPoint(round(gp.BendEffect.maxPosition / 2),
+                         round(barEffect.value / (self.bendSemitone * 2))))
+        barEffect.points.append(gp.BendPoint(gp.BendEffect.maxPosition, 0))
         effect.tremoloBar = barEffect
 
     def toStrokeValue(self, value):
@@ -751,28 +751,28 @@ class GP3File(gp.GPFileBase):
 
         Stroke value maps to:
 
-        -   *1*: `sixty fourth <guitarpro.base.Duration.SIXTY_FOURTH>`_
-        -   *2*: `sixty fourth <guitarpro.base.Duration.SIXTY_FOURTH>`_
-        -   *3*: `thirty second <guitarpro.base.Duration.THIRTY_SECOND>`_
-        -   *4*: `sixteenth <guitarpro.base.Duration.SIXTEENTH>`_
-        -   *5*: `eighth <guitarpro.base.Duration.EIGHTH>`_
-        -   *6*: `quarter <guitarpro.base.Duration.QUARTER>`_
+        -   *1*: `sixty fourth <guitarpro.base.Duration.sixtyFourth>`_
+        -   *2*: `sixty fourth <guitarpro.base.Duration.sixtyFourth>`_
+        -   *3*: `thirty second <guitarpro.base.Duration.thirtySecond>`_
+        -   *4*: `sixteenth <guitarpro.base.Duration.sixteenth>`_
+        -   *5*: `eighth <guitarpro.base.Duration.eighth>`_
+        -   *6*: `quarter <guitarpro.base.Duration.quarter>`_
 
         """
         if value == 1:
-            return gp.Duration.SIXTY_FOURTH
+            return gp.Duration.sixtyFourth
         elif value == 2:
-            return gp.Duration.SIXTY_FOURTH
+            return gp.Duration.sixtyFourth
         elif value == 3:
-            return gp.Duration.THIRTY_SECOND
+            return gp.Duration.thirtySecond
         elif value == 4:
-            return gp.Duration.SIXTEENTH
+            return gp.Duration.sixteenth
         elif value == 5:
-            return gp.Duration.EIGHTH
+            return gp.Duration.eighth
         elif value == 6:
-            return gp.Duration.QUARTER
+            return gp.Duration.quarter
         else:
-            return gp.Duration.SIXTY_FOURTH
+            return gp.Duration.sixtyFourth
 
     def readMixTableChange(self, measure):
         """Read mix table change.
@@ -933,9 +933,9 @@ class GP3File(gp.GPFileBase):
 
     def unpackVelocity(self, dyn):
         """Convert Guitar Pro dynamic value to raw MIDI velocity."""
-        return (gp.Velocities.MIN_VELOCITY +
-                gp.Velocities.VELOCITY_INCREMENT * dyn -
-                gp.Velocities.VELOCITY_INCREMENT)
+        return (gp.Velocities.minVelocity +
+                gp.Velocities.velocityIncrement * dyn -
+                gp.Velocities.velocityIncrement)
 
     def getTiedNoteValue(self, stringIndex, track):
         """Get note value of tied note."""
@@ -1007,10 +1007,10 @@ class GP3File(gp.GPFileBase):
         bendEffect.value = self.readInt()
         pointCount = self.readInt()
         for i in range(pointCount):
-            position = round(self.readInt() * gp.BendEffect.MAX_POSITION /
-                             gp.GPFileBase.BEND_POSITION)
-            value = round(self.readInt() * gp.BendEffect.SEMITONE_LENGTH /
-                          gp.GPFileBase.BEND_SEMITONE)
+            position = round(self.readInt() * gp.BendEffect.maxPosition /
+                             gp.GPFileBase.bendPosition)
+            value = round(self.readInt() * gp.BendEffect.semitoneLength /
+                          gp.GPFileBase.bendSemitone)
             vibrato = self.readBool()
             bendEffect.points.append(gp.BendPoint(position, value, vibrato))
         if pointCount > 0:
@@ -1345,17 +1345,17 @@ class GP3File(gp.GPFileBase):
         self.writeInt(tremoloBar.value)
 
     def fromStrokeValue(self, value):
-        if value == gp.Duration.SIXTY_FOURTH:
+        if value == gp.Duration.sixtyFourth:
             return 1
-        elif value == gp.Duration.SIXTY_FOURTH:
+        elif value == gp.Duration.sixtyFourth:
             return 2
-        elif value == gp.Duration.THIRTY_SECOND:
+        elif value == gp.Duration.thirtySecond:
             return 3
-        elif value == gp.Duration.SIXTEENTH:
+        elif value == gp.Duration.sixteenth:
             return 4
-        elif value == gp.Duration.EIGHTH:
+        elif value == gp.Duration.eighth:
             return 5
-        elif value == gp.Duration.QUARTER:
+        elif value == gp.Duration.quarter:
             return 6
         else:
             return 1
@@ -1401,7 +1401,7 @@ class GP3File(gp.GPFileBase):
             flags |= 0x04
         if not noteEffect.isDefault:
             flags |= 0x08
-        if note.velocity != gp.Velocities.DEFAULT:
+        if note.velocity != gp.Velocities.default:
             flags |= 0x10
         # if note.isTiedNote or note.effect.deadNote:
         flags |= 0x20
@@ -1458,10 +1458,10 @@ class GP3File(gp.GPFileBase):
         self.writeInt(bend.value)
         self.writeInt(len(bend.points))
         for point in bend.points:
-            self.writeInt(round(point.position * self.BEND_POSITION /
-                                gp.BendEffect.MAX_POSITION))
-            self.writeInt(round(point.value * self.BEND_SEMITONE /
-                                gp.BendEffect.SEMITONE_LENGTH))
+            self.writeInt(round(point.position * self.bendPosition /
+                                gp.BendEffect.maxPosition))
+            self.writeInt(round(point.value * self.bendSemitone /
+                                gp.BendEffect.semitoneLength))
             self.writeBool(point.vibrato)
 
     def writeGrace(self, grace):
@@ -1471,5 +1471,5 @@ class GP3File(gp.GPFileBase):
         self.writeByte(grace.duration)
 
     def packVelocity(self, velocity):
-        return ((velocity + gp.Velocities.VELOCITY_INCREMENT -
-                 gp.Velocities.MIN_VELOCITY) / gp.Velocities.VELOCITY_INCREMENT)
+        return ((velocity + gp.Velocities.velocityIncrement -
+                 gp.Velocities.minVelocity) / gp.Velocities.velocityIncrement)
