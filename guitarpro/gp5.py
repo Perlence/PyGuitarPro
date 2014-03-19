@@ -510,7 +510,7 @@ class GP5File(gp4.GP4File):
 
         grace.fret = fret
         grace.velocity = self.unpackVelocity(dyn)
-        grace.duration = duration
+        grace.duration = 1 << (7 - duration)
         grace.isDead = bool(flags & 0x01)
         grace.isOnBeat = bool(flags & 0x02)
         grace.transition = gp.GraceEffectTransition(transition)
@@ -1094,7 +1094,7 @@ class GP5File(gp4.GP4File):
         self.writeByte(grace.fret)
         self.writeByte(self.packVelocity(grace.velocity))
         self.writeByte(grace.transition.value)
-        self.writeByte(grace.duration)
+        self.writeByte(8 - grace.duration.bit_length())
 
         flags = 0x00
         if grace.isDead:

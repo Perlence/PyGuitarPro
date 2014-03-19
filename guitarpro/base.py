@@ -695,7 +695,7 @@ class Duration(GPObject):
     sixtyFourth = 64
 
     # The time resulting with a 64th note and a 3/2 tuplet
-    minTime = int(int(quarterTime * (4.0 / sixtyFourth)) * 2 / 3)
+    minTime = int(int(quarterTime * (4 / sixtyFourth)) * 2 / 3)
 
     def __init__(self, *args, **kwargs):
         self.value = self.quarter

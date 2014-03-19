@@ -1027,6 +1027,11 @@ class GP3File(gp.GPFileBase):
             See :class:`guitarpro.base.GraceEffectTransition`.
 
         -   Duration: :ref:`byte`.
+            Values are:
+
+            *   *1*: Thirty-second note.
+            *   *2*: Twenty-fourth note.
+            *   *3*: Sixteenth note.
 
         """
         fret = self.readSignedByte()
@@ -1037,7 +1042,7 @@ class GP3File(gp.GPFileBase):
 
         grace.fret = fret
         grace.velocity = self.unpackVelocity(dyn)
-        grace.duration = duration
+        grace.duration = 1 << (7 - duration)
         grace.isDead = fret == -1
         grace.isOnBeat = False
         grace.transition = gp.GraceEffectTransition(transition)
@@ -1459,7 +1464,7 @@ class GP3File(gp.GPFileBase):
         self.writeByte(grace.fret)
         self.writeByte(self.packVelocity(grace.velocity))
         self.writeSignedByte(grace.transition.value)
-        self.writeByte(grace.duration)
+        self.writeByte(8 - grace.duration.bit_length())
 
     def packVelocity(self, velocity):
         return ((velocity + gp.Velocities.velocityIncrement -
