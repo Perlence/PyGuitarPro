@@ -1,10 +1,9 @@
 from setuptools import setup, find_packages
-from guitarpro import __version__
 
 setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
-    version=__version__,
+    version='0.1',
     author='Sviatoslav Abakumov',
     author_email='dust.harvesting@gmail.com',
     url='https://bitbucket.org/Perlence/pyguitarpro/',

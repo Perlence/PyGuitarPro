@@ -1,5 +1,4 @@
 import re
-from itertools import izip_longest
 
 
 def clamp(iterable, length, fillvalue=None):
@@ -11,7 +10,7 @@ def clamp(iterable, length, fillvalue=None):
             yield x
         else:
             return
-    for __ in range(i + 1, length):
+    for __ in xrange(i + 1, length):
         yield fillvalue
 
 
