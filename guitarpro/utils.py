@@ -5,11 +5,14 @@ from itertools import izip_longest
 def clamp(iterable, length, fillvalue=None):
     """Set length of iterable to given length. If iterable is shorter then
     ``length`` then fill it with ``fillvalue``, drop items otherwise."""
-    for x, i in izip_longest(iterable, xrange(length), fillvalue=fillvalue):
+    i = -1
+    for i, x in enumerate(iterable):
         if i < length:
             yield x
         else:
             return
+    for __ in range(i + 1, length):
+        yield fillvalue
 
 
 def hexify(string):

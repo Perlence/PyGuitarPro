@@ -1350,6 +1350,9 @@ class Chord(GPObject):
     def __init__(self, length, *args, **kwargs):
         self.strings = [-1] * length
         self.name = ''
+        self.barres = []
+        self.omissions = []
+        self.fingerings = []
         GPObject.__init__(self, *args, **kwargs)
 
     @property

@@ -1288,9 +1288,10 @@ class GP3File(gp.GPFileBase):
         self.writeInt(chord.firstFret)
         for fret in clamp(chord.strings, 6, fillvalue=-1):
             self.writeInt(fret)
-        self.writeInt(len(chord.barres or []))
-        if chord.barres:
-            barreFrets, barreStarts, barreEnds = zip(*chord.barres)
+        barres = chord.barres[:2]
+        self.writeInt(len(barres))
+        if barres:
+            barreFrets, barreStarts, barreEnds = zip(*barres)
         else:
             barreFrets, barreStarts, barreEnds = [], [], []
         for fret in clamp(barreFrets, 2, fillvalue=0):
@@ -1299,7 +1300,7 @@ class GP3File(gp.GPFileBase):
             self.writeInt(start)
         for end in clamp(barreEnds, 2, fillvalue=0):
             self.writeInt(end)
-        for omission in clamp(chord.omissions or [], 7, fillvalue=1):
+        for omission in clamp(chord.omissions, 7, fillvalue=True):
             self.writeBool(omission)
         self.placeholder(1)
 

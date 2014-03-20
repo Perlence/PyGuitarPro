@@ -310,7 +310,7 @@ class GP4File(gp3.GP3File):
         for fret in clamp(chord.strings, 7, fillvalue=-1):
             self.writeInt(fret)
 
-        self.writeByte(len(chord.barres or []))
+        self.writeByte(len(chord.barres))
         if chord.barres:
             barreFrets, barreStarts, barreEnds = zip(*chord.barres)
         else:
@@ -322,11 +322,11 @@ class GP4File(gp3.GP3File):
         for end in clamp(barreEnds, 5, fillvalue=0):
             self.writeByte(end)
 
-        for omission in clamp(chord.omissions or [], 7, fillvalue=1):
+        for omission in clamp(chord.omissions, 7, fillvalue=True):
             self.writeBool(omission)
 
         self.placeholder(1)
-        for fingering in clamp(chord.fingerings or [], 7,
+        for fingering in clamp(chord.fingerings, 7,
                                fillvalue=gp.Fingering.unknown):
             self.writeSignedByte(fingering.value)
         self.writeBool(chord.show)
