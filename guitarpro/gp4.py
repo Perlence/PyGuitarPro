@@ -102,8 +102,8 @@ class GP4File(gp3.GP3File):
                 beat.effect.stroke.value = self.toStrokeValue(strokeDown)
         beat.effect.hasRasgueado = bool(flags2 & 0x01)
         if flags2 & 0x02:
-            beat.effect.pickStroke = self.readSignedByte()
-            beat.effect.hasPickStroke = True
+            direction = self.readSignedByte()
+            beat.effect.pickStroke = gp.BeatStrokeDirection(direction)
 
     def readTremoloBar(self, effect):
         barEffect = gp.BendEffect()
@@ -376,7 +376,7 @@ class GP4File(gp3.GP3File):
             self.writeSignedByte(strokeUp)
             self.writeSignedByte(strokeDown)
         if flags2 & 0x02:
-            self.writeSignedByte(beatEffect.pickStroke)
+            self.writeSignedByte(beatEffect.pickStroke.value)
 
     def writeTremoloBar(self, tremoloBar):
         self.writeSignedByte(tremoloBar.type.value)

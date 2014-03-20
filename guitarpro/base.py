@@ -959,9 +959,8 @@ class BeatEffect(GPObject):
 
     def __init__(self, *args, **kwargs):
         self.fadeIn = False
-        self.hasPickStroke = False
+        self.pickStroke = BeatStrokeDirection.none
         self.hasRasgueado = False
-        self.pickStroke = 0
         self.popping = False
         self.slapping = False
         self.stroke = BeatStroke()
@@ -980,6 +979,10 @@ class BeatEffect(GPObject):
     @property
     def isSlapEffect(self):
         return self.tapping or self.slapping or self.popping
+
+    @property
+    def hasPickStroke(self):
+        return self.pickStroke != BeatStrokeDirection.none
 
     @property
     def isDefault(self):
