@@ -711,14 +711,7 @@ class GP3File(gp.GPFileBase):
             else:
                 self.readInt()
         if flags1 & 0x40:
-            strokeUp = self.readSignedByte()
-            strokeDown = self.readSignedByte()
-            if strokeUp > 0:
-                beat.effect.stroke.direction = gp.BeatStrokeDirection.up
-                beat.effect.stroke.value = self.toStrokeValue(strokeUp)
-            elif strokeDown > 0:
-                beat.effect.stroke.direction = gp.BeatStrokeDirection.down
-                beat.effect.stroke.value = self.toStrokeValue(strokeDown)
+            self.readBeatStroke(beat.effect)
         if flags1 & 0x04:
             harmonic = gp.NaturalHarmonic()
             effect.harmonic = harmonic
@@ -742,6 +735,16 @@ class GP3File(gp.GPFileBase):
                          round(-barEffect.value / (self.bendSemitone * 2))))
         barEffect.points.append(gp.BendPoint(gp.BendEffect.maxPosition, 0))
         effect.tremoloBar = barEffect
+
+    def readBeatStroke(self, beatEffect):
+        strokeUp = self.readSignedByte()
+        strokeDown = self.readSignedByte()
+        if strokeUp > 0:
+            beatEffect.stroke.direction = gp.BeatStrokeDirection.up
+            beatEffect.stroke.value = self.toStrokeValue(strokeUp)
+        elif strokeDown > 0:
+            beatEffect.stroke.direction = gp.BeatStrokeDirection.down
+            beatEffect.stroke.value = self.toStrokeValue(strokeDown)
 
     def toStrokeValue(self, value):
         """Unpack stroke value.
@@ -1328,20 +1331,23 @@ class GP3File(gp.GPFileBase):
             self.writeByte(beatEffect.slapEffect.value)
             self.writeTremoloBar(beatEffect.tremoloBar)
         if flags1 & 0x40:
-            if beatEffect.stroke.direction == gp.BeatStrokeDirection.up:
-                strokeUp = self.fromStrokeValue(beatEffect.stroke.value)
-                strokeDown = 0
-            elif beatEffect.stroke.direction == gp.BeatStrokeDirection.down:
-                strokeUp = 0
-                strokeDown = self.fromStrokeValue(beatEffect.stroke.value)
-            self.writeSignedByte(strokeUp)
-            self.writeSignedByte(strokeDown)
+            self.writeBeatStroke(beatEffect.stroke)
 
     def writeTremoloBar(self, tremoloBar):
         if tremoloBar is not None:
             self.writeInt(tremoloBar.value)
         else:
             self.writeInt(0)
+
+    def writeBeatStroke(self, stroke):
+        if stroke.direction == gp.BeatStrokeDirection.up:
+            strokeUp = self.fromStrokeValue(stroke.value)
+            strokeDown = 0
+        elif stroke.direction == gp.BeatStrokeDirection.down:
+            strokeUp = 0
+            strokeDown = self.fromStrokeValue(stroke.value)
+        self.writeSignedByte(strokeUp)
+        self.writeSignedByte(strokeDown)
 
     def fromStrokeValue(self, value):
         if value == gp.Duration.sixtyFourth:

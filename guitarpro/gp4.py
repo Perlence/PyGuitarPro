@@ -90,14 +90,7 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x04:
             self.readTremoloBar(beat.effect)
         if flags1 & 0x40:
-            strokeUp = self.readSignedByte()
-            strokeDown = self.readSignedByte()
-            if strokeUp > 0:
-                beat.effect.stroke.direction = gp.BeatStrokeDirection.up
-                beat.effect.stroke.value = self.toStrokeValue(strokeUp)
-            elif strokeDown > 0:
-                beat.effect.stroke.direction = gp.BeatStrokeDirection.down
-                beat.effect.stroke.value = self.toStrokeValue(strokeDown)
+            self.readBeatStroke(beat.effect)
         beat.effect.hasRasgueado = bool(flags2 & 0x01)
         if flags2 & 0x02:
             direction = self.readSignedByte()
@@ -359,14 +352,7 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x04:
             self.writeTremoloBar(beatEffect.tremoloBar)
         if flags1 & 0x40:
-            if beatEffect.stroke.direction == gp.BeatStrokeDirection.up:
-                strokeUp = self.fromStrokeValue(beatEffect.stroke.value)
-                strokeDown = 0
-            elif beatEffect.stroke.direction == gp.BeatStrokeDirection.down:
-                strokeUp = 0
-                strokeDown = self.fromStrokeValue(beatEffect.stroke.value)
-            self.writeSignedByte(strokeUp)
-            self.writeSignedByte(strokeDown)
+            self.writeBeatStroke(beatEffect.stroke)
         if flags2 & 0x02:
             self.writeSignedByte(beatEffect.pickStroke.value)
 
