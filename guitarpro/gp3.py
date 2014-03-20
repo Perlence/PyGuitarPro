@@ -705,12 +705,10 @@ class GP3File(gp.GPFileBase):
         beat.effect.fadeIn = bool(flags1 & 0x10)
         if flags1 & 0x20:
             flags2 = self.readByte()
-            if flags2 == 0:
+            beat.effect.slapEffect = gp.SlapEffect(flags2)
+            if beat.effect.slapEffect == gp.SlapEffect.none:
                 self.readTremoloBar(beat.effect)
             else:
-                beat.effect.tapping = flags2 == 1
-                beat.effect.slapping = flags2 == 2
-                beat.effect.popping = flags2 == 3
                 self.readInt()
         if flags1 & 0x40:
             strokeUp = self.readSignedByte()
@@ -741,7 +739,7 @@ class GP3File(gp.GPFileBase):
         barEffect.points.append(gp.BendPoint(0, 0))
         barEffect.points.append(
             gp.BendPoint(round(gp.BendEffect.maxPosition / 2),
-                         round(barEffect.value / (self.bendSemitone * 2))))
+                         round(-barEffect.value / (self.bendSemitone * 2))))
         barEffect.points.append(gp.BendPoint(gp.BendEffect.maxPosition, 0))
         effect.tremoloBar = barEffect
 
@@ -1302,7 +1300,7 @@ class GP3File(gp.GPFileBase):
         for end in clamp(barreEnds, 2, fillvalue=0):
             self.writeInt(end)
         for omission in clamp(chord.omissions or [], 7, fillvalue=1):
-            self.writeByte(omission)
+            self.writeBool(omission)
         self.placeholder(1)
 
     def writeText(self, text):
@@ -1326,18 +1324,8 @@ class GP3File(gp.GPFileBase):
             flags1 |= 0x40
         self.writeByte(flags1)
         if flags1 & 0x20:
-            if not beatEffect.isSlapEffect:
-                self.writeByte(0)
-                self.writeTremoloBar(beatEffect.tremoloBar)
-            else:
-                if beatEffect.tapping:
-                    slapEffect = 1
-                if beatEffect.slapping:
-                    slapEffect = 2
-                if beatEffect.popping:
-                    slapEffect = 3
-                self.writeByte(slapEffect)
-                self.placeholder(4)
+            self.writeByte(beatEffect.slapEffect.value)
+            self.writeTremoloBar(beatEffect.tremoloBar)
         if flags1 & 0x40:
             if beatEffect.stroke.direction == gp.BeatStrokeDirection.up:
                 strokeUp = self.fromStrokeValue(beatEffect.stroke.value)
@@ -1349,7 +1337,10 @@ class GP3File(gp.GPFileBase):
             self.writeSignedByte(strokeDown)
 
     def writeTremoloBar(self, tremoloBar):
-        self.writeInt(tremoloBar.value)
+        if tremoloBar is not None:
+            self.writeInt(tremoloBar.value)
+        else:
+            self.writeInt(0)
 
     def fromStrokeValue(self, value):
         if value == gp.Duration.sixtyFourth:

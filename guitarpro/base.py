@@ -942,6 +942,13 @@ class BeatStroke(GPObject):
         return 0
 
 
+class SlapEffect(Enum):
+    none = 0
+    tapping = 1
+    slapping = 2
+    popping = 3
+
+
 class BeatEffect(GPObject):
 
     """This class contains all beat effects."""
@@ -952,19 +959,15 @@ class BeatEffect(GPObject):
                 'fadeIn',
                 'tremoloBar',
                 'mixTableChange',
-                'tapping',
-                'slapping',
-                'popping',
+                'slapEffect',
                 'vibrato')
 
     def __init__(self, *args, **kwargs):
         self.fadeIn = False
         self.pickStroke = BeatStrokeDirection.none
         self.hasRasgueado = False
-        self.popping = False
-        self.slapping = False
         self.stroke = BeatStroke()
-        self.tapping = False
+        self.slapEffect = SlapEffect.none
         self.vibrato = False
         GPObject.__init__(self, *args, **kwargs)
 
@@ -978,7 +981,7 @@ class BeatEffect(GPObject):
 
     @property
     def isSlapEffect(self):
-        return self.tapping or self.slapping or self.popping
+        return self.slapEffect != SlapEffect.none
 
     @property
     def hasPickStroke(self):
@@ -993,9 +996,7 @@ class BeatEffect(GPObject):
                 self.fadeIn == default.fadeIn and
                 self.vibrato == default.vibrato and
                 self.tremoloBar == default.tremoloBar and
-                self.tapping == default.tapping and
-                self.slapping == default.slapping and
-                self.popping == default.popping)
+                self.slapEffect == default.slapEffect)
 
 
 class TupletBracket(Enum):

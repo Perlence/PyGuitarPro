@@ -74,7 +74,7 @@ class GP4File(gp3.GP3File):
                                         range(barresCount)):
             barre = gp.Barre(fret, start, end)
             chord.barres.append(barre)
-        chord.omissions = self.readByte(7)
+        chord.omissions = self.readBool(7)
         self.skip(1)
         chord.fingerings = map(gp.Fingering, self.readSignedByte(7))
         chord.show = self.readBool()
@@ -85,10 +85,8 @@ class GP4File(gp3.GP3File):
         beat.effect.vibrato = bool(flags1 & 0x02) or beat.effect.vibrato
         beat.effect.fadeIn = bool(flags1 & 0x10)
         if flags1 & 0x20:
-            slapEffect = self.readSignedByte()
-            beat.effect.tapping = slapEffect == 1
-            beat.effect.slapping = slapEffect == 2
-            beat.effect.popping = slapEffect == 3
+            value = self.readSignedByte()
+            beat.effect.slapEffect = gp.SlapEffect(value)
         if flags2 & 0x04:
             self.readTremoloBar(beat.effect)
         if flags1 & 0x40:
@@ -325,7 +323,7 @@ class GP4File(gp3.GP3File):
             self.writeByte(end)
 
         for omission in clamp(chord.omissions or [], 7, fillvalue=1):
-            self.writeByte(omission)
+            self.writeBool(omission)
 
         self.placeholder(1)
         for fingering in clamp(chord.fingerings or [], 7,
@@ -357,13 +355,7 @@ class GP4File(gp3.GP3File):
         self.writeSignedByte(flags2)
 
         if flags1 & 0x20:
-            if beatEffect.tapping:
-                slapEffect = 1
-            if beatEffect.slapping:
-                slapEffect = 2
-            if beatEffect.popping:
-                slapEffect = 3
-            self.writeSignedByte(slapEffect)
+            self.writeSignedByte(beatEffect.slapEffect.value)
         if flags2 & 0x04:
             self.writeTremoloBar(beatEffect.tremoloBar)
         if flags1 & 0x40:
