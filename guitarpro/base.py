@@ -1566,17 +1566,8 @@ class MixTableChange(GPObject):
                 'useRSE')
 
     def __init__(self, *args, **kwargs):
-        self.instrument = None
-        self.volume = None
-        self.balance = None
-        self.chorus = None
-        self.reverb = None
-        self.phaser = None
-        self.tremolo = None
         self.tempoName = ''
-        self.tempo = None
         self.hideTempo = True
-        self.wah = WahEffect()
         self.useRSE = False
         GPObject.__init__(self, *args, **kwargs)
 

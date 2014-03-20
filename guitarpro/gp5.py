@@ -306,8 +306,11 @@ class GP5File(gp4.GP4File):
 
     def readRSEInstrumentEffect(self, rseInstrument):
         if self.versionTuple > (5, 0):
-            rseInstrument.effect = self.readIntByteSizeString()
-            rseInstrument.effectCategory = self.readIntByteSizeString()
+            effect = self.readIntByteSizeString()
+            effectCategory = self.readIntByteSizeString()
+            if rseInstrument is not None:
+                rseInstrument.effect = effect
+                rseInstrument.effectCategory = effectCategory
         return rseInstrument
 
     def readMeasure(self, measure, track):
@@ -378,72 +381,71 @@ class GP5File(gp4.GP4File):
         return duration.time if not voice.isEmpty else 0
 
     def readMixTableChange(self, measure):
-        tableChange = gp.MixTableChange()
-        tableChange.instrument.value = self.readSignedByte()
-        tableChange.rse = self.readRSEInstrument()
-        tableChange.volume.value = self.readSignedByte()
-        tableChange.balance.value = self.readSignedByte()
-        tableChange.chorus.value = self.readSignedByte()
-        tableChange.reverb.value = self.readSignedByte()
-        tableChange.phaser.value = self.readSignedByte()
-        tableChange.tremolo.value = self.readSignedByte()
-        tableChange.tempoName = self.readIntByteSizeString()
-        tableChange.tempo.value = self.readInt()
-
-        if tableChange.instrument.value < 0:
-            tableChange.instrument = None
-
-        if tableChange.volume.value >= 0:
-            tableChange.volume.duration = self.readSignedByte()
-        else:
-            tableChange.volume = None
-        if tableChange.balance.value >= 0:
-            tableChange.balance.duration = self.readSignedByte()
-        else:
-            tableChange.balance = None
-        if tableChange.chorus.value >= 0:
-            tableChange.chorus.duration = self.readSignedByte()
-        else:
-            tableChange.chorus = None
-        if tableChange.reverb.value >= 0:
-            tableChange.reverb.duration = self.readSignedByte()
-        else:
-            tableChange.reverb = None
-        if tableChange.phaser.value >= 0:
-            tableChange.phaser.duration = self.readSignedByte()
-        else:
-            tableChange.phaser = None
-        if tableChange.tremolo.value >= 0:
-            tableChange.tremolo.duration = self.readSignedByte()
-        else:
-            tableChange.tremolo = None
-        if tableChange.tempo.value >= 0:
-            tableChange.tempo.duration = self.readSignedByte()
-            measure.tempo.value = tableChange.tempo.value
-            tableChange.hideTempo = self.versionTuple > (5, 0) and self.readBool()
-        else:
-            tableChange.tempo = None
-
-        flags = self.readByte()
-        if tableChange.volume is not None:
-            tableChange.volume.allTracks = bool(flags & 0x01)
-        if tableChange.balance is not None:
-            tableChange.balance.allTracks = bool(flags & 0x02)
-        if tableChange.chorus is not None:
-            tableChange.chorus.allTracks = bool(flags & 0x04)
-        if tableChange.reverb is not None:
-            tableChange.reverb.allTracks = bool(flags & 0x08)
-        if tableChange.phaser is not None:
-            tableChange.phaser.allTracks = bool(flags & 0x10)
-        if tableChange.tremolo is not None:
-            tableChange.tremolo.allTracks = bool(flags & 0x20)
-        if tableChange.tempo is not None:
-            tableChange.tempo.allTracks = True
-        tableChange.useRSE = bool(flags & 0x40)
-        tableChange.wah.display = bool(flags & 0x80)
-        tableChange.wah.state = gp.WahState(self.readSignedByte())
+        tableChange = super(gp4.GP4File, self).readMixTableChange(measure)
+        flags = self.readMixTableChangeFlags(tableChange)
+        tableChange.wah = self.readWahEffect(flags)
         self.readRSEInstrumentEffect(tableChange.rse)
         return tableChange
+
+    def readMixTableChangeValues(self, tableChange, measure):
+        instrument = self.readSignedByte()
+        rse = self.readRSEInstrument()
+        volume = self.readSignedByte()
+        balance = self.readSignedByte()
+        chorus = self.readSignedByte()
+        reverb = self.readSignedByte()
+        phaser = self.readSignedByte()
+        tremolo = self.readSignedByte()
+        tempoName = self.readIntByteSizeString()
+        tempo = self.readInt()
+        if instrument >= 0:
+            tableChange.instrument = gp.MixTableItem(instrument)
+            tableChange.rse = rse
+        if volume >= 0:
+            tableChange.volume = gp.MixTableItem(volume)
+        if balance >= 0:
+            tableChange.balance = gp.MixTableItem(balance)
+        if chorus >= 0:
+            tableChange.chorus = gp.MixTableItem(chorus)
+        if reverb >= 0:
+            tableChange.reverb = gp.MixTableItem(reverb)
+        if phaser >= 0:
+            tableChange.phaser = gp.MixTableItem(phaser)
+        if tremolo >= 0:
+            tableChange.tremolo = gp.MixTableItem(tremolo)
+        if tempo >= 0:
+            tableChange.tempo = gp.MixTableItem(tempo)
+            tableChange.tempoName = tempoName
+            measure.tempo.value = tempo
+
+    def readMixTableChangeDurations(self, tableChange):
+        if tableChange.volume is not None:
+            tableChange.volume.duration = self.readSignedByte()
+        if tableChange.balance is not None:
+            tableChange.balance.duration = self.readSignedByte()
+        if tableChange.chorus is not None:
+            tableChange.chorus.duration = self.readSignedByte()
+        if tableChange.reverb is not None:
+            tableChange.reverb.duration = self.readSignedByte()
+        if tableChange.phaser is not None:
+            tableChange.phaser.duration = self.readSignedByte()
+        if tableChange.tremolo is not None:
+            tableChange.tremolo.duration = self.readSignedByte()
+        if tableChange.tempo is not None:
+            tableChange.tempo.duration = self.readSignedByte()
+            tableChange.hideTempo = (self.versionTuple > (5, 0) and
+                                     self.readBool())
+
+    def readMixTableChangeFlags(self, tableChange):
+        flags = super(GP5File, self).readMixTableChangeFlags(tableChange)
+        tableChange.useRSE = bool(flags & 0x40)
+        return flags
+
+    def readWahEffect(self, flags):
+        wah = gp.WahEffect()
+        wah.display = bool(flags & 0x80)
+        wah.state = gp.WahState(self.readSignedByte())
+        return wah
 
     def readNote(self, note, guitarString, track, effect):
         flags = self.readByte()
@@ -961,48 +963,74 @@ class GP5File(gp4.GP4File):
             self.writeByte(beat.display.breakSecondary)
 
     def writeMixTableChange(self, tableChange):
-        items = [('instrument', self.writeSignedByte),
-                 ('rse', self.writeRSEInstrument),
-                 ('volume', self.writeSignedByte),
-                 ('balance', self.writeSignedByte),
-                 ('chorus', self.writeSignedByte),
-                 ('reverb', self.writeSignedByte),
-                 ('phaser', self.writeSignedByte),
-                 ('tremolo', self.writeSignedByte),
-                 ('tempoName', self.writeIntByteSizeString),
-                 ('tempo', self.writeInt)]
+        super(gp4.GP4File, self).writeMixTableChange(tableChange)
+        self.writeMixTableChangeFlags(tableChange)
+        self.writeWahEffect(tableChange.wah)
+        self.writeRSEInstrumentEffect(tableChange.rse)
 
-        for name, write in items:
-            item = getattr(tableChange, name)
-            if name == 'rse':
-                write(item)
-            elif isinstance(item, gp.MixTableItem):
-                write(item.value)
-            elif item is None:
-                write(-1)
-            else:
-                write(item)
+    def writeMixTableChangeValues(self, tableChange):
+        self.writeSignedByte(tableChange.instrument.value
+                             if tableChange.instrument is not None else -1)
+        self.writeRSEInstrument(tableChange.rse)
+        self.writeSignedByte(tableChange.volume.value
+                             if tableChange.volume is not None else -1)
+        self.writeSignedByte(tableChange.balance.value
+                             if tableChange.balance is not None else -1)
+        self.writeSignedByte(tableChange.chorus.value
+                             if tableChange.chorus is not None else -1)
+        self.writeSignedByte(tableChange.reverb.value
+                             if tableChange.reverb is not None else -1)
+        self.writeSignedByte(tableChange.phaser.value
+                             if tableChange.phaser is not None else -1)
+        self.writeSignedByte(tableChange.tremolo.value
+                             if tableChange.tremolo is not None else -1)
+        self.writeIntByteSizeString(tableChange.tempoName)
+        self.writeInt(tableChange.tempo.value
+                      if tableChange.tempo is not None else -1)
 
+    def writeMixTableChangeDurations(self, tableChange):
+        if tableChange.volume is not None:
+            self.writeSignedByte(tableChange.volume.duration)
+        if tableChange.balance is not None:
+            self.writeSignedByte(tableChange.balance.duration)
+        if tableChange.chorus is not None:
+            self.writeSignedByte(tableChange.chorus.duration)
+        if tableChange.reverb is not None:
+            self.writeSignedByte(tableChange.reverb.duration)
+        if tableChange.phaser is not None:
+            self.writeSignedByte(tableChange.phaser.duration)
+        if tableChange.tremolo is not None:
+            self.writeSignedByte(tableChange.tremolo.duration)
+        if tableChange.tempo is not None:
+            self.writeSignedByte(tableChange.tempo.duration)
+            if self.versionTuple > (5, 0):
+                self.writeBool(tableChange.hideTempo)
+
+    def writeMixTableChangeFlags(self, tableChange):
         flags = 0x00
-        # instrument change doesn't have duration
-        for i, (name, __) in enumerate(items[2:]):
-            item = getattr(tableChange, name)
-            if isinstance(item, gp.MixTableItem):
-                self.writeSignedByte(item.duration)
-                if name == 'tempo':
-                    if self.versionTuple > (5, 0):
-                        self.writeBool(tableChange.hideTempo)
-                if item.allTracks:
-                    flags |= 1 << i
-
+        if tableChange.volume is not None and tableChange.volume.allTracks:
+            flags |= 0x01
+        if tableChange.balance is not None and tableChange.balance.allTracks:
+            flags |= 0x02
+        if tableChange.chorus is not None and tableChange.chorus.allTracks:
+            flags |= 0x04
+        if tableChange.reverb is not None and tableChange.reverb.allTracks:
+            flags |= 0x08
+        if tableChange.phaser is not None and tableChange.phaser.allTracks:
+            flags |= 0x10
+        if tableChange.tremolo is not None and tableChange.tremolo.allTracks:
+            flags |= 0x20
         if tableChange.useRSE:
             flags |= 0x40
         if tableChange.wah is not None and tableChange.wah.display:
             flags |= 0x80
-
         self.writeByte(flags)
-        self.writeSignedByte(tableChange.wah.state.value)
-        self.writeRSEInstrumentEffect(tableChange.rse)
+
+    def writeWahEffect(self, wah):
+        if wah is not None:
+            self.writeSignedByte(wah.state.value)
+        else:
+            self.writeSignedByte(gp.WahState.none.value)
 
     def writeNote(self, note):
         flags = 0x00

@@ -794,11 +794,11 @@ class GP3File(gp.GPFileBase):
 
         """
         tableChange = gp.MixTableChange()
-        self.readMixTableChangeValues(tableChange)
-        self.readMixTableChangeDurations(tableChange, measure)
+        self.readMixTableChangeValues(tableChange, measure)
+        self.readMixTableChangeDurations(tableChange)
         return tableChange
 
-    def readMixTableChangeValues(self, tableChange):
+    def readMixTableChangeValues(self, tableChange, measure):
         instrument = self.readSignedByte()
         volume = self.readSignedByte()
         balance = self.readSignedByte()
@@ -823,8 +823,9 @@ class GP3File(gp.GPFileBase):
             tableChange.tremolo = gp.MixTableItem(tremolo)
         if tempo >= 0:
             tableChange.tempo = gp.MixTableItem(tempo)
+            measure.tempo.value = tempo
 
-    def readMixTableChangeDurations(self, tableChange, measure):
+    def readMixTableChangeDurations(self, tableChange):
         if tableChange.volume is not None:
             tableChange.volume.duration = self.readSignedByte()
         if tableChange.balance is not None:
@@ -839,7 +840,6 @@ class GP3File(gp.GPFileBase):
             tableChange.tremolo.duration = self.readSignedByte()
         if tableChange.tempo is not None:
             tableChange.tempo.duration = self.readSignedByte()
-            measure.tempo.value = tableChange.tempo.value
             tableChange.hideTempo = False
 
     def readNotes(self, track, voice, duration, effect=None):

@@ -113,24 +113,24 @@ class GP4File(gp3.GP3File):
 
     def readMixTableChange(self, measure):
         tableChange = super(GP4File, self).readMixTableChange(measure)
-
-        allTracksFlags = self.readSignedByte()
-        if tableChange.volume is not None:
-            tableChange.volume.allTracks = bool(allTracksFlags & 0x01)
-        if tableChange.balance is not None:
-            tableChange.balance.allTracks = bool(allTracksFlags & 0x02)
-        if tableChange.chorus is not None:
-            tableChange.chorus.allTracks = bool(allTracksFlags & 0x04)
-        if tableChange.reverb is not None:
-            tableChange.reverb.allTracks = bool(allTracksFlags & 0x08)
-        if tableChange.phaser is not None:
-            tableChange.phaser.allTracks = bool(allTracksFlags & 0x10)
-        if tableChange.tremolo is not None:
-            tableChange.tremolo.allTracks = bool(allTracksFlags & 0x20)
-        if tableChange.tempo is not None:
-            tableChange.tempo.allTracks = True
-
+        self.readMixTableChangeFlags(tableChange)
         return tableChange
+
+    def readMixTableChangeFlags(self, tableChange):
+        flags = self.readSignedByte()
+        if tableChange.volume is not None:
+            tableChange.volume.allTracks = bool(flags & 0x01)
+        if tableChange.balance is not None:
+            tableChange.balance.allTracks = bool(flags & 0x02)
+        if tableChange.chorus is not None:
+            tableChange.chorus.allTracks = bool(flags & 0x04)
+        if tableChange.reverb is not None:
+            tableChange.reverb.allTracks = bool(flags & 0x08)
+        if tableChange.phaser is not None:
+            tableChange.phaser.allTracks = bool(flags & 0x10)
+        if tableChange.tremolo is not None:
+            tableChange.tremolo.allTracks = bool(flags & 0x20)
+        return flags
 
     def readNoteEffects(self, note):
         noteEffect = note.effect
@@ -368,20 +368,23 @@ class GP4File(gp3.GP3File):
 
     def writeMixTableChange(self, tableChange):
         super(GP4File, self).writeMixTableChange(tableChange)
+        self.writeMixTableChangeFlags(tableChange)
 
-        items = [tableChange.volume,
-                 tableChange.balance,
-                 tableChange.chorus,
-                 tableChange.reverb,
-                 tableChange.phaser,
-                 tableChange.tremolo]
-
-        allTracksFlags = 0x00
-        for i, item in enumerate(items):
-            if item is not None and item.allTracks:
-                allTracksFlags |= 1 << i
-
-        self.writeSignedByte(allTracksFlags)
+    def writeMixTableChangeFlags(self, tableChange):
+        flags = 0x00
+        if tableChange.volume is not None and tableChange.volume.allTracks:
+            flags |= 0x01
+        if tableChange.balance is not None and tableChange.balance.allTracks:
+            flags |= 0x02
+        if tableChange.chorus is not None and tableChange.chorus.allTracks:
+            flags |= 0x04
+        if tableChange.reverb is not None and tableChange.reverb.allTracks:
+            flags |= 0x08
+        if tableChange.phaser is not None and tableChange.phaser.allTracks:
+            flags |= 0x10
+        if tableChange.tremolo is not None and tableChange.tremolo.allTracks:
+            flags |= 0x20
+        self.writeSignedByte(flags)
 
     def writeNoteEffects(self, note):
         noteEffect = note.effect
