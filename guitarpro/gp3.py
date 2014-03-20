@@ -56,7 +56,7 @@ class GP3File(gp.GPFileBase):
         """
         if not self.readVersion():
             raise gp.GPException("unsupported version '%s'" %
-                                        self.version)
+                                 self.version)
         song = gp.Song()
         self.readInfo(song)
         self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
@@ -247,7 +247,6 @@ class GP3File(gp.GPFileBase):
 
     def readRepeatAlternative(self, measureHeaders):
         value = self.readByte()
-        repeatAlternative = 0
         existingAlternatives = 0
         for header in reversed(measureHeaders):
             if header.isRepeatOpen:
@@ -615,46 +614,53 @@ class GP3File(gp.GPFileBase):
 
         """
         chord = gp.Chord(stringCount)
-        if self.readByte() & 0x01 == 0:
-            chord.name = self.readIntByteSizeString()
-            chord.firstFret = self.readInt()
-            if chord.firstFret:
-                for i in range(6):
-                    fret = self.readInt()
-                    if i < len(chord.strings):
-                        chord.strings[i] = fret
+        newFormat = self.readBool()
+        if not newFormat:
+            self.readOldChord(chord)
         else:
-            chord.sharp = self.readBool()
-            intonation = 'sharp' if chord.sharp else 'flat'
-            self.skip(3)
-            chord.root = gp.PitchClass(self.readInt(), intonation=intonation)
-            chord.type = gp.ChordType(self.readInt())
-            chord.extension = gp.ChordExtension(self.readInt())
-            chord.bass = gp.PitchClass(self.readInt(), intonation=intonation)
-            chord.tonality = gp.ChordTonality(self.readInt())
-            chord.add = self.readBool()
-            chord.name = self.readByteSizeString(22)
-            chord.fifth = gp.ChordTonality(self.readInt())
-            chord.ninth = gp.ChordTonality(self.readInt())
-            chord.eleventh = gp.ChordTonality(self.readInt())
-            chord.firstFret = self.readInt()
+            self.readNewChord(chord)
+        if len(chord.notes) > 0:
+            beat.setChord(chord)
+
+    def readOldChord(self, chord):
+        chord.name = self.readIntByteSizeString()
+        chord.firstFret = self.readInt()
+        if chord.firstFret:
             for i in range(6):
                 fret = self.readInt()
                 if i < len(chord.strings):
                     chord.strings[i] = fret
-            chord.barres = []
-            barresCount = self.readInt()
-            barreFrets = self.readInt(2)
-            barreStarts = self.readInt(2)
-            barreEnds = self.readInt(2)
-            for fret, start, end, __ in zip(barreFrets, barreStarts, barreEnds,
-                                            range(barresCount)):
-                barre = gp.Barre(fret, start, end)
-                chord.barres.append(barre)
-            chord.omissions = self.readBool(7)
-            self.skip(1)
-        if len(chord.notes) > 0:
-            beat.setChord(chord)
+
+    def readNewChord(self, chord):
+        chord.sharp = self.readBool()
+        intonation = 'sharp' if chord.sharp else 'flat'
+        self.skip(3)
+        chord.root = gp.PitchClass(self.readInt(), intonation=intonation)
+        chord.type = gp.ChordType(self.readInt())
+        chord.extension = gp.ChordExtension(self.readInt())
+        chord.bass = gp.PitchClass(self.readInt(), intonation=intonation)
+        chord.tonality = gp.ChordTonality(self.readInt())
+        chord.add = self.readBool()
+        chord.name = self.readByteSizeString(22)
+        chord.fifth = gp.ChordTonality(self.readInt())
+        chord.ninth = gp.ChordTonality(self.readInt())
+        chord.eleventh = gp.ChordTonality(self.readInt())
+        chord.firstFret = self.readInt()
+        for i in range(6):
+            fret = self.readInt()
+            if i < len(chord.strings):
+                chord.strings[i] = fret
+        chord.barres = []
+        barresCount = self.readInt()
+        barreFrets = self.readInt(2)
+        barreStarts = self.readInt(2)
+        barreEnds = self.readInt(2)
+        for fret, start, end, __ in zip(barreFrets, barreStarts, barreEnds,
+                                        range(barresCount)):
+            barre = gp.Barre(fret, start, end)
+            chord.barres.append(barre)
+        chord.omissions = self.readBool(7)
+        self.skip(1)
 
     def readText(self, beat):
         """Read beat text.

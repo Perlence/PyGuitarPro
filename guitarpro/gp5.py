@@ -20,7 +20,7 @@ class GP5File(gp4.GP4File):
     def readSong(self):
         if not self.readVersion():
             raise gp.GPException("unsupported version '%s'" %
-                                        self.version)
+                                 self.version)
 
         song = gp.Song()
         self.readInfo(song)
