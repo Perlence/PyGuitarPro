@@ -999,7 +999,7 @@ class GP3File(gp.GPFileBase):
         if flags & 0x10:
             noteEffect.grace = self.readGrace()
         if flags & 0x04:
-            noteEffect.slides = self.readSlides(flags)
+            noteEffect.slides = self.readSlides()
         return noteEffect
 
     def readBend(self):
@@ -1027,7 +1027,7 @@ class GP3File(gp.GPFileBase):
         bendEffect.type = gp.BendType(self.readSignedByte())
         bendEffect.value = self.readInt()
         pointCount = self.readInt()
-        for i in range(pointCount):
+        for __ in range(pointCount):
             position = round(self.readInt() * gp.BendEffect.maxPosition /
                              gp.GPFileBase.bendPosition)
             value = round(self.readInt() * gp.BendEffect.semitoneLength /
@@ -1070,7 +1070,7 @@ class GP3File(gp.GPFileBase):
 
         return grace
 
-    def readSlides(self, flags):
+    def readSlides(self):
         return [gp.SlideType.legatoSlideTo]
 
     # Writing
@@ -1183,6 +1183,7 @@ class GP3File(gp.GPFileBase):
 
     def writeRepeatAlternative(self, value):
         first_one = False
+        i = 0
         for i in range(value.bit_length() + 1):
             if value & 1 << i:
                 first_one = True

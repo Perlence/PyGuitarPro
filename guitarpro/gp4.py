@@ -382,7 +382,7 @@ class GP4File(gp3.GP3File):
         elif value == 3:
             return gp.Duration.thirtySecond
 
-    def readSlides(self, flags=None):
+    def readSlides(self):
         """Read slides.
 
         Slide is encoded in :ref:`signed-byte`.  See
