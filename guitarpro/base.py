@@ -319,12 +319,12 @@ class Lyrics(GPObject):
     __attr__ = ('trackChoice',
                 'lines')
 
-    MAX_LINE_COUNT = 5
+    maxLineCount = 5
 
     def __init__(self, *args, **kwargs):
         self.trackChoice = -1
         self.lines = []
-        for __ in range(Lyrics.MAX_LINE_COUNT):
+        for __ in range(Lyrics.maxLineCount):
             self.lines.append(LyricLine())
         GPObject.__init__(self, *args, **kwargs)
 

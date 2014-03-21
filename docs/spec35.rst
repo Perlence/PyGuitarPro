@@ -68,6 +68,14 @@ ByteSizeString
 Values of type :ref:`byte-size-string` are represented by length of the string (1 byte) followed by character bytes.
 
 
+.. _int-size-string:
+
+IntSizeString
+^^^^^^^^^^^^^
+
+Values of type :ref:`int-size-string` are represented by length of the string (1 int) followed by character bytes.
+
+
 .. _int-byte-size-string:
 
 IntByteSizeString
