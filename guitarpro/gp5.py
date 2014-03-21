@@ -23,9 +23,9 @@ class GP5File(gp4.GP4File):
                                  self.version)
         song = gp.Song()
         self.readInfo(song)
-        self.readLyrics(song)
-        self.readRSEMasterEffect(song)
-        self.readPageSetup(song)
+        song.lyrics = self.readLyrics()
+        song.masterEffect = self.readRSEMasterEffect()
+        song.pageSetup = self.readPageSetup()
         song.tempoName = self.readIntByteSizeString()
         song.tempo = self.readInt()
         song.hideTempo = (self.readBool() if self.versionTuple > (5, 0)
@@ -34,7 +34,7 @@ class GP5File(gp4.GP4File):
         self.readInt()  # octave
         channels = self.readMidiChannels()
         directions = self.readDirections()
-        self.readMasterReverb(song)
+        song.masterEffect.reverb = self.readMasterReverb()
         measureCount = self.readInt()
         trackCount = self.readInt()
         self.readMeasureHeaders(song, measureCount, directions)
@@ -57,13 +57,13 @@ class GP5File(gp4.GP4File):
         for __ in range(notesCount):
             song.notice.append(self.readIntByteSizeString())
 
-    def readRSEMasterEffect(self, song):
+    def readRSEMasterEffect(self):
         if self.versionTuple > (5, 0):
             masterEffect = gp.RSEMasterEffect()
             masterEffect.volume = self.readByte()
             self.skip(7)  # ???
             masterEffect.equalizer = self.readEqualizer(11)
-            song.masterEffect = masterEffect
+            return masterEffect
 
     def readEqualizer(self, knobsNumber):
         knobs = map(self.unpackVolumeValue,
@@ -73,7 +73,7 @@ class GP5File(gp4.GP4File):
     def unpackVolumeValue(self, value):
         return -value / 10
 
-    def readPageSetup(self, song):
+    def readPageSetup(self):
         setup = gp.PageSetup()
         setup.pageSize = gp.Point(self.readInt(), self.readInt())
         l = self.readInt()
@@ -96,7 +96,7 @@ class GP5File(gp4.GP4File):
         setup.copyright = (self.readIntByteSizeString() + '\n' +
                            self.readIntByteSizeString())
         setup.pageNumber = self.readIntByteSizeString()
-        song.pageSetup = setup
+        return setup
 
     def readDirections(self):
         signs = {
@@ -124,12 +124,13 @@ class GP5File(gp4.GP4File):
         }
         return signs, fromSigns
 
-    def readMasterReverb(self, song):
+    def readMasterReverb(self):
         # Opeth - Baying of the Hounds.gp5: ffffffff
         # Mastodon - Colony of Birchmen.gp5: 01000000
         # Mostly 00000000
-        song.masterEffect.reverb = self.readByte()
+        reverb = self.readByte()
         self.skip(3)  # ???
+        return reverb
 
     def readMeasureHeaders(self, song, measureCount, directions):
         super(GP5File, self).readMeasureHeaders(song, measureCount)
@@ -192,7 +193,7 @@ class GP5File(gp4.GP4File):
                 oString.value = iTuning
                 track.strings.append(oString)
         track.port = self.readInt()
-        self.readChannel(track, channels)
+        track.channel = self.readChannel(channels)
         if track.channel.channel == 9:
             track.isPercussionTrack = True
         track.fretCount = self.readInt()
@@ -391,7 +392,7 @@ class GP5File(gp4.GP4File):
         flags2 = self.readByte()
         note.swapAccidentals = bool(flags2 & 0x02)
         if flags & 0x08:
-            self.readNoteEffects(note)
+            note.effect = self.readNoteEffects(note)
         return note
 
     def readGrace(self):

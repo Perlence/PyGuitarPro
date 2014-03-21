@@ -63,7 +63,7 @@ class GP4File(gp3.GP3File):
         self.readInfo(song)
         self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
                              else gp.TripletFeel.none)
-        self.readLyrics(song)
+        song.lyrics = self.readLyrics()
         song.tempo = self.readInt()
         song.key = gp.KeySignature((self.readInt(), 0))
         self.readSignedByte()  # octave
@@ -75,7 +75,7 @@ class GP4File(gp3.GP3File):
         self.readMeasures(song)
         return song
 
-    def readLyrics(self, song):
+    def readLyrics(self):
         """Read lyrics.
 
         First, read an :ref:`int` that points to the track lyrics are bound to.
@@ -84,11 +84,12 @@ class GP4File(gp3.GP3File):
         and :ref:`int-size-string` holding text of the lyric line.
 
         """
-        song.lyrics = gp.Lyrics()
-        song.lyrics.trackChoice = self.readInt()
-        for line in song.lyrics.lines:
+        lyrics = gp.Lyrics()
+        lyrics.trackChoice = self.readInt()
+        for line in lyrics.lines:
             line.startingMeasure = self.readInt()
             line.lyrics = self.readIntSizeString()
+        return lyrics
 
     def readNewChord(self, chord):
         """Read new-style (GP4) chord diagram.
@@ -184,7 +185,7 @@ class GP4File(gp3.GP3File):
         chord.fingerings = map(gp.Fingering, self.readSignedByte(7))
         chord.show = self.readBool()
 
-    def readBeatEffects(self, beat, effect):
+    def readBeatEffects(self, effect):
         """Read beat effects.
 
         Beat effects are read using two byte flags.
@@ -224,21 +225,23 @@ class GP4File(gp3.GP3File):
             :class:`guitarpro.base.BeatStrokeDirection`.
 
         """
+        beatEffect = gp.BeatEffect()
         flags1 = self.readSignedByte()
         flags2 = self.readSignedByte()
-        beat.effect.vibrato = bool(flags1 & 0x02) or beat.effect.vibrato
-        beat.effect.fadeIn = bool(flags1 & 0x10)
+        beatEffect.vibrato = bool(flags1 & 0x02) or beatEffect.vibrato
+        beatEffect.fadeIn = bool(flags1 & 0x10)
         if flags1 & 0x20:
             value = self.readSignedByte()
-            beat.effect.slapEffect = gp.SlapEffect(value)
+            beatEffect.slapEffect = gp.SlapEffect(value)
         if flags2 & 0x04:
-            beat.effect.tremoloBar =  self.readTremoloBar()
+            beatEffect.tremoloBar =  self.readTremoloBar()
         if flags1 & 0x40:
-            beat.effect.stroke =  self.readBeatStroke()
-        beat.effect.hasRasgueado = bool(flags2 & 0x01)
+            beatEffect.stroke =  self.readBeatStroke()
+        beatEffect.hasRasgueado = bool(flags2 & 0x01)
         if flags2 & 0x02:
             direction = self.readSignedByte()
-            beat.effect.pickStroke = gp.BeatStrokeDirection(direction)
+            beatEffect.pickStroke = gp.BeatStrokeDirection(direction)
+        return beatEffect
 
     def readTremoloBar(self):
         return self.readBend()
@@ -328,7 +331,7 @@ class GP4File(gp3.GP3File):
         -   Trill.  See :meth:`readTrill`.
 
         """
-        noteEffect = note.effect
+        noteEffect = gp.NoteEffect()
         flags1 = self.readSignedByte()
         flags2 = self.readSignedByte()
         noteEffect.hammer = bool(flags1 & 0x02)
@@ -348,6 +351,7 @@ class GP4File(gp3.GP3File):
             noteEffect.harmonic = self.readHarmonic(note)
         if flags2 & 0x20:
             noteEffect.trill = self.readTrill()
+        return noteEffect
 
     def readTremoloPicking(self):
         """Read tremolo picking.
@@ -594,14 +598,7 @@ class GP4File(gp3.GP3File):
             self.writeSignedByte(beatEffect.pickStroke.value)
 
     def writeTremoloBar(self, tremoloBar):
-        self.writeSignedByte(tremoloBar.type.value)
-        self.writeInt(tremoloBar.value)
-        self.writeInt(len(tremoloBar.points))
-        for point in tremoloBar.points:
-            self.writeInt(round(point.position * self.bendPosition /
-                                gp.BendEffect.maxPosition))
-            self.writeInt(round(point.value * (self.bendSemitone * 2.0)))
-            self.writeBool(point.vibrato)
+        self.writeBend(tremoloBar)
 
     def writeMixTableChange(self, tableChange):
         super(GP4File, self).writeMixTableChange(tableChange)

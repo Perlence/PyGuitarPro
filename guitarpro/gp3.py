@@ -357,7 +357,7 @@ class GP3File(gp.GPFileBase):
                 oString.value = iTuning
                 track.strings.append(oString)
         track.port = self.readInt()
-        self.readChannel(track, channels)
+        track.channel = self.readChannel(channels)
         if track.channel.channel == 9:
             track.isPercussionTrack = True
         track.fretCount = self.readInt()
@@ -365,7 +365,7 @@ class GP3File(gp.GPFileBase):
         track.color = self.readColor()
         return track
 
-    def readChannel(self, track, channels):
+    def readChannel(self, channels):
         """Read MIDI channel.
 
         MIDI channel in Guitar Pro is represented by two integers.  First is
@@ -376,11 +376,12 @@ class GP3File(gp.GPFileBase):
         index = self.readInt() - 1
         effectChannel = self.readInt() - 1
         if 0 <= index < len(channels):
-            track.channel = channels[index]
-            if track.channel.instrument < 0:
-                track.channel.instrument = 0
-            if not track.channel.isPercussionChannel:
-                track.channel.effectChannel = effectChannel
+            trackChannel = channels[index]
+            if trackChannel.instrument < 0:
+                trackChannel.instrument = 0
+            if not trackChannel.isPercussionChannel:
+                trackChannel.effectChannel = effectChannel
+            return trackChannel
 
     def readMeasures(self, song):
         """Read measures.
@@ -466,11 +467,11 @@ class GP3File(gp.GPFileBase):
         duration = self.readDuration(flags)
         effect = gp.NoteEffect()
         if flags & 0x02:
-            self.readChord(len(track.strings), beat)
+            beat.effect.chord = self.readChord(len(track.strings))
         if flags & 0x04:
-            self.readText(beat)
+            beat.text = self.readText()
         if flags & 0x08:
-            self.readBeatEffects(beat, effect)
+            beat.effect = self.readBeatEffects(effect)
         if flags & 0x10:
             mixTableChange = self.readMixTableChange(measure)
             beat.effect.mixTableChange = mixTableChange
@@ -536,7 +537,7 @@ class GP3File(gp.GPFileBase):
                 duration.tuplet.times = 8
         return duration
 
-    def readChord(self, stringCount, beat):
+    def readChord(self, stringCount):
         """Read chord diagram.
 
         First byte is chord header.  If it's set to 0, then following chord is
@@ -551,7 +552,7 @@ class GP3File(gp.GPFileBase):
         else:
             self.readNewChord(chord)
         if len(chord.notes) > 0:
-            beat.setChord(chord)
+            return chord
 
     def readOldChord(self, chord):
         """Read chord diagram encoded in GP3 format.
@@ -665,7 +666,7 @@ class GP3File(gp.GPFileBase):
         chord.omissions = self.readBool(7)
         self.skip(1)
 
-    def readText(self, beat):
+    def readText(self):
         """Read beat text.
 
         Text is stored in :ref:`int-byte-size-string`.
@@ -673,9 +674,9 @@ class GP3File(gp.GPFileBase):
         """
         text = gp.BeatText()
         text.value = self.readIntByteSizeString()
-        beat.setText(text)
+        return text
 
-    def readBeatEffects(self, beat, effect):
+    def readBeatEffects(self, effect):
         """Read beat effects.
 
         The first byte is effects flags:
@@ -704,25 +705,27 @@ class GP3File(gp.GPFileBase):
         determined, see :meth:`toStrokeValue`.
 
         """
+        beatEffects = gp.BeatEffect()
         flags1 = self.readByte()
         effect.vibrato = bool(flags1 & 0x01) or effect.vibrato
-        beat.effect.vibrato = bool(flags1 & 0x02) or beat.effect.vibrato
-        beat.effect.fadeIn = bool(flags1 & 0x10)
+        beatEffects.vibrato = bool(flags1 & 0x02) or beatEffects.vibrato
+        beatEffects.fadeIn = bool(flags1 & 0x10)
         if flags1 & 0x20:
             flags2 = self.readByte()
-            beat.effect.slapEffect = gp.SlapEffect(flags2)
-            if beat.effect.slapEffect == gp.SlapEffect.none:
-                beat.effect.tremoloBar = self.readTremoloBar()
+            beatEffects.slapEffect = gp.SlapEffect(flags2)
+            if beatEffects.slapEffect == gp.SlapEffect.none:
+                beatEffects.tremoloBar = self.readTremoloBar()
             else:
                 self.readInt()
         if flags1 & 0x40:
-            beat.effect.stroke = self.readBeatStroke()
+            beatEffects.stroke = self.readBeatStroke()
         if flags1 & 0x04:
             harmonic = gp.NaturalHarmonic()
             effect.harmonic = harmonic
         if flags1 & 0x08:
             harmonic = gp.ArtificialHarmonic()
             effect.harmonic = harmonic
+        return beatEffects
 
     def readTremoloBar(self):
         """Read tremolo bar beat effect.
@@ -947,7 +950,7 @@ class GP3File(gp.GPFileBase):
             note.effect.leftHandFinger = gp.Fingering(self.readSignedByte())
             note.effect.rightHandFinger = gp.Fingering(self.readSignedByte())
         if flags & 0x08:
-            self.readNoteEffects(note)
+            note.effect = self.readNoteEffects(note)
             if note.effect.isHarmonic and isinstance(note.effect.harmonic, gp.TappedHarmonic):
                 note.effect.harmonic.fret = note.value + 12
         return note
@@ -987,7 +990,7 @@ class GP3File(gp.GPFileBase):
         -   Grace note.  See :meth:`readGrace`.
 
         """
-        noteEffect = note.effect
+        noteEffect = gp.NoteEffect()
         flags = self.readByte()
         noteEffect.hammer = bool(flags & 0x02)
         noteEffect.letRing = bool(flags & 0x08)
@@ -997,6 +1000,7 @@ class GP3File(gp.GPFileBase):
             noteEffect.grace = self.readGrace()
         if flags & 0x04:
             noteEffect.slides = self.readSlides(flags)
+        return noteEffect
 
     def readBend(self):
         """Read bend.

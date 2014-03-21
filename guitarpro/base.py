@@ -1084,14 +1084,6 @@ class Beat(GPObject):
         offset = self.start - self.measure.start()
         return self.measure.header.realStart + offset
 
-    def setText(self, text):
-        text.beat = self
-        self.text = text
-
-    def setChord(self, chord):
-        chord.beat = self
-        self.effect.chord = chord
-
     def ensureVoices(self, count):
         while len(self.voices) < count:  # as long we have not enough voice
             # create new ones
