@@ -394,7 +394,7 @@ class GP5File(gp4.GP4File):
             self.readNoteEffects(note)
         return note
 
-    def readGrace(self, noteEffect):
+    def readGrace(self):
         grace = gp.GraceEffect()
         grace.fret = self.readByte()
         grace.velocity = self.unpackVelocity(self.readByte())
@@ -403,9 +403,9 @@ class GP5File(gp4.GP4File):
         flags = self.readByte()
         grace.isDead = bool(flags & 0x01)
         grace.isOnBeat = bool(flags & 0x02)
-        noteEffect.grace = grace
+        return grace
 
-    def readSlides(self, noteEffect):
+    def readSlides(self):
         slideType = self.readByte()
         slides = []
         if slideType & 0x01:
@@ -420,7 +420,7 @@ class GP5File(gp4.GP4File):
             slides.append(gp.SlideType.intoFromBelow)
         if slideType & 0x20:
             slides.append(gp.SlideType.intoFromAbove)
-        noteEffect.slides = slides
+        return slides
 
     def readHarmonic(self, note):
         noteEffect = note.effect
@@ -443,7 +443,7 @@ class GP5File(gp4.GP4File):
             harmonic = gp.PinchHarmonic()
         elif harmonicType == 5:
             harmonic = gp.SemiHarmonic()
-        noteEffect.harmonic = harmonic
+        return harmonic
 
     # Writing
     # =======

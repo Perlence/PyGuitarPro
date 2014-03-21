@@ -232,28 +232,16 @@ class GP4File(gp3.GP3File):
             value = self.readSignedByte()
             beat.effect.slapEffect = gp.SlapEffect(value)
         if flags2 & 0x04:
-            self.readTremoloBar(beat.effect)
+            beat.effect.tremoloBar =  self.readTremoloBar()
         if flags1 & 0x40:
-            self.readBeatStroke(beat.effect)
+            beat.effect.stroke =  self.readBeatStroke()
         beat.effect.hasRasgueado = bool(flags2 & 0x01)
         if flags2 & 0x02:
             direction = self.readSignedByte()
             beat.effect.pickStroke = gp.BeatStrokeDirection(direction)
 
-    def readTremoloBar(self, effect):
-        barEffect = gp.BendEffect()
-        barEffect.type = gp.BendType(self.readSignedByte())
-        barEffect.value = self.readInt()
-        pointCount = self.readInt()
-        for i in range(pointCount):
-            pointPosition = round(self.readInt() * gp.BendEffect.maxPosition /
-                                  self.bendPosition)
-            pointValue = round(self.readInt() / (self.bendSemitone * 2.0))
-            vibrato = self.readBool()
-            barEffect.points.append(gp.BendPoint(pointPosition, pointValue,
-                                                 vibrato))
-        if pointCount > 0:
-            effect.tremoloBar = barEffect
+    def readTremoloBar(self):
+        return self.readBend()
 
     def readMixTableChange(self, measure):
         """Read mix table change.
@@ -349,19 +337,19 @@ class GP4File(gp3.GP3File):
         noteEffect.palmMute = bool(flags2 & 0x02)
         noteEffect.vibrato = bool(flags2 & 0x40) or noteEffect.vibrato
         if flags1 & 0x01:
-            self.readBend(noteEffect)
+            noteEffect.bend = self.readBend()
         if flags1 & 0x10:
-            self.readGrace(noteEffect)
+            noteEffect.grace = self.readGrace()
         if flags2 & 0x04:
-            self.readTremoloPicking(noteEffect)
+            noteEffect.tremoloPicking = self.readTremoloPicking()
         if flags2 & 0x08:
-            self.readSlides(noteEffect)
+            noteEffect.slides = self.readSlides()
         if flags2 & 0x10:
-            self.readHarmonic(note)
+            noteEffect.harmonic = self.readHarmonic(note)
         if flags2 & 0x20:
-            self.readTrill(noteEffect)
+            noteEffect.trill = self.readTrill()
 
-    def readTremoloPicking(self, noteEffect):
+    def readTremoloPicking(self):
         """Read tremolo picking.
 
         Tremolo constists of picking speed encoded in :ref:`signed-byte`.  For
@@ -371,7 +359,7 @@ class GP4File(gp3.GP3File):
         value = self.readSignedByte()
         tp = gp.TremoloPickingEffect()
         tp.duration.value = self.fromTremoloValue(value)
-        noteEffect.tremoloPicking = tp
+        return tp
 
     def fromTremoloValue(self, value):
         """Convert tremolo picking speed to actual duration.
@@ -390,14 +378,14 @@ class GP4File(gp3.GP3File):
         elif value == 3:
             return gp.Duration.thirtySecond
 
-    def readSlides(self, noteEffect):
+    def readSlides(self, flags=None):
         """Read slides.
 
         Slide is encoded in :ref:`signed-byte`.  See
         :class:`guitarpro.base.SlideType` for value mapping.
 
         """
-        noteEffect.slides = [gp.SlideType(self.readSignedByte())]
+        return [gp.SlideType(self.readSignedByte())]
 
     def readHarmonic(self, note):
         """Read harmonic.
@@ -434,9 +422,9 @@ class GP4File(gp3.GP3File):
             pitch = gp.PitchClass(note.realValue)
             octave = gp.Octave.ottava
             harmonic = gp.ArtificialHarmonic(pitch, octave)
-        note.effect.harmonic = harmonic
+        return harmonic
 
-    def readTrill(self, noteEffect):
+    def readTrill(self):
         """Read trill.
 
         -   Fret: :ref:`signed-byte`.
@@ -447,7 +435,7 @@ class GP4File(gp3.GP3File):
         trill = gp.TrillEffect()
         trill.fret = self.readSignedByte()
         trill.duration.value = self.fromTrillPeriod(self.readSignedByte())
-        noteEffect.trill = trill
+        return trill
 
     def fromTrillPeriod(self, period):
         """Convert trill period to actual duration.

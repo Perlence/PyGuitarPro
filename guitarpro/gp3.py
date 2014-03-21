@@ -712,11 +712,11 @@ class GP3File(gp.GPFileBase):
             flags2 = self.readByte()
             beat.effect.slapEffect = gp.SlapEffect(flags2)
             if beat.effect.slapEffect == gp.SlapEffect.none:
-                self.readTremoloBar(beat.effect)
+                beat.effect.tremoloBar = self.readTremoloBar()
             else:
                 self.readInt()
         if flags1 & 0x40:
-            self.readBeatStroke(beat.effect)
+            beat.effect.stroke = self.readBeatStroke()
         if flags1 & 0x04:
             harmonic = gp.NaturalHarmonic()
             effect.harmonic = harmonic
@@ -724,7 +724,7 @@ class GP3File(gp.GPFileBase):
             harmonic = gp.ArtificialHarmonic()
             effect.harmonic = harmonic
 
-    def readTremoloBar(self, effect):
+    def readTremoloBar(self):
         """Read tremolo bar beat effect.
 
         The only type of tremolo bar effect Guitar Pro 3 supports is :attr:`dip
@@ -740,17 +740,17 @@ class GP3File(gp.GPFileBase):
             gp.BendPoint(round(gp.BendEffect.maxPosition / 2),
                          round(-barEffect.value / (self.bendSemitone * 2))))
         barEffect.points.append(gp.BendPoint(gp.BendEffect.maxPosition, 0))
-        effect.tremoloBar = barEffect
+        return barEffect
 
-    def readBeatStroke(self, beatEffect):
+    def readBeatStroke(self):
         strokeUp = self.readSignedByte()
         strokeDown = self.readSignedByte()
         if strokeUp > 0:
-            beatEffect.stroke.direction = gp.BeatStrokeDirection.up
-            beatEffect.stroke.value = self.toStrokeValue(strokeUp)
+            return gp.BeatStroke(gp.BeatStrokeDirection.up,
+                                 self.toStrokeValue(strokeUp))
         elif strokeDown > 0:
-            beatEffect.stroke.direction = gp.BeatStrokeDirection.down
-            beatEffect.stroke.value = self.toStrokeValue(strokeDown)
+            return gp.BeatStroke(gp.BeatStrokeDirection.down,
+                                 self.toStrokeValue(strokeDown))
 
     def toStrokeValue(self, value):
         """Unpack stroke value.
@@ -992,13 +992,13 @@ class GP3File(gp.GPFileBase):
         noteEffect.hammer = bool(flags & 0x02)
         noteEffect.letRing = bool(flags & 0x08)
         if flags & 0x01:
-            self.readBend(noteEffect)
+            noteEffect.bend = self.readBend()
         if flags & 0x10:
-            self.readGrace(noteEffect)
+            noteEffect.grace = self.readGrace()
         if flags & 0x04:
-            self.readSlides(noteEffect, flags)
+            noteEffect.slides = self.readSlides(flags)
 
-    def readBend(self, noteEffect):
+    def readBend(self):
         """Read bend.
 
         Encoded as:
@@ -1031,9 +1031,9 @@ class GP3File(gp.GPFileBase):
             vibrato = self.readBool()
             bendEffect.points.append(gp.BendPoint(position, value, vibrato))
         if pointCount > 0:
-            noteEffect.bend = bendEffect
+            return bendEffect
 
-    def readGrace(self, noteEffect):
+    def readGrace(self):
         """Read grace note effect.
 
         -   Fret: :ref:`signed-byte`.  Number of fret.
@@ -1064,10 +1064,10 @@ class GP3File(gp.GPFileBase):
         grace.isOnBeat = False
         grace.transition = gp.GraceEffectTransition(transition)
 
-        noteEffect.grace = grace
+        return grace
 
-    def readSlides(self, noteEffect, flags):
-        noteEffect.slides = [gp.SlideType.legatoSlideTo]
+    def readSlides(self, flags):
+        return [gp.SlideType.legatoSlideTo]
 
     # Writing
     # =======
