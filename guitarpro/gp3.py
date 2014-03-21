@@ -972,14 +972,15 @@ class GP3File(gp.GPFileBase):
 
         """
         noteEffect = note.effect
-        flags1 = self.readByte()
-        noteEffect.hammer = bool(flags1 & 0x02)
-        noteEffect.slides = [gp.SlideType.legatoSlideTo] if flags1 & 0x04 else []
-        noteEffect.letRing = bool(flags1 & 0x08)
-        if flags1 & 0x01:
+        flags = self.readByte()
+        noteEffect.hammer = bool(flags & 0x02)
+        noteEffect.letRing = bool(flags & 0x08)
+        if flags & 0x01:
             self.readBend(noteEffect)
-        if flags1 & 0x10:
+        if flags & 0x10:
             self.readGrace(noteEffect)
+        if flags & 0x04:
+            self.readSlides(noteEffect, flags)
 
     def readBend(self, noteEffect):
         """Read bend.
@@ -1053,6 +1054,9 @@ class GP3File(gp.GPFileBase):
         grace.transition = gp.GraceEffectTransition(transition)
 
         noteEffect.grace = grace
+
+    def readSlides(self, noteEffect, flags):
+        noteEffect.slides = [gp.SlideType.legatoSlideTo]
 
     # Writing
     # =======

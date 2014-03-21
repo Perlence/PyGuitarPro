@@ -373,11 +373,9 @@ class GP5File(gp4.GP4File):
         if flags & 0x20:
             note.type = gp.NoteType(self.readByte())
             note.effect.deadNote = note.type == gp.NoteType.dead
-
         if flags & 0x10:
             dyn = self.readSignedByte()
             note.velocity = self.unpackVelocity(dyn)
-
         if flags & 0x20:
             fret = self.readSignedByte()
             if note.type == gp.NoteType.tie:
@@ -385,58 +383,26 @@ class GP5File(gp4.GP4File):
             else:
                 value = fret
             note.value = value if 0 <= value < 100 else 0
-
         if flags & 0x80:
             note.effect.leftHandFinger = gp.Fingering(self.readSignedByte())
             note.effect.rightHandFinger = gp.Fingering(self.readSignedByte())
-
         if flags & 0x01:
             note.durationPercent = self.readDouble()
         flags2 = self.readByte()
         note.swapAccidentals = bool(flags2 & 0x02)
-
         if flags & 0x08:
             self.readNoteEffects(note)
-
         return note
 
-    def readNoteEffects(self, note):
-        noteEffect = note.effect
-        flags1 = self.readByte()
-        flags2 = self.readByte()
-        if flags1 & 0x01:
-            self.readBend(noteEffect)
-        if flags1 & 0x10:
-            self.readGrace(noteEffect)
-        if flags2 & 0x04:
-            self.readTremoloPicking(noteEffect)
-        if flags2 & 0x08:
-            self.readSlides(noteEffect)
-        if flags2 & 0x10:
-            self.readHarmonic(note)
-        if flags2 & 0x20:
-            self.readTrill(noteEffect)
-        noteEffect.letRing = bool(flags1 & 0x08)
-        noteEffect.hammer = bool(flags1 & 0x02)
-        noteEffect.vibrato = bool(flags2 & 0x40) or noteEffect.vibrato
-        noteEffect.palmMute = bool(flags2 & 0x02)
-        noteEffect.staccato = bool(flags2 & 0x01)
-
     def readGrace(self, noteEffect):
-        fret = self.readByte()
-        dyn = self.readByte()
-        transition = self.readByte()
-        duration = self.readByte()
-        flags = self.readByte()
         grace = gp.GraceEffect()
-
-        grace.fret = fret
-        grace.velocity = self.unpackVelocity(dyn)
-        grace.duration = 1 << (7 - duration)
+        grace.fret = self.readByte()
+        grace.velocity = self.unpackVelocity(self.readByte())
+        grace.transition = gp.GraceEffectTransition(self.readByte())
+        grace.duration = 1 << (7 - self.readByte())
+        flags = self.readByte()
         grace.isDead = bool(flags & 0x01)
         grace.isOnBeat = bool(flags & 0x02)
-        grace.transition = gp.GraceEffectTransition(transition)
-
         noteEffect.grace = grace
 
     def readSlides(self, noteEffect):
@@ -953,63 +919,16 @@ class GP5File(gp4.GP4File):
         if flags & 0x08:
             self.writeNoteEffects(note)
 
-    def writeNoteEffects(self, note):
-        noteEffect = note.effect
-        flags1 = 0x00
-        if noteEffect.isBend:
-            flags1 |= 0x01
-        if noteEffect.hammer:
-            flags1 |= 0x02
-        if noteEffect.letRing:
-            flags1 |= 0x08
-        if noteEffect.isGrace:
-            flags1 |= 0x10
-
-        self.writeByte(flags1)
-
-        flags2 = 0x00
-        if noteEffect.staccato:
-            flags2 |= 0x01
-        if noteEffect.palmMute:
-            flags2 |= 0x02
-        if noteEffect.isTremoloPicking:
-            flags2 |= 0x04
-        if noteEffect.slides:
-            flags2 |= 0x08
-        if noteEffect.isHarmonic:
-            flags2 |= 0x10
-        if noteEffect.isTrill:
-            flags2 |= 0x20
-        if noteEffect.vibrato:
-            flags2 |= 0x40
-
-        self.writeByte(flags2)
-
-        if flags1 & 0x01:
-            self.writeBend(noteEffect.bend)
-        if flags1 & 0x10:
-            self.writeGrace(noteEffect.grace)
-        if flags2 & 0x04:
-            self.writeTremoloPicking(noteEffect.tremoloPicking)
-        if flags2 & 0x08:
-            self.writeSlides(noteEffect.slides)
-        if flags2 & 0x10:
-            self.writeHarmonic(note, noteEffect.harmonic)
-        if flags2 & 0x20:
-            self.writeTrill(noteEffect.trill)
-
     def writeGrace(self, grace):
         self.writeByte(grace.fret)
         self.writeByte(self.packVelocity(grace.velocity))
         self.writeByte(grace.transition.value)
         self.writeByte(8 - grace.duration.bit_length())
-
         flags = 0x00
         if grace.isDead:
             flags |= 0x01
         if grace.isOnBeat:
             flags |= 0x02
-
         self.writeByte(flags)
 
     def writeSlides(self, slides):

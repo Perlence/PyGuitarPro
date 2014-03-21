@@ -136,6 +136,11 @@ class GP4File(gp3.GP3File):
         noteEffect = note.effect
         flags1 = self.readSignedByte()
         flags2 = self.readSignedByte()
+        noteEffect.hammer = bool(flags1 & 0x02)
+        noteEffect.letRing = bool(flags1 & 0x08)
+        noteEffect.staccato = bool(flags2 & 0x01)
+        noteEffect.palmMute = bool(flags2 & 0x02)
+        noteEffect.vibrato = bool(flags2 & 0x40) or noteEffect.vibrato
         if flags1 & 0x01:
             self.readBend(noteEffect)
         if flags1 & 0x10:
@@ -143,22 +148,20 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x04:
             self.readTremoloPicking(noteEffect)
         if flags2 & 0x08:
-            noteEffect.slides = [gp.SlideType(self.readSignedByte())]
+            self.readSlides(noteEffect)
         if flags2 & 0x10:
             self.readHarmonic(note)
         if flags2 & 0x20:
             self.readTrill(noteEffect)
-        noteEffect.hammer = bool(flags1 & 0x02)
-        noteEffect.letRing = bool(flags1 & 0x08)
-        noteEffect.staccato = bool(flags2 & 0x01)
-        noteEffect.palmMute = bool(flags2 & 0x02)
-        noteEffect.vibrato = bool(flags2 & 0x40) or noteEffect.vibrato
 
     def readTremoloPicking(self, noteEffect):
         value = self.readSignedByte()
         tp = gp.TremoloPickingEffect()
         tp.duration.value = self.fromTremoloValue(value)
         noteEffect.tremoloPicking = tp
+
+    def readSlides(self, noteEffect):
+        noteEffect.slides = [gp.SlideType(self.readSignedByte())]
 
     def fromTremoloValue(self, value):
         if value == 1:
@@ -388,9 +391,7 @@ class GP4File(gp3.GP3File):
             flags1 |= 0x08
         if noteEffect.isGrace:
             flags1 |= 0x10
-
         self.writeSignedByte(flags1)
-
         flags2 = 0x00
         if noteEffect.staccato:
             flags2 |= 0x01
@@ -406,9 +407,7 @@ class GP4File(gp3.GP3File):
             flags2 |= 0x20
         if noteEffect.vibrato:
             flags2 |= 0x40
-
         self.writeSignedByte(flags2)
-
         if flags1 & 0x01:
             self.writeBend(noteEffect.bend)
         if flags1 & 0x10:
@@ -416,7 +415,7 @@ class GP4File(gp3.GP3File):
         if flags2 & 0x04:
             self.writeTremoloPicking(noteEffect.tremoloPicking)
         if flags2 & 0x08:
-            self.writeSignedByte(noteEffect.slides[0].value)
+            self.writeSlides(noteEffect.slides)
         if flags2 & 0x10:
             self.writeHarmonic(note, noteEffect.harmonic)
         if flags2 & 0x20:
@@ -425,6 +424,9 @@ class GP4File(gp3.GP3File):
     def writeTremoloPicking(self, tremoloPicking):
         self.writeSignedByte(
             self.toTremoloValue(tremoloPicking.duration.value))
+
+    def writeSlides(self, slides):
+        self.writeSignedByte(slides[0].value)
 
     def toTremoloValue(self, value):
         if value == gp.Duration.eighth:
