@@ -693,6 +693,7 @@ class Duration(GPObject):
     sixteenth = 16
     thirtySecond = 32
     sixtyFourth = 64
+    hundredTwentyEighth = 128
 
     # The time resulting with a 64th note and a 3/2 tuplet
     minTime = int(int(quarterTime * (4 / sixtyFourth)) * 2 / 3)

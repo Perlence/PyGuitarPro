@@ -760,7 +760,7 @@ class GP3File(gp.GPFileBase):
 
         Stroke value maps to:
 
-        -   *1*: sixty-fourth
+        -   *1*: hundred twenty-eighth
         -   *2*: sixty-fourth
         -   *3*: thirty-second
         -   *4*: sixteenth
@@ -769,7 +769,7 @@ class GP3File(gp.GPFileBase):
 
         """
         if value == 1:
-            return gp.Duration.sixtyFourth
+            return gp.Duration.hundredTwentyEighth
         elif value == 2:
             return gp.Duration.sixtyFourth
         elif value == 3:
@@ -1374,7 +1374,7 @@ class GP3File(gp.GPFileBase):
         self.writeSignedByte(strokeDown)
 
     def fromStrokeValue(self, value):
-        if value == gp.Duration.sixtyFourth:
+        if value == gp.Duration.hundredTwentyEighth:
             return 1
         elif value == gp.Duration.sixtyFourth:
             return 2
