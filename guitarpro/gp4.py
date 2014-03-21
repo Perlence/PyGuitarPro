@@ -245,7 +245,6 @@ class GP4File(gp3.GP3File):
 
     def writeBeat(self, beat, voiceIndex=0):
         voice = beat.voices[voiceIndex]
-
         flags = 0x00
         if voice.duration.isDotted:
             flags |= 0x01
@@ -261,27 +260,19 @@ class GP4File(gp3.GP3File):
             flags |= 0x20
         if voice.isEmpty or voice.isRestVoice:
             flags |= 0x40
-
         self.writeSignedByte(flags)
-
         if flags & 0x40:
             beatType = 0x00 if voice.isEmpty else 0x02
             self.writeSignedByte(beatType)
-
         self.writeDuration(voice.duration, flags)
-
         if flags & 0x02:
             self.writeChord(beat.effect.chord)
-
         if flags & 0x04:
             self.writeText(beat.text)
-
         if flags & 0x08:
             self.writeBeatEffects(beat.effect)
-
         if flags & 0x10:
             self.writeMixTableChange(beat.effect.mixTableChange)
-
         self.writeNotes(voice)
 
     def writeChord(self, chord):

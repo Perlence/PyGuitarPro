@@ -172,7 +172,7 @@ class GP3File(gp.GPFileBase):
         """
         previous = None
         for number in range(1, measureCount + 1):
-            header = self.readMeasureHeader(number, song, previous)
+            header, __ = self.readMeasureHeader(number, song, previous)
             song.addMeasureHeader(header)
             previous = header
 
@@ -243,7 +243,7 @@ class GP3File(gp.GPFileBase):
         elif header.number > 1:
             header.keySignature = previous.keySignature
         header.hasDoubleBar = bool(flags & 0x80)
-        return header
+        return header, flags
 
     def readRepeatAlternative(self, measureHeaders):
         value = self.readByte()
@@ -409,7 +409,7 @@ class GP3File(gp.GPFileBase):
             header.tempo = tempo
             start += header.length
 
-    def readMeasure(self, measure, track):
+    def readMeasure(self, measure, track, voiceIndex=0):
         """Read measure.
 
         The measure is written as number of beats followed by sequence
@@ -419,7 +419,7 @@ class GP3File(gp.GPFileBase):
         start = measure.start
         beats = self.readInt()
         for beat in range(beats):
-            start += self.readBeat(start, measure, track, 0)
+            start += self.readBeat(start, measure, track, voiceIndex)
 
     def readBeat(self, start, measure, track, voiceIndex):
         """Read beat.
