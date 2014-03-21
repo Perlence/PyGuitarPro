@@ -245,7 +245,6 @@ class Song(GPObject):
     It contains basic information about the stored song.
 
     """
-
     __attr__ = ('title', 'subtitle', 'artist', 'album', 'words', 'music',
                 'copyright', 'tab', 'instructions', 'notice', 'lyrics',
                 'pageSetup', 'tempoName', 'tempo', 'hideTempo', 'key',
@@ -703,6 +702,7 @@ class Duration(GPObject):
 class MeasureClef(Enum):
 
     """A list of available clefs."""
+
     treble = 0
     bass = 1
     tenor = 2
@@ -712,6 +712,7 @@ class MeasureClef(Enum):
 class LineBreak(Enum):
 
     """A line break directive."""
+
     none = 0
     break_ = 1
     protect = 2
@@ -809,6 +810,7 @@ class Measure(GPObject):
 class VoiceDirection(Enum):
 
     """Voice directions indicating the direction of beams."""
+
     none = 0
     up = 1
     down = 2
@@ -853,6 +855,7 @@ class Voice(GPObject):
 class BeatStrokeDirection(Enum):
 
     """All beat stroke directions."""
+
     none = 0
     up = 1
     down = 2
@@ -1061,10 +1064,13 @@ class GraceEffectTransition(Enum):
 
     #: No transition
     none = 0
+
     #: Slide from the grace note to the real one
     slide = 1
+
     #: Perform a bend from the grace note to the real one
     bend = 2
+
     #: Perform a hammer on
     hammer = 3
 
@@ -1450,31 +1456,46 @@ class MixTableChange(GPObject):
 class BendType(Enum):
 
     """All Bend presets."""
-    # Bends
+
     #: No Preset
     none = 0
+
+    # Bends
+    # =====
+
     #: A simple bend
     bend = 1
+
     #: A bend and release afterwards
     bendRelease = 2
+
     #: A bend, then release and rebend
     bendReleaseBend = 3
+
     #: Prebend
     prebend = 4
+
     #: Prebend and then release
     prebendRelease = 5
 
     # Tremolobar
+    # ==========
+
     #: Dip the bar down and then back up
     dip = 6
+
     #: Dive the bar
     dive = 7
+
     #: Release the bar up
     releaseUp = 8
+
     #: Dip the bar up and then back down
     invertedDip = 9
+
     #: Return the bar
     return_ = 10
+
     #: Release the bar down
     releaseDown = 11
 
@@ -1508,8 +1529,10 @@ class BendEffect(GPObject):
 
     #: The note offset per bend point offset.
     semitoneLength = 1
+
     #: The max position of the bend points (x axis)
     maxPosition = 12
+
     #: The max value of the bend points (y axis)
     maxValue = semitoneLength * 12
 

@@ -298,6 +298,14 @@ class GP5File(gp4.GP4File):
         beat.display = display
         return duration
 
+    def readBeatStroke(self):
+        stroke = super(GP5File, self).readBeatStroke()
+        if stroke.direction == gp.BeatStrokeDirection.up:
+            stroke.direction = gp.BeatStrokeDirection.down
+        elif stroke.direction == gp.BeatStrokeDirection.down:
+            stroke.direction = gp.BeatStrokeDirection.up
+        return stroke
+
     def readMixTableChange(self, measure):
         tableChange = super(gp4.GP4File, self).readMixTableChange(measure)
         flags = self.readMixTableChangeFlags(tableChange)
@@ -531,7 +539,7 @@ class GP5File(gp4.GP4File):
         self.writeByte(setup.headerAndFooter & 0xff)
 
         flags2 = 0x00
-        if setup.headerAndFooter & gp.HeaderFooterElements.pageNumber != 0:
+        if setup.headerAndFooter and gp.HeaderFooterElements.pageNumber != 0:
             flags2 |= 0x01
         self.writeByte(flags2)
 
@@ -802,6 +810,13 @@ class GP5File(gp4.GP4File):
         self.writeByte(flags3)
         if flags3 & 0x08:
             self.writeByte(beat.display.breakSecondary)
+
+    def writeBeatStroke(self, stroke):
+        if stroke.direction == gp.BeatStrokeDirection.up:
+            stroke.direction = gp.BeatStrokeDirection.down
+        elif stroke.direction == gp.BeatStrokeDirection.down:
+            stroke.direction = gp.BeatStrokeDirection.up
+        super(GP5File, self).writeBeatStroke(stroke)
 
     def writeMixTableChange(self, tableChange):
         super(gp4.GP4File, self).writeMixTableChange(tableChange)
