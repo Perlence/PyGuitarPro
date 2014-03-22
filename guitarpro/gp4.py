@@ -32,25 +32,25 @@ class GP4File(gp3.GP3File):
         -   Triplet feel: :ref:`bool`.
             If value is true, then triplet feel is set to eigth.
 
-        -   Lyrics.  See :meth:`readLyrics`.
+        -   Lyrics. See :meth:`readLyrics`.
 
         -   Tempo: :ref:`int`.
 
-        -   Key: :ref:`int`.  Key signature of the song.
+        -   Key: :ref:`int`. Key signature of the song.
 
-        -   Octave: :ref:`signed-byte`.  Reserved for future uses.
+        -   Octave: :ref:`signed-byte`. Reserved for future uses.
 
-        -   MIDI channels.  See :meth:`readMidiChannels`.
+        -   MIDI channels. See :meth:`readMidiChannels`.
 
         -   Number of measures: :ref:`int`.
 
         -   Number of tracks: :ref:`int`.
 
-        -   Measure headers.  See :meth:`readMeasureHeaders`.
+        -   Measure headers. See :meth:`readMeasureHeaders`.
 
-        -   Tracks.  See :meth:`readTracks`.
+        -   Tracks. See :meth:`readTracks`.
 
-        -   Measures.  See :meth:`readMeasures`.
+        -   Measures. See :meth:`readMeasures`.
 
         """
         if not self.readVersion():
@@ -93,47 +93,47 @@ class GP4File(gp3.GP3File):
 
         New-style chord diagram is read as follows:
 
-        -   Sharp: :ref:`bool`.  If true, display all semitones as sharps,
+        -   Sharp: :ref:`bool`. If true, display all semitones as sharps,
             otherwise display as flats.
 
         -   Blank space, 3 :ref:`Bytes <byte>`.
 
-        -   Root: :ref:`byte`.  Values are:
+        -   Root: :ref:`byte`. Values are:
 
             *   -1 for customized chords
             *    0: C
             *    1: C#
             *   ...
 
-        -   Type: :ref:`byte`.  Determines the chord type as followed.  See
+        -   Type: :ref:`byte`. Determines the chord type as followed. See
             :class:`guitarpro.base.ChordType` for mapping.
 
-        -   Chord extension: :ref:`byte`.  See
+        -   Chord extension: :ref:`byte`. See
             :class:`guitarpro.base.ChordExtension` for mapping.
 
-        -   Bass note: :ref:`int`.  Lowest note of chord as in *C/A*.
+        -   Bass note: :ref:`int`. Lowest note of chord as in *C/A*.
 
-        -   Tonality: :ref:`int`.  See :class:`guitarpro.base.ChordTonality`
+        -   Tonality: :ref:`int`. See :class:`guitarpro.base.ChordTonality`
             for mapping.
 
-        -   Add: :ref:`bool`.  Determines if a "add" (added note) is present in
+        -   Add: :ref:`bool`. Determines if a "add" (added note) is present in
             the chord.
 
-        -   Name: :ref:`byte-size-string`.  Max length is 22.
+        -   Name: :ref:`byte-size-string`. Max length is 22.
 
-        -   Fifth tonality: :ref:`byte`.  Maps to
+        -   Fifth tonality: :ref:`byte`. Maps to
             :class:`guitarpro.base.ChordExtension`.
 
-        -   Ninth tonality: :ref:`byte`.  Maps to
+        -   Ninth tonality: :ref:`byte`. Maps to
             :class:`guitarpro.base.ChordExtension`.
 
-        -   Eleventh tonality: :ref:`byte`.  Maps to
+        -   Eleventh tonality: :ref:`byte`. Maps to
             :class:`guitarpro.base.ChordExtension`.
 
-        -   List of frets: 6 :ref:`Ints <int>`.  Fret values are saved as in
+        -   List of frets: 6 :ref:`Ints <int>`. Fret values are saved as in
             default format.
 
-        -   Count of barres: :ref:`byte`.  Maximum count is 5.
+        -   Count of barres: :ref:`byte`. Maximum count is 5.
 
         -   Barre frets: 5 :ref:`Bytes <byte>`.
 
@@ -141,12 +141,12 @@ class GP4File(gp3.GP3File):
 
         -   Barre end string: 5 :ref:`Bytes <byte>`.
 
-        -   Omissions: 7 :ref:`Bools <bool>`.  If the value is true then note
+        -   Omissions: 7 :ref:`Bools <bool>`. If the value is true then note
             is played in chord.
 
         -   Blank space, 1 :ref:`byte`.
 
-        -   Fingering: 7 :ref:`SignedBytes <signed-byte>`.  For value mapping,
+        -   Fingering: 7 :ref:`SignedBytes <signed-byte>`. For value mapping,
             see :class:`guitarpro.base.Fingering`.
 
         """
@@ -211,14 +211,14 @@ class GP4File(gp3.GP3File):
 
         Flags are followed by:
 
-        -   Slap effect: :ref:`signed-byte`.  For value mapping see
+        -   Slap effect: :ref:`signed-byte`. For value mapping see
             :class:`guitarpro.base.SlapEffect`.
 
-        -   Tremolo bar.  See :meth:`readTremoloBar`.
+        -   Tremolo bar. See :meth:`readTremoloBar`.
 
-        -   Beat stroke.  See :meth:`readBeatStroke`.
+        -   Beat stroke. See :meth:`readBeatStroke`.
 
-        -   Pick stroke: :ref:`signed-byte`.  For value mapping see
+        -   Pick stroke: :ref:`signed-byte`. For value mapping see
             :class:`guitarpro.base.BeatStrokeDirection`.
 
         """
@@ -315,17 +315,17 @@ class GP4File(gp3.GP3File):
 
         Flags are followed by:
 
-        -   Bend.  See :meth:`readBend`.
+        -   Bend. See :meth:`readBend`.
 
-        -   Grace note.  See :meth:`readGrace`.
+        -   Grace note. See :meth:`readGrace`.
 
-        -   Tremolo picking.  See :meth:`readTremoloPicking`.
+        -   Tremolo picking. See :meth:`readTremoloPicking`.
 
-        -   Slide.  See :meth:`readSlides`.
+        -   Slide. See :meth:`readSlides`.
 
-        -   Harmonic.  See :meth:`readHarmonic`.
+        -   Harmonic. See :meth:`readHarmonic`.
 
-        -   Trill.  See :meth:`readTrill`.
+        -   Trill. See :meth:`readTrill`.
 
         """
         noteEffect = gp.NoteEffect()
@@ -353,7 +353,7 @@ class GP4File(gp3.GP3File):
     def readTremoloPicking(self):
         """Read tremolo picking.
 
-        Tremolo constists of picking speed encoded in :ref:`signed-byte`.  For
+        Tremolo constists of picking speed encoded in :ref:`signed-byte`. For
         value mapping refer to :meth:`fromTremoloValue`.
 
         """
@@ -382,7 +382,7 @@ class GP4File(gp3.GP3File):
     def readSlides(self):
         """Read slides.
 
-        Slide is encoded in :ref:`signed-byte`.  See
+        Slide is encoded in :ref:`signed-byte`. See
         :class:`guitarpro.base.SlideType` for value mapping.
 
         """
@@ -391,7 +391,7 @@ class GP4File(gp3.GP3File):
     def readHarmonic(self, note):
         """Read harmonic.
 
-        Harmonic is encoded in :ref:`signed-byte`.  Values correspond to:
+        Harmonic is encoded in :ref:`signed-byte`. Values correspond to:
 
         -   *1*: natural harmonic
         -   *3*: tapped harmonic
@@ -430,7 +430,7 @@ class GP4File(gp3.GP3File):
 
         -   Fret: :ref:`signed-byte`.
 
-        -   Period: :ref:`signed-byte`.  See :meth:`fromTrillPeriod`.
+        -   Period: :ref:`signed-byte`. See :meth:`fromTrillPeriod`.
 
         """
         trill = gp.TrillEffect()

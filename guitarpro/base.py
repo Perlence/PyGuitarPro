@@ -1316,7 +1316,7 @@ class PitchClass(object):
 
     """A pitch class.
 
-    Constructor provides several overloads.  Each overload provides keyword
+    Constructor provides several overloads. Each overload provides keyword
     argument ``intonation`` that may be either 'sharp' or 'flat'.
 
     First of overloads is (tone, accidental):
@@ -1592,7 +1592,7 @@ class RSEEqualizer(GPObject):
     """Equalizer found in master effect and track effect.
 
     Attribute :attr:`RSEEqualizer.knobs` is a list of values in range from -6.0
-    to 5.9.  Master effect has 10 knobs, track effect has 3 knobs.  Gain is a
+    to 5.9. Master effect has 10 knobs, track effect has 3 knobs. Gain is a
     value in range from -6.0 to 5.9 which can be found in both master and track
     effects and is named as "PRE" in Guitar Pro 5.
 

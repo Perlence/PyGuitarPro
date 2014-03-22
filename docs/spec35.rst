@@ -65,7 +65,8 @@ Values of type :ref:`double` are stored in 8 little-endian bytes.
 ByteSizeString
 ^^^^^^^^^^^^^^
 
-Values of type :ref:`byte-size-string` are represented by length of the string (1 byte) followed by character bytes.
+Values of type :ref:`byte-size-string` are represented by length of the string
+(1 byte) followed by character bytes.
 
 
 .. _int-size-string:
@@ -73,7 +74,8 @@ Values of type :ref:`byte-size-string` are represented by length of the string (
 IntSizeString
 ^^^^^^^^^^^^^
 
-Values of type :ref:`int-size-string` are represented by length of the string (1 int) followed by character bytes.
+Values of type :ref:`int-size-string` are represented by length of the string (1
+int) followed by character bytes.
 
 
 .. _int-byte-size-string:
@@ -81,7 +83,9 @@ Values of type :ref:`int-size-string` are represented by length of the string (1
 IntByteSizeString
 ^^^^^^^^^^^^^^^^^
 
-Values of type :ref:`int-byte-size-string` are represented by integer holding length of the string increased by 1, a byte holding length of the string and finally followed by character bytes.
+Values of type :ref:`int-byte-size-string` are represented by integer holding
+length of the string increased by 1, a byte holding length of the string and
+finally followed by character bytes.
 
 
 Guitar Pro 3 format

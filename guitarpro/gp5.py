@@ -27,35 +27,35 @@ class GP5File(gp4.GP4File):
         -   Score information.
             See :meth:`readInfo`.
 
-        -   Lyrics.  See :meth:`readLyrics`.
+        -   Lyrics. See :meth:`readLyrics`.
 
-        -   RSE master effect.  See :meth:`readRSEInstrument`.
+        -   RSE master effect. See :meth:`readRSEInstrument`.
 
         -   Tempo name: :ref:`int-byte-size-string`.
 
         -   Tempo: :ref:`int`.
 
-        -   Hide tempo: :ref:`bool`.  Don't display tempo on the sheet if set.
+        -   Hide tempo: :ref:`bool`. Don't display tempo on the sheet if set.
 
-        -   Key: :ref:`int`.  Key signature of the song.
+        -   Key: :ref:`int`. Key signature of the song.
 
-        -   Octave: :ref:`int`.  Octave of the song.
+        -   Octave: :ref:`int`. Octave of the song.
 
-        -   MIDI channels.  See :meth:`readMidiChannels`.
+        -   MIDI channels. See :meth:`readMidiChannels`.
 
-        -   Directions.  See :meth:`readDirections`.
+        -   Directions. See :meth:`readDirections`.
 
-        -   Master reverb.  See :meth:`readMasterReverb`.
+        -   Master reverb. See :meth:`readMasterReverb`.
 
         -   Number of measures: :ref:`int`.
 
         -   Number of tracks: :ref:`int`.
 
-        -   Measure headers.  See :meth:`readMeasureHeaders`.
+        -   Measure headers. See :meth:`readMeasureHeaders`.
 
-        -   Tracks.  See :meth:`readTracks`.
+        -   Tracks. See :meth:`readTracks`.
 
-        -   Measures.  See :meth:`readMeasures`.
+        -   Measures. See :meth:`readMeasures`.
 
         """
         if not self.readVersion():
@@ -98,8 +98,8 @@ class GP5File(gp4.GP4File):
         -   tabbed by
         -   instructions
 
-        The sequence if followed by notice.  Notice starts with the number of
-        notice lines stored in :ref:`int`.  Each line is encoded in
+        The sequence if followed by notice. Notice starts with the number of
+        notice lines stored in :ref:`int`. Each line is encoded in
         :ref:`int-byte-size-string`.
 
         """
@@ -123,9 +123,9 @@ class GP5File(gp4.GP4File):
         Persistence of RSE master effect was introduced in Guitar Pro 5.1.
         It is read as:
 
-        -   Master volume: :ref:`int`.  Values are in range from 0 to 200.
+        -   Master volume: :ref:`int`. Values are in range from 0 to 200.
 
-        -   Equalizer.  See :meth:`readEqualizer`.
+        -   Equalizer. See :meth:`readEqualizer`.
 
         """
         if self.versionTuple > (5, 0):
@@ -138,11 +138,11 @@ class GP5File(gp4.GP4File):
     def readEqualizer(self, knobsNumber):
         """Read equalizer values.
 
-        Equlizers are used in RSE master effect and Track RSE.  They consist of
+        Equlizers are used in RSE master effect and Track RSE. They consist of
         *n* :ref:`SignedBytes <signed-byte>` for each *n* frequency faders and
         one :ref:`signed-byte` for gain (PRE) fader.
 
-        Volume values are stored as opposite to actual value.  See
+        Volume values are stored as opposite to actual value. See
         :meth:`unpackVolumeValue`.
 
         """
@@ -164,14 +164,14 @@ class GP5File(gp4.GP4File):
 
         Page setup is read as follows:
 
-        -   Page size: 2 :ref:`Ints <int>`.  Width and height of the page.
+        -   Page size: 2 :ref:`Ints <int>`. Width and height of the page.
 
-        -   Page padding: 4 :ref:`Ints <int>`.  Left, right, top, bottom
+        -   Page padding: 4 :ref:`Ints <int>`. Left, right, top, bottom
             padding of the page.
 
         -   Score size proportion: :ref:`int`.
 
-        -   Header and footer elements: :ref:`short`.  See
+        -   Header and footer elements: :ref:`short`. See
             :class:`HeaderFooterElements` for value mapping.
 
         -   List of placeholders:
@@ -279,16 +279,16 @@ class GP5File(gp4.GP4File):
 
         Measure header format in Guitar Pro 5 differs from one if Guitar Pro 3.
 
-        First, there is a blank byte if measure is not first.  Then measure
+        First, there is a blank byte if measure is not first. Then measure
         header is read as in GP3's :meth:`guitarpro.gp3.readMeasureHeader`.
         Then measure header is read as follows:
 
-        -   Time signature beams: 4 :ref:`Bytes <byte>`.  Appears If time
+        -   Time signature beams: 4 :ref:`Bytes <byte>`. Appears If time
             signature was set, i.e. flags *0x01* and *0x02* are both set.
 
         -   Blank :ref:`byte` if flag at *0x10* is set.
 
-        -   Triplet feel: :ref:`byte`.  See
+        -   Triplet feel: :ref:`byte`. See
             :class:`guitarpro.base.TripletFeel`.
 
         """
