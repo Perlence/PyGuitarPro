@@ -36,24 +36,21 @@ class GP4File(gp3.GP3File):
 
         -   Tempo: :ref:`int`.
 
-        -   Key: :ref:`int`.
-            Key signature of the song.
+        -   Key: :ref:`int`.  Key signature of the song.
 
-        -   MIDI channels: list of :class:`guitarpro.base.MidiChannel`.
-            See :meth:`readMidiChannels`.
+        -   Octave: :ref:`signed-byte`.  Reserved for future uses.
+
+        -   MIDI channels.  See :meth:`readMidiChannels`.
 
         -   Number of measures: :ref:`int`.
 
         -   Number of tracks: :ref:`int`.
 
-        -   Measure headers: list of :class:`guitarpro.base.MeasureHeader`.
-            See :meth:`readMeasureHeaders`.
+        -   Measure headers.  See :meth:`readMeasureHeaders`.
 
-        -   Tracks: list of :class:`guitarpro.base.Track`.
-            See :meth:`readTracks`.
+        -   Tracks.  See :meth:`readTracks`.
 
-        -   Measures: table of :class:`guitarpro.base.Measure`.
-            See :meth:`readMeasures`.
+        -   Measures.  See :meth:`readMeasures`.
 
         """
         if not self.readVersion():

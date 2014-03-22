@@ -6,8 +6,8 @@ from . import gp4
 
 class GP5File(gp4.GP4File):
 
-    '''A reader for GuitarPro 5 files.
-    '''
+    """A reader for GuitarPro 5 files."""
+
     _supportedVersions = ['FICHIER GUITAR PRO v5.00',
                           'FICHIER GUITAR PRO v5.10']
 
@@ -18,6 +18,46 @@ class GP5File(gp4.GP4File):
     # =======
 
     def readSong(self):
+        """Read the song.
+
+        A song consists of score information, triplet feel, lyrics, tempo, song
+        key, MIDI channels, measure and track count, measure headers,
+        tracks, measures.
+
+        -   Score information.
+            See :meth:`readInfo`.
+
+        -   Lyrics.  See :meth:`readLyrics`.
+
+        -   RSE master effect.  See :meth:`readRSEInstrument`.
+
+        -   Tempo name: :ref:`int-byte-size-string`.
+
+        -   Tempo: :ref:`int`.
+
+        -   Hide tempo: :ref:`bool`.  Don't display tempo on the sheet if set.
+
+        -   Key: :ref:`int`.  Key signature of the song.
+
+        -   Octave: :ref:`int`.  Octave of the song.
+
+        -   MIDI channels.  See :meth:`readMidiChannels`.
+
+        -   Directions.  See :meth:`readDirections`.
+
+        -   Master reverb.  See :meth:`readMasterReverb`.
+
+        -   Number of measures: :ref:`int`.
+
+        -   Number of tracks: :ref:`int`.
+
+        -   Measure headers.  See :meth:`readMeasureHeaders`.
+
+        -   Tracks.  See :meth:`readTracks`.
+
+        -   Measures.  See :meth:`readMeasures`.
+
+        """
         if not self.readVersion():
             raise gp.GPException("unsupported version '%s'" %
                                  self.version)
@@ -34,7 +74,7 @@ class GP5File(gp4.GP4File):
         self.readInt()  # octave
         channels = self.readMidiChannels()
         directions = self.readDirections()
-        song.masterEffect.reverb = self.readMasterReverb()
+        song.masterEffect.reverb = self.readInt()
         measureCount = self.readInt()
         trackCount = self.readInt()
         self.readMeasureHeaders(song, measureCount, directions)
@@ -43,6 +83,26 @@ class GP5File(gp4.GP4File):
         return song
 
     def readInfo(self, song):
+        """Read score information.
+
+        Score information consists of sequence of :ref:`IntByteSizeStrings
+        <int-byte-size-string>`:
+
+        -   title
+        -   subtitle
+        -   artist
+        -   album
+        -   words
+        -   music
+        -   copyright
+        -   tabbed by
+        -   instructions
+
+        The sequence if followed by notice.  Notice starts with the number of
+        notice lines stored in :ref:`int`.  Each line is encoded in
+        :ref:`int-byte-size-string`.
+
+        """
         song.title = self.readIntByteSizeString()
         song.subtitle = self.readIntByteSizeString()
         song.artist = self.readIntByteSizeString()
@@ -58,22 +118,77 @@ class GP5File(gp4.GP4File):
             song.notice.append(self.readIntByteSizeString())
 
     def readRSEMasterEffect(self):
+        """Read RSE master effect.
+
+        Persistence of RSE master effect was introduced in Guitar Pro 5.1.
+        It is read as:
+
+        -   Master volume: :ref:`int`.  Values are in range from 0 to 200.
+
+        -   Equalizer.  See :meth:`readEqualizer`.
+
+        """
         if self.versionTuple > (5, 0):
             masterEffect = gp.RSEMasterEffect()
-            masterEffect.volume = self.readByte()
-            self.skip(7)  # ???
+            masterEffect.volume = self.readInt()
+            self.readInt()  # ???
             masterEffect.equalizer = self.readEqualizer(11)
             return masterEffect
 
     def readEqualizer(self, knobsNumber):
+        """Read equalizer values.
+
+        Equlizers are used in RSE master effect and Track RSE.  They consist of
+        *n* :ref:`SignedBytes <signed-byte>` for each *n* frequency faders and
+        one :ref:`signed-byte` for gain (PRE) fader.
+
+        Volume values are stored as opposite to actual value.  See
+        :meth:`unpackVolumeValue`.
+
+        """
         knobs = map(self.unpackVolumeValue,
                     self.readSignedByte(count=knobsNumber))
         return gp.RSEEqualizer(knobs=knobs[:-1], gain=knobs[-1])
 
     def unpackVolumeValue(self, value):
+        """Unpack equalizer volume value.
+
+        Equalizer volumes are float but stored as
+        :ref:`SignedBytes <signed-byte>`.
+
+        """
         return -value / 10
 
     def readPageSetup(self):
+        """Read page setup.
+
+        Page setup is read as follows:
+
+        -   Page size: 2 :ref:`Ints <int>`.  Width and height of the page.
+
+        -   Page padding: 4 :ref:`Ints <int>`.  Left, right, top, bottom
+            padding of the page.
+
+        -   Score size proportion: :ref:`int`.
+
+        -   Header and footer elements: :ref:`short`.  See
+            :class:`HeaderFooterElements` for value mapping.
+
+        -   List of placeholders:
+
+            *   title
+            *   subtitle
+            *   artist
+            *   album
+            *   words
+            *   music
+            *   wordsAndMusic
+            *   copyright1, e.g. Copyright %copyright%
+            *   copyright2, e.g. All Rights Reserved - International Copyright
+                Secured
+            *   pageNumber
+
+        """
         setup = gp.PageSetup()
         setup.pageSize = gp.Point(self.readInt(), self.readInt())
         l = self.readInt()
@@ -82,10 +197,7 @@ class GP5File(gp4.GP4File):
         b = self.readInt()
         setup.pageMargin = gp.Padding(l, t, r, b)
         setup.scoreSizeProportion = self.readInt() / 100
-        setup.headerAndFooter = self.readByte()
-        flags2 = self.readByte()
-        if flags2 & 0x01:
-            setup.headerAndFooter |= gp.HeaderFooterElements.pageNumber
+        setup.headerAndFooter = self.readShort()
         setup.title = self.readIntByteSizeString()
         setup.subtitle = self.readIntByteSizeString()
         setup.artist = self.readIntByteSizeString()
@@ -99,6 +211,34 @@ class GP5File(gp4.GP4File):
         return setup
 
     def readDirections(self):
+        """Read directions.
+
+        Directions is a list of 19 :ref:`ShortInts <short-int>` each pointing
+        at the number of measure.
+
+        Directions are read in the following order.
+
+        -   Coda
+        -   Double Coda
+        -   Segno
+        -   Segno Segno
+        -   Fine
+        -   Da Capo
+        -   Da Capo al Coda
+        -   Da Capo al Double Coda
+        -   Da Capo al Fine
+        -   Da Segno
+        -   Da Segno al Coda
+        -   Da Segno al Double Coda
+        -   Da Segno al Fine
+        -   Da Segno Segno
+        -   Da Segno Segno al Coda
+        -   Da Segno Segno al Double Coda
+        -   Da Segno Segno al Fine
+        -   Da Coda
+        -   Da Double Coda
+
+        """
         signs = {
             gp.DirectionSign('Coda'): self.readShort(),
             gp.DirectionSign('Double Coda'): self.readShort(),
@@ -124,14 +264,6 @@ class GP5File(gp4.GP4File):
         }
         return signs, fromSigns
 
-    def readMasterReverb(self):
-        # Opeth - Baying of the Hounds.gp5: ffffffff
-        # Mastodon - Colony of Birchmen.gp5: 01000000
-        # Mostly 00000000
-        reverb = self.readByte()
-        self.skip(3)  # ???
-        return reverb
-
     def readMeasureHeaders(self, song, measureCount, directions):
         super(GP5File, self).readMeasureHeaders(song, measureCount)
         signs, fromSigns = directions
@@ -143,6 +275,23 @@ class GP5File(gp4.GP4File):
                 song.measureHeaders[number - 1].fromDirection = sign
 
     def readMeasureHeader(self, number, song, previous=None):
+        """Read measure header.
+
+        Measure header format in Guitar Pro 5 differs from one if Guitar Pro 3.
+
+        First, there is a blank byte if measure is not first.  Then measure
+        header is read as in GP3's :meth:`guitarpro.gp3.readMeasureHeader`.
+        Then measure header is read as follows:
+
+        -   Time signature beams: 4 :ref:`Bytes <byte>`.  Appears If time
+            signature was set, i.e. flags *0x01* and *0x02* are both set.
+
+        -   Blank :ref:`byte` if flag at *0x10* is set.
+
+        -   Triplet feel: :ref:`byte`.  See
+            :class:`guitarpro.base.TripletFeel`.
+
+        """
         if previous is not None:
             # Always 0
             self.skip(1)
@@ -269,7 +418,6 @@ class GP5File(gp4.GP4File):
     def readBeat(self, start, measure, track, voiceIndex):
         duration = super(GP5File, self).readBeat(start, measure, track, voiceIndex)
         beat = self.getBeat(measure, start)
-        voice = beat.voices[voiceIndex]
         flags2 = self.readByte()
         flags3 = self.readByte()
         if flags2 & 0x10:
@@ -432,7 +580,6 @@ class GP5File(gp4.GP4File):
         return slides
 
     def readHarmonic(self, note):
-        noteEffect = note.effect
         harmonicType = self.readSignedByte()
         if harmonicType == 1:
             harmonic = gp.NaturalHarmonic()
@@ -511,8 +658,8 @@ class GP5File(gp4.GP4File):
                 masterEffect.volume = 100
                 masterEffect.reverb = 0
                 masterEffect.equalizer = gp.RSEEqualizer(knobs=[0] * 10, gain=0)
-            self.writeByte(masterEffect.volume)
-            self.placeholder(7)
+            self.writeInt(masterEffect.volume)
+            self.writeInt(0)
             self.writeEqualizer(masterEffect.equalizer)
 
     def writeEqualizer(self, equalizer):
