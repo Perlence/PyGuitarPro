@@ -125,7 +125,7 @@ class GP5File(gp4.GP4File):
 
         -   Master volume: :ref:`int`. Values are in range from 0 to 200.
 
-        -   Equalizer. See :meth:`readEqualizer`.
+        -   10-band equalizer. See :meth:`readEqualizer`.
 
         """
         if self.versionTuple > (5, 0):
@@ -138,9 +138,9 @@ class GP5File(gp4.GP4File):
     def readEqualizer(self, knobsNumber):
         """Read equalizer values.
 
-        Equlizers are used in RSE master effect and Track RSE. They consist of
-        *n* :ref:`SignedBytes <signed-byte>` for each *n* frequency faders and
-        one :ref:`signed-byte` for gain (PRE) fader.
+        Equalizers are used in RSE master effect and Track RSE. They consist of
+        *n* :ref:`SignedBytes <signed-byte>` for each *n* bands and one
+        :ref:`signed-byte` for gain (PRE) fader.
 
         Volume values are stored as opposite to actual value. See
         :meth:`unpackVolumeValue`.
@@ -213,7 +213,7 @@ class GP5File(gp4.GP4File):
     def readDirections(self):
         """Read directions.
 
-        Directions is a list of 19 :ref:`ShortInts <short-int>` each pointing
+        Directions is a list of 19 :ref:`ShortInts <short>` each pointing
         at the number of measure.
 
         Directions are read in the following order.
@@ -312,12 +312,84 @@ class GP5File(gp4.GP4File):
         return self.readByte()
 
     def readTracks(self, song, trackCount, channels):
-        for i in range(trackCount):
-            song.addTrack(self.readTrack(i + 1, channels))
-        # Always 0
-        self.skip(2 if self.versionTuple == (5, 0) else 1)
+        """Read tracks.
+
+        Tracks in Guitar Pro 5 have almost the same format as in Guitar Pro 3.
+        If it's Guitar Pro 5.0 then 2 blank bytes are read after
+        :meth:`guitarpro.gp3.readTracks`. If format version is higher than 5.0,
+        1 blank byte is read.
+
+        """
+        super(GP5File, self).readTracks(song, trackCount, channels)
+        self.skip(2 if self.versionTuple == (5, 0) else 1)  # Always 0
 
     def readTrack(self, number, channels):
+        """Read track.
+
+        If it's Guitar Pro 5.0 format and track is first then one blank byte is
+        read.
+
+        Then go track's flags. It presides the track's attributes:
+
+        -   *0x01*: drums track
+        -   *0x02*: 12 stringed guitar track
+        -   *0x04*: banjo track
+        -   *0x08*: track visibility
+        -   *0x10*: track is soloed
+        -   *0x20*: track is muted
+        -   *0x40*: RSE is enabled
+        -   *0x80*: show tuning in the header of the sheet.
+
+        Flags are followed by:
+
+        -   Name: `String`. A 40 characters long string containing the track's
+            name.
+
+        -   Number of strings: :ref:`int`. An integer equal to the number of
+            strings of the track.
+
+        -   Tuning of the strings: `Table of integers`. The tuning of the
+            strings is stored as a 7-integers table, the "Number of strings"
+            first integers being really used. The strings are stored from the
+            highest to the lowest.
+
+        -   Port: :ref:`int`. The number of the MIDI port used.
+
+        -   Channel. See :meth:`GP3File.readChannel`.
+
+        -   Number of frets: :ref:`int`. The number of frets of the
+            instrument.
+
+        -   Height of the capo: :ref:`int`. The number of the fret on which a
+            capo is set. If no capo is used, the value is 0.
+
+        -   Track's color. The track's displayed color in Guitar Pro.
+
+        These properties are followed by second set of flags stored in a
+        :ref:`short`.
+
+        -   *0x0001*: show tablature
+        -   *0x0002*: show standard notation
+        -   *0x0004*: chord diagrams are below standard notation
+        -   *0x0008*: show rhythm with tab
+        -   *0x0010*: force horizontal beams
+        -   *0x0020*: force channels 11 to 16
+        -   *0x0040*: diagram list on top of the score
+        -   *0x0080*: diagrams in the score
+        -   *0x0200*: auto let-ring
+        -   *0x0400*: auto brush
+        -   *0x0800*: extend rhythmic inside the tab
+
+        Then follow:
+
+        -   Auto accentuation: :ref:`byte`. See
+            :class:`guitarpro.base.Accentuation`.
+
+        -   MIDI bank: :ref:`byte`.
+
+        -   Track RSE. See :meth:`readTrackRSE`.
+
+        """
         if number == 1 or self.versionTuple == (5, 0):
             # Always 0
             self.skip(1)
@@ -349,36 +421,43 @@ class GP5File(gp4.GP4File):
         track.offset = self.readInt()
         track.color = self.readColor()
 
-        flags2 = self.readByte()
-        flags3 = self.readByte()
-        trackSettings = gp.TrackSettings()
-        trackSettings.tablature = bool(flags2 & 0x01)
-        trackSettings.notation = bool(flags2 & 0x02)
-        trackSettings.diagramsAreBelow = bool(flags2 & 0x04)
-        trackSettings.showRhythm = bool(flags2 & 0x08)
-        trackSettings.forceHorizontal = bool(flags2 & 0x10)
-        trackSettings.forceChannels = bool(flags2 & 0x20)
-        trackSettings.diagramList = bool(flags2 & 0x40)
-        trackSettings.diagramsInScore = bool(flags2 & 0x80)
+        flags2 = self.readShort()
+        track.settings = gp.TrackSettings()
+        track.settings.tablature = bool(flags2 & 0x0001)
+        track.settings.notation = bool(flags2 & 0x0002)
+        track.settings.diagramsAreBelow = bool(flags2 & 0x0004)
+        track.settings.showRhythm = bool(flags2 & 0x0008)
+        track.settings.forceHorizontal = bool(flags2 & 0x0010)
+        track.settings.forceChannels = bool(flags2 & 0x0020)
+        track.settings.diagramList = bool(flags2 & 0x0040)
+        track.settings.diagramsInScore = bool(flags2 & 0x0080)
+        # 0x0100: ???
+        track.settings.autoLetRing = bool(flags2 & 0x0200)
+        track.settings.autoBrush = bool(flags2 & 0x0400)
+        track.settings.extendRhythmic = bool(flags2 & 0x0800)
 
-        # 0x01: ???
-        trackSettings.autoLetRing = bool(flags3 & 0x02)
-        trackSettings.autoBrush = bool(flags3 & 0x04)
-        trackSettings.extendRhythmic = bool(flags3 & 0x08)
-        track.settings = trackSettings
-
-        trackRSE = gp.TrackRSE()
-        trackRSE.autoAccentuation = gp.Accentuation(self.readByte())
-
-        bank = self.readByte()
-        track.channel.bank = bank
-
-        track.rse = self.readTrackRSE(trackRSE)
+        track.rse = gp.TrackRSE()
+        track.rse.autoAccentuation = gp.Accentuation(self.readByte())
+        track.channel.bank = self.readByte()
+        self.readTrackRSE(track.rse)
         return track
 
-    def readTrackRSE(self, trackRSE=None):
-        if trackRSE is None:
-            trackRSE = gp.TrackRSE()
+    def readTrackRSE(self, trackRSE):
+        """Read track RSE.
+
+        In GuitarPro 5.1 track RSE is read as follows:
+
+        -   Humanize: :ref:`byte`.
+
+        -   Unknown space: 6 :ref:`Ints <int>`.
+
+        -   RSE instrument. See :meth:`readRSEInstrument`.
+
+        -   3-band track equalizer. See :meth:`readEqualizer`.
+
+        -   RSE instrument effect. See :meth:`readRSEInstrumentEffect`.
+
+        """
         if self.versionTuple == (5, 0):
             trackRSE.humanize = self.readByte()
             self.readInt(3)  # ???
@@ -394,6 +473,17 @@ class GP5File(gp4.GP4File):
             return trackRSE
 
     def readRSEInstrument(self):
+        """Read RSE instrument.
+
+        -   MIDI instrument number: :ref:`int`.
+
+        -   Unknown :ref:`int`.
+
+        -   Sound bank: :ref:`int`.
+
+        -   Unknown :ref:`int`.
+
+        """
         instrument = gp.RSEInstrument()
         instrument.instrument = self.readInt()
         self.readInt()  # ??? mostly 1
@@ -402,6 +492,15 @@ class GP5File(gp4.GP4File):
         return instrument
 
     def readRSEInstrumentEffect(self, rseInstrument):
+        """Read RSE instrument effect name.
+
+        This feature was introduced in Guitar Pro 5.1.
+
+        -   Effect name: :ref:`int-byte-size-string`.
+
+        -   Effect category: :ref:`int-byte-size-string`.
+
+        """
         if self.versionTuple > (5, 0):
             effect = self.readIntByteSizeString()
             effectCategory = self.readIntByteSizeString()
@@ -411,42 +510,80 @@ class GP5File(gp4.GP4File):
         return rseInstrument
 
     def readMeasure(self, measure, track, voiceIndex=None):
+        """Read measure.
+
+        Guitar Pro 5 stores twice more measures compared to Guitar Pro 3.
+        One measure consists of two sub-measures for each of two voices.
+
+        Sub-measures are followed by a :class:`~guitarpro.base.LineBreak`
+        stored in :ref:`byte`.
+
+        """
         for voiceIndex in range(gp.Beat.maxVoices):
             super(GP5File, self).readMeasure(measure, track, voiceIndex)
         measure.lineBreak = gp.LineBreak(self.readByte(default=0))
 
     def readBeat(self, start, measure, track, voiceIndex):
+        """Read beat.
+
+        First, beat is read is in Guitar Pro 3 :meth:`guitarpro.gp3.readBeat`.
+        Then it is followed by set of flags stored in :ref:`short`.
+
+        -   *0x0001*: break beams
+        -   *0x0002*: direct beams down
+        -   *0x0004*: force beams
+        -   *0x0008*: direct beams up
+        -   *0x0010*: ottava (8va)
+        -   *0x0020*: ottava bassa (8vb)
+        -   *0x0040*: quindicesima (15ma)
+        -   *0x0100*: quindicesima bassa (15mb)
+        -   *0x0200*: start tuplet bracket here
+        -   *0x0400*: end tuplet bracket here
+        -   *0x0800*: break secondary beams
+        -   *0x1000*: break secondary tuplet
+        -   *0x2000*: force tuplet bracket
+
+        -   Break secondary beams: :ref:`byte`. Appears if flag at *0x0800* is
+            set. Signifies how much beams should be broken.
+
+        """
         duration = super(GP5File, self).readBeat(start, measure, track, voiceIndex)
         beat = self.getBeat(measure, start)
-        flags2 = self.readByte()
-        flags3 = self.readByte()
-        if flags2 & 0x10:
+        flags2 = self.readShort()
+        if flags2 & 0x0010:
             beat.octave = gp.Octave.ottava
-        if flags2 & 0x20:
+        if flags2 & 0x0020:
             beat.octave = gp.Octave.ottavaBassa
-        if flags2 & 0x40:
+        if flags2 & 0x0040:
             beat.octave = gp.Octave.quindicesima
-        if flags3 & 0x01:
+        if flags2 & 0x0100:
             beat.octave = gp.Octave.quindicesimaBassa
         display = gp.BeatDisplay()
-        display.breakBeam = bool(flags2 & 0x01)
-        display.forceBeam = bool(flags2 & 0x04)
-        display.forceBracket = bool(flags3 & 0x20)
-        display.breakSecondaryTuplet = bool(flags3 & 0x10)
-        if flags2 & 0x02:
+        display.breakBeam = bool(flags2 & 0x0001)
+        display.forceBeam = bool(flags2 & 0x0004)
+        display.forceBracket = bool(flags2 & 0x2000)
+        display.breakSecondaryTuplet = bool(flags2 & 0x1000)
+        if flags2 & 0x0002:
             display.beamDirection = gp.VoiceDirection.down
-        if flags2 & 0x08:
+        if flags2 & 0x0008:
             display.beamDirection = gp.VoiceDirection.up
-        if flags3 & 0x02:
+        if flags2 & 0x0200:
             display.tupletBracket = gp.TupletBracket.start
-        if flags3 & 0x04:
+        if flags2 & 0x0400:
             display.tupletBracket = gp.TupletBracket.end
-        if flags3 & 0x08:
+        if flags2 & 0x0800:
             display.breakSecondary = self.readByte()
         beat.display = display
         return duration
 
     def readBeatStroke(self):
+        """Read beat stroke.
+
+        Beat stroke consists of two :ref:`Bytes <byte>` which correspond to
+        stroke down and stroke up speed. See :class:`guitarpro.base.BeatStroke`
+        for value mapping.
+
+        """
         stroke = super(GP5File, self).readBeatStroke()
         if stroke.direction == gp.BeatStrokeDirection.up:
             stroke.direction = gp.BeatStrokeDirection.down
@@ -455,6 +592,16 @@ class GP5File(gp4.GP4File):
         return stroke
 
     def readMixTableChange(self, measure):
+        """Read mix table change.
+
+        Mix table change was modified to support RSE instruments.
+        It is read as in Guitar Pro 3 and is followed by:
+
+        -   Wah effect. See :meth:`readWahEffect`.
+
+        -   RSE instrument effect. See :meth:`readRSEInstrumentEffect`.
+
+        """
         tableChange = super(gp4.GP4File, self).readMixTableChange(measure)
         flags = self.readMixTableChangeFlags(tableChange)
         tableChange.wah = self.readWahEffect(flags)
@@ -462,6 +609,33 @@ class GP5File(gp4.GP4File):
         return tableChange
 
     def readMixTableChangeValues(self, tableChange, measure):
+        """Read mix table change values.
+
+        Mix table change values consist of:
+
+        -   Instrument: :ref:`signed-byte`.
+
+        -   RSE instrument. See `readRSEInstrument`.
+
+        -   Volume: :ref:`signed-byte`.
+
+        -   Balance: :ref:`signed-byte`.
+
+        -   Chorus: :ref:`signed-byte`.
+
+        -   Reverb: :ref:`signed-byte`.
+
+        -   Phaser: :ref:`signed-byte`.
+
+        -   Tremolo: :ref:`signed-byte`.
+
+        -   Tempo name: :ref:`int-byte-size-string`.
+
+        -   Tempo: :ref:`int`.
+
+        If the value is -1 then corresponding parameter hasn't changed.
+
+        """
         instrument = self.readSignedByte()
         rse = self.readRSEInstrument()
         volume = self.readSignedByte()
@@ -493,6 +667,16 @@ class GP5File(gp4.GP4File):
             measure.tempo.value = tempo
 
     def readMixTableChangeDurations(self, tableChange):
+        """Read mix table change durations.
+
+        Durations are read for each non-null
+        :class:`~guitarpro.base.MixTableItem`. Durations are encoded in
+        :ref:`signed-byte`.
+
+        If tempo did change, then one :ref:`bool` is read. If it's true, then
+        tempo change won't be displayed on the score.
+
+        """
         if tableChange.volume is not None:
             tableChange.volume.duration = self.readSignedByte()
         if tableChange.balance is not None:
@@ -511,17 +695,68 @@ class GP5File(gp4.GP4File):
                                      self.readBool())
 
     def readMixTableChangeFlags(self, tableChange):
+        """Read mix table change flags.
+
+        Mix table change flags are read as in Guitar Pro 4
+        :meth:`guitarpro.gp4.readMixTableChangeFlags`, with one additional
+        flag:
+
+        -   *0x40*: use RSE
+        -   *0x80*: show wah-wah
+
+        """
         flags = super(GP5File, self).readMixTableChangeFlags(tableChange)
         tableChange.useRSE = bool(flags & 0x40)
         return flags
 
     def readWahEffect(self, flags):
+        """Read wah-wah.
+
+        -   Wah state: :ref:`signed-byte`. See :class:`guitarpro.base.WahState`
+            for value mapping.
+
+        """
         wah = gp.WahEffect()
         wah.display = bool(flags & 0x80)
         wah.state = gp.WahState(self.readSignedByte())
         return wah
 
     def readNote(self, note, guitarString, track, effect):
+        """Read note.
+
+        The first byte is note flags:
+
+        -   *0x01*: duration percent
+        -   *0x02*: heavy accentuated note
+        -   *0x04*: ghost note
+        -   *0x08*: presence of note effects
+        -   *0x10*: dynamics
+        -   *0x20*: fret
+        -   *0x40*: accentuated note
+        -   *0x80*: right hand or left hand fingering
+
+        Flags are followed by:
+
+        -   Note type: :ref:`byte`. Note is normal if values is 1, tied if
+            value is 2, dead if value is 3.
+
+        -   Note dynamics: :ref:`signed-byte`. See :meth:`unpackVelocity`.
+
+        -   Fret number: :ref:`signed-byte`. If flag at *0x20* is set then
+            read fret number.
+
+        -   Fingering: 2 :ref:`SignedBytes <signed-byte>`. See
+            :class:`guitarpro.base.Fingering`.
+
+        -   Duration percent: :ref:`double`.
+
+        -   Second set of flags: :ref:`byte`.
+
+            -   *0x02*: swap accidentals.
+
+        -   Note effects. See :meth:`guitarpro.gp4.readNoteEffects`.
+
+        """
         flags = self.readByte()
         note.string = guitarString.number
         note.effect.accentuatedNote = bool(flags & 0x40)
@@ -552,6 +787,28 @@ class GP5File(gp4.GP4File):
         return note
 
     def readGrace(self):
+        """Read grace note effect.
+
+        -   Fret: :ref:`signed-byte`. Number of fret.
+
+        -   Dynamic: :ref:`byte`. Dynamic of a grace note, as in
+            :attr:`guitarpro.base.Note.velocity`.
+
+        -   Transition: :ref:`byte`. See
+            :class:`guitarpro.base.GraceEffectTransition`.
+
+        -   Duration: :ref:`byte`. Values are:
+
+            -   *1*: Thirty-second note.
+            -   *2*: Twenty-fourth note.
+            -   *3*: Sixteenth note.
+
+        -   Flags: :ref:`byte`.
+
+            -   *0x01*: grace note is muted (dead)
+            -   *0x02*: grace note is on beat
+
+        """
         grace = gp.GraceEffect()
         grace.fret = self.readByte()
         grace.velocity = self.unpackVelocity(self.readByte())
@@ -563,6 +820,18 @@ class GP5File(gp4.GP4File):
         return grace
 
     def readSlides(self):
+        """Read slides.
+
+        First :ref:`byte` stores slide types:
+
+        -   *0x01*: shift slide
+        -   *0x02*: legato slide
+        -   *0x04*: slide out downwards
+        -   *0x08*: slide out upwards
+        -   *0x10*: slide into from below
+        -   *0x20*: slide into from above
+
+        """
         slideType = self.readByte()
         slides = []
         if slideType & 0x01:
@@ -580,6 +849,27 @@ class GP5File(gp4.GP4File):
         return slides
 
     def readHarmonic(self, note):
+        """Read harmonic.
+
+        First :ref:`byte` is harmonic type:
+
+        -   *1*: natural harmonic
+        -   *2*: artificial harmonic
+        -   *3*: tapped harmonic
+        -   *4*: pinch harmonic
+        -   *5*: semi-harmonic
+
+        In case harmonic types is artificial, following data is read:
+
+        -   Note: :ref:`byte`.
+        -   Accidental: :ref:`signed-byte`.
+        -   Octave: :ref:`byte`.
+
+        If harmonic type is tapped:
+
+        -   Fret: :ref:`byte`.
+
+        """
         harmonicType = self.readSignedByte()
         if harmonicType == 1:
             harmonic = gp.NaturalHarmonic()
@@ -843,35 +1133,31 @@ class GP5File(gp4.GP4File):
         self.writeInt(track.offset)
         self.writeColor(track.color)
 
-        flags2 = 0x00
+        flags2 = 0x0000
         if track.settings.tablature:
-            flags2 |= 0x01
+            flags2 |= 0x0001
         if track.settings.notation:
-            flags2 |= 0x02
+            flags2 |= 0x0002
         if track.settings.diagramsAreBelow:
-            flags2 |= 0x04
+            flags2 |= 0x0004
         if track.settings.showRhythm:
-            flags2 |= 0x08
+            flags2 |= 0x0008
         if track.settings.forceHorizontal:
-            flags2 |= 0x10
+            flags2 |= 0x0010
         if track.settings.forceChannels:
-            flags2 |= 0x20
+            flags2 |= 0x0020
         if track.settings.diagramList:
-            flags2 |= 0x40
+            flags2 |= 0x0040
         if track.settings.diagramsInScore:
-            flags2 |= 0x80
-
-        self.writeByte(flags2)
-
-        flags3 = 0x00
+            flags2 |= 0x0080
         if track.settings.autoLetRing:
-            flags3 |= 0x02
+            flags2 |= 0x0200
         if track.settings.autoBrush:
-            flags3 |= 0x04
+            flags2 |= 0x0400
         if track.settings.extendRhythmic:
-            flags3 |= 0x08
+            flags2 |= 0x0800
+        self.writeShort(flags2)
 
-        self.writeByte(flags3)
         if track.rse is not None and track.rse.autoAccentuation is not None:
             self.writeByte(track.rse.autoAccentuation.value)
         else:
@@ -925,37 +1211,35 @@ class GP5File(gp4.GP4File):
 
     def writeBeat(self, beat, voiceIndex=0):
         super(GP5File, self).writeBeat(beat, voiceIndex)
-        flags2 = 0x00
+        flags2 = 0x0000
         if beat.display.breakBeam:
-            flags2 |= 0x01
+            flags2 |= 0x0001
         if beat.display.beamDirection == gp.VoiceDirection.down:
-            flags2 |= 0x02
+            flags2 |= 0x0002
         if beat.display.forceBeam:
-            flags2 |= 0x04
+            flags2 |= 0x0004
         if beat.display.beamDirection == gp.VoiceDirection.up:
-            flags2 |= 0x08
+            flags2 |= 0x0008
         if beat.octave == gp.Octave.ottava:
-            flags2 |= 0x10
+            flags2 |= 0x0010
         if beat.octave == gp.Octave.ottavaBassa:
-            flags2 |= 0x20
+            flags2 |= 0x0020
         if beat.octave == gp.Octave.quindicesima:
-            flags2 |= 0x40
-        self.writeByte(flags2)
-        flags3 = 0x00
+            flags2 |= 0x0040
         if beat.octave == gp.Octave.quindicesimaBassa:
-            flags3 |= 0x01
+            flags2 |= 0x0100
         if beat.display.tupletBracket == gp.TupletBracket.start:
-            flags3 |= 0x02
+            flags2 |= 0x0200
         if beat.display.tupletBracket == gp.TupletBracket.end:
-            flags3 |= 0x04
+            flags2 |= 0x0400
         if beat.display.breakSecondary:
-            flags3 |= 0x08
+            flags2 |= 0x0800
         if beat.display.breakSecondaryTuplet:
-            flags3 |= 0x10
+            flags2 |= 0x1000
         if beat.display.forceBracket:
-            flags3 |= 0x20
-        self.writeByte(flags3)
-        if flags3 & 0x08:
+            flags2 |= 0x2000
+        self.writeShort(flags2)
+        if flags2 & 0x0800:
             self.writeByte(beat.display.breakSecondary)
 
     def writeBeatStroke(self, stroke):

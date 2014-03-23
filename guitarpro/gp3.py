@@ -295,9 +295,6 @@ class GP3File(gp.GPFileBase):
     def readTrack(self, number, channels):
         """Read track.
 
-        :param number: 1-based number of track.
-        :param channels: list of :class:`guitarpro.base.MidiChannel` instances.
-
         The first byte is the track's flags. It presides the track's
         attributes:
 
@@ -681,23 +678,19 @@ class GP3File(gp.GPFileBase):
         -   *0x04*: natural harmonic
         -   *0x08*: artificial harmonic
         -   *0x10*: fade in
-        -   *0x20*: tremolo bar or slap
-        -   *0x40*: stroke direction
+        -   *0x20*: tremolo bar or slap effect
+        -   *0x40*: beat stroke direction
         -   *0x80*: *blank*
 
-        If flag at *0x20* is set, then beat effect has either tremolo bar or
-        slap. Read the value of next byte, if it's 0 then tremolo bar should
-        be read (see :meth:`readTremoloBar`). Else it's tapping and values of
-        the byte map to:
+        -   Tremolo bar or slap effect: :ref:`byte`. If it's 0 then tremolo bar
+            should be read (see :meth:`readTremoloBar`). Else it's tapping and
+            values of the byte map to:
 
-        -   *1*: tap
-        -   *2*: slap
-        -   *3*: pop
+            -   *1*: tap
+            -   *2*: slap
+            -   *3*: pop
 
-        If flag at *0x40* is set, then stroke effect is expected. It consists
-        of two :ref:`Bytes <byte>` which correspond to stroke up and stroke
-        down. If value is greater than zero, the speed of stroke is
-        determined, see :meth:`toStrokeValue`.
+        -   Beat stroke direction. See :meth:`readBeatStroke`.
 
         """
         beatEffects = gp.BeatEffect()
@@ -741,6 +734,13 @@ class GP3File(gp.GPFileBase):
         return barEffect
 
     def readBeatStroke(self):
+        """Read beat stroke.
+
+        Beat stroke consists of two :ref:`Bytes <byte>` which correspond to
+        stroke up and stroke down speed. See :class:`guitarpro.base.BeatStroke`
+        for value mapping.
+
+        """
         strokeUp = self.readSignedByte()
         strokeDown = self.readSignedByte()
         if strokeUp > 0:
@@ -1045,24 +1045,18 @@ class GP3File(gp.GPFileBase):
 
         -   Duration: :ref:`byte`. Values are:
 
-            *   *1*: Thirty-second note.
-            *   *2*: Twenty-fourth note.
-            *   *3*: Sixteenth note.
+            -   *1*: Thirty-second note.
+            -   *2*: Twenty-fourth note.
+            -   *3*: Sixteenth note.
 
         """
-        fret = self.readSignedByte()
-        dyn = self.readByte()
-        transition = self.readSignedByte()
-        duration = self.readByte()
         grace = gp.GraceEffect()
-
-        grace.fret = fret
-        grace.velocity = self.unpackVelocity(dyn)
-        grace.duration = 1 << (7 - duration)
-        grace.isDead = fret == -1
+        grace.fret = self.readSignedByte()
+        grace.velocity = self.unpackVelocity(self.readByte())
+        grace.duration = 1 << (7 - self.readByte())
+        grace.isDead = grace.fret == -1
         grace.isOnBeat = False
-        grace.transition = gp.GraceEffectTransition(transition)
-
+        grace.transition = gp.GraceEffectTransition(self.readSignedByte())
         return grace
 
     def readSlides(self):
