@@ -164,6 +164,15 @@ class GPFileBase(object):
 
 
 class GPObject(object):
+
+    """GPObject is the base of all Guitar Pro objects.
+
+    GPObjects are able to compute hash and be compared one to other.
+    To create new GPObject subclass all attribute names must specified in tuple
+    :attr:`GPObject.__attr__`. The order of attributes is important as it is
+    provides positional arguments for :meth:`GPObject.__init__`.
+
+    """
     __attr__ = ()
 
     class __metaclass__(type):
@@ -1390,7 +1399,7 @@ class PitchClass(object):
     """A pitch class.
 
     Constructor provides several overloads. Each overload provides keyword
-    argument ``intonation`` that may be either 'sharp' or 'flat'.
+    argument ``intonation`` that may be either "sharp" or "flat".
 
     First of overloads is (tone, accidental):
 

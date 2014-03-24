@@ -1,8 +1,15 @@
-Guitar Pro 3—5 specification
-============================
+API Reference
+=============
 
-Basic types
------------
+Models
+------
+
+.. automodule:: guitarpro.base
+   :members:
+
+
+Basic Guitar Pro 3—5 types
+--------------------------
 
 .. _byte:
 

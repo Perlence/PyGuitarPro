@@ -309,16 +309,16 @@ class GP3File(gp.GPFileBase):
 
         Flags are followed by:
 
-        -   Name: `String`. A 40 characters long string containing the track's
-            name.
+        -   Name: :ref:`byte-size-string`. A 40 characters long string
+            containing the track's name.
 
         -   Number of strings: :ref:`int`. An integer equal to the number of
             strings of the track.
 
-        -   Tuning of the strings: `Table of integers`. The tuning of the
-            strings is stored as a 7-integers table, the "Number of strings"
-            first integers being really used. The strings are stored from the
-            highest to the lowest.
+        -   Tuning of the strings: List of 7 :ref:`Ints <int>`. The tuning of
+            the strings is stored as a 7-integers table, the "Number of
+            strings" first integers being really used. The strings are stored
+            from the highest to the lowest.
 
         -   Port: :ref:`int`. The number of the MIDI port used.
 
