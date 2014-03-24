@@ -13,9 +13,6 @@ class GP3File(gp.GPFileBase):
     _supportedVersions = ['FICHIER GUITAR PRO v3.00']
     _tripletFeel = gp.TripletFeel.none
 
-    def __init__(self, *args, **kwargs):
-        super(GP3File, self).__init__(*args, **kwargs)
-
     # Reading
     # =======
 
@@ -598,7 +595,7 @@ class GP3File(gp.GPFileBase):
         -   Tonality: :ref:`int`. See :class:`guitarpro.base.ChordAlteration`
             for mapping.
 
-        -   Add: :ref:`bool`. Determines if a "add" (added note) is present in
+        -   Add: :ref:`bool`. Determines if an "add" (added note) is present in
             the chord.
 
         -   Name: :ref:`byte-size-string`. Max length is 22.

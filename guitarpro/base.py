@@ -47,43 +47,43 @@ class GPFileBase(object):
                 raise e
 
     def readByte(self, count=1, default=None):
-        """Read 1 byte ``count`` times."""
+        """Read 1 byte *count* times."""
         args = ('B', 1)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
     def readSignedByte(self, count=1, default=None):
-        """Read 1 signed byte ``count`` times."""
+        """Read 1 signed byte *count* times."""
         args = ('b', 1)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
     def readBool(self, count=1, default=None):
-        """Read 1 byte ``count`` as a boolean."""
+        """Read 1 byte *count* times as a boolean."""
         args = ('?', 1)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
     def readShort(self, count=1, default=None):
-        """Read 2 little-endian bytes as a short integer."""
+        """Read 2 little-endian bytes *count* times as a short integer."""
         args = ('<h', 2)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
     def readInt(self, count=1, default=None):
-        """Read 4 little-endian bytes as an integer."""
+        """Read 4 little-endian bytes *count* times as an integer."""
         args = ('<i', 4)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
     def readFloat(self, count=1, default=None):
-        """Read 4 little-endian bytes as a float."""
+        """Read 4 little-endian bytes *count* times as a float."""
         args = ('<f', 4)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
     def readDouble(self, count=1, default=None):
-        """Read 8 little-endian bytes as a double."""
+        """Read 8 little-endian bytes *count* times as a double."""
         args = ('<d', 8)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
@@ -1421,7 +1421,7 @@ class PitchClass(object):
     """A pitch class.
 
     Constructor provides several overloads. Each overload provides keyword
-    argument ``intonation`` that may be either "sharp" or "flat".
+    argument *intonation* that may be either "sharp" or "flat".
 
     First of overloads is (tone, accidental):
 

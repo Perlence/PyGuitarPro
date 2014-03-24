@@ -11,9 +11,6 @@ class GP5File(gp4.GP4File):
     _supportedVersions = ['FICHIER GUITAR PRO v5.00',
                           'FICHIER GUITAR PRO v5.10']
 
-    def __init__(self, *args, **kwargs):
-        super(GP5File, self).__init__(*args, **kwargs)
-
     # Reading
     # =======
 

@@ -13,9 +13,6 @@ class GP4File(gp3.GP3File):
                           'FICHIER GUITAR PRO v4.06',
                           'FICHIER GUITAR PRO L4.06']
 
-    def __init__(self, *args, **kwargs):
-        super(GP4File, self).__init__(*args, **kwargs)
-
     # Reading
     # =======
 
@@ -116,7 +113,7 @@ class GP4File(gp3.GP3File):
         -   Tonality: :ref:`int`. See :class:`guitarpro.base.ChordAlteration`
             for mapping.
 
-        -   Add: :ref:`bool`. Determines if a "add" (added note) is present in
+        -   Add: :ref:`bool`. Determines if an "add" (added note) is present in
             the chord.
 
         -   Name: :ref:`byte-size-string`. Max length is 22.
