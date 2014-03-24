@@ -13,7 +13,7 @@ Python this package will be the good thing to start with.
 .. toctree::
    :maxdepth: 2
 
-   pyguitarpro/intro
+   pyguitarpro/install
    pyguitarpro/api
 
 
