@@ -47,32 +47,46 @@ class GPFileBase(object):
                 raise e
 
     def readByte(self, count=1, default=None):
-        read = lambda: self.read('B', 1, default=default)
-        return read() if count == 1 else [read() for i in range(count)]
+        """Read 1 byte ``count`` times."""
+        args = ('B', 1)
+        return (self.read(*args, default=default) if count == 1 else
+                [self.read(*args, default=default) for i in range(count)])
 
     def readSignedByte(self, count=1, default=None):
-        read = lambda: self.read('b', 1, default=default)
-        return read() if count == 1 else [read() for i in range(count)]
+        """Read 1 signed byte ``count`` times."""
+        args = ('b', 1)
+        return (self.read(*args, default=default) if count == 1 else
+                [self.read(*args, default=default) for i in range(count)])
 
     def readBool(self, count=1, default=None):
-        read = lambda: self.read('?', 1, default=default)
-        return read() if count == 1 else [read() for i in range(count)]
+        """Read 1 byte ``count`` as a boolean."""
+        args = ('?', 1)
+        return (self.read(*args, default=default) if count == 1 else
+                [self.read(*args, default=default) for i in range(count)])
 
     def readShort(self, count=1, default=None):
-        read = lambda: self.read('<h', 2, default=default)
-        return read() if count == 1 else [read() for i in range(count)]
+        """Read 2 little-endian bytes as a short integer."""
+        args = ('<h', 2)
+        return (self.read(*args, default=default) if count == 1 else
+                [self.read(*args, default=default) for i in range(count)])
 
     def readInt(self, count=1, default=None):
-        read = lambda: self.read('<i', 4, default=default)
-        return read() if count == 1 else [read() for i in range(count)]
+        """Read 4 little-endian bytes as an integer."""
+        args = ('<i', 4)
+        return (self.read(*args, default=default) if count == 1 else
+                [self.read(*args, default=default) for i in range(count)])
 
     def readFloat(self, count=1, default=None):
-        read = lambda: self.read('<f', 4, default=default)
-        return read() if count == 1 else [read() for i in range(count)]
+        """Read 4 little-endian bytes as a float."""
+        args = ('<f', 4)
+        return (self.read(*args, default=default) if count == 1 else
+                [self.read(*args, default=default) for i in range(count)])
 
     def readDouble(self, count=1, default=None):
-        read = lambda: self.read('<d', 8, default=default)
-        return read() if count == 1 else [read() for i in range(count)]
+        """Read 8 little-endian bytes as a double."""
+        args = ('<d', 8)
+        return (self.read(*args, default=default) if count == 1 else
+                [self.read(*args, default=default) for i in range(count)])
 
     def readString(self, size, length=None):
         if length is None:
@@ -82,12 +96,20 @@ class GPFileBase(object):
         return s[:(length if length >= 0 else size)]
 
     def readByteSizeString(self, size):
+        """Read length of the string stored in 1 byte and followed by character
+        bytes."""
         return self.readString(size, self.readByte())
 
     def readIntSizeString(self):
+        """Read length of the string stored in 1 integer and followed by
+        character bytes."""
         return self.readString(self.readInt())
 
     def readIntByteSizeString(self):
+        """Read length of the string increased by 1 and stored in 1 integer
+        followed by length of the string in 1 byte and finally followed by
+        character bytes.
+        """
         d = self.readInt() - 1
         return self.readByteSizeString(d)
 
