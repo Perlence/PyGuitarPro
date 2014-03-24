@@ -3,12 +3,12 @@ Quickstart
 
 After the package has been installed, it's ready for hacking.
 
-Reading `.gp?` files is as easy as::
+Reading ``.gp*`` files is as easy as::
 
     import guitarpro
     curl = guitarpro.parse('Mastodon - Curl of the Burl.gp5')
 
-Writing `.gp?` files isn't that hard as well::
+Writing ``.gp*`` files isn't that hard as well::
 
     guitarpro.write(curl, 'Mastodon - Curl of the Burl 2.gp5')
 
