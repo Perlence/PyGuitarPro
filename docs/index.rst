@@ -14,6 +14,7 @@ Python this package will be the good thing to start with.
    :maxdepth: 2
 
    pyguitarpro/install
+   pyguitarpro/quickstart
    pyguitarpro/api
 
 

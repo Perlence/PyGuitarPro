@@ -3,14 +3,20 @@ Installation
 
 Install the extension with:
 
-    $ pip install flask-classy
+.. code-block:: console
+
+    $ pip install pyguitarpro
 
 or using ``easy_install``:
 
-    $ easy_install flask-classy
+.. code-block:: console
+
+    $ easy_install pyguitarpro
 
 or manually:
 
-    hg clone https://bitbucket.org/Perlence/pyguitarpro
-    cd pyguitarpro
-    python setup.py install
+.. code-block:: console
+
+    $ hg clone https://bitbucket.org/Perlence/pyguitarpro
+    $ cd pyguitarpro
+    $ python setup.py install

@@ -1,6 +1,13 @@
 API Reference
 =============
 
+General functions
+-----------------
+
+.. automodule:: guitarpro.__init__
+   :members:
+
+
 Models
 ------
 
