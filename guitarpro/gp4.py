@@ -113,7 +113,7 @@ class GP4File(gp3.GP3File):
 
         -   Bass note: :ref:`int`. Lowest note of chord as in *C/A*.
 
-        -   Tonality: :ref:`int`. See :class:`guitarpro.base.ChordTonality`
+        -   Tonality: :ref:`int`. See :class:`guitarpro.base.ChordAlteration`
             for mapping.
 
         -   Add: :ref:`bool`. Determines if a "add" (added note) is present in
@@ -157,12 +157,12 @@ class GP4File(gp3.GP3File):
         chord.type = gp.ChordType(self.readByte())
         chord.extension = gp.ChordExtension(self.readByte())
         chord.bass = gp.PitchClass(self.readInt(), intonation=intonation)
-        chord.tonality = gp.ChordTonality(self.readInt())
+        chord.tonality = gp.ChordAlteration(self.readInt())
         chord.add = self.readBool()
         chord.name = self.readByteSizeString(22)
-        chord.fifth = gp.ChordTonality(self.readByte())
-        chord.ninth = gp.ChordTonality(self.readByte())
-        chord.eleventh = gp.ChordTonality(self.readByte())
+        chord.fifth = gp.ChordAlteration(self.readByte())
+        chord.ninth = gp.ChordAlteration(self.readByte())
+        chord.eleventh = gp.ChordAlteration(self.readByte())
         chord.firstFret = self.readInt()
         for i in range(7):
             fret = self.readInt()
@@ -397,9 +397,9 @@ class GP4File(gp3.GP3File):
         -   *3*: tapped harmonic
         -   *4*: pinch harmonic
         -   *5*: semi-harmonic
-        -   *15*: artificial harmonic on (n + 5)th fret
-        -   *17*: artificial harmonic on (n + 7)th fret
-        -   *22*: artificial harmonic on (n + 12)th fret
+        -   *15*: artificial harmonic on (*n + 5*)th fret
+        -   *17*: artificial harmonic on (*n + 7*)th fret
+        -   *22*: artificial harmonic on (*n + 12*)th fret
 
         """
         harmonicType = self.readSignedByte()

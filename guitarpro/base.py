@@ -713,8 +713,11 @@ class LineBreak(Enum):
 
     """A line break directive."""
 
+    #: No line break.
     none = 0
+    #: Break line.
     break_ = 1
+    #: Protect the line from breaking.
     protect = 2
 
 
@@ -888,9 +891,19 @@ class BeatStroke(GPObject):
 
 
 class SlapEffect(Enum):
+
+    """Characteristic of articulation."""
+
+    #: No slap effect.
     none = 0
+
+    #: Tapping.
     tapping = 1
+
+    #: Slapping.
     slapping = 2
+
+    #: Popping.
     popping = 3
 
 
@@ -1062,16 +1075,16 @@ class GraceEffectTransition(Enum):
 
     """All transition types for grace notes."""
 
-    #: No transition
+    #: No transition.
     none = 0
 
-    #: Slide from the grace note to the real one
+    #: Slide from the grace note to the real one.
     slide = 1
 
-    #: Perform a bend from the grace note to the real one
+    #: Perform a bend from the grace note to the real one.
     bend = 2
 
-    #: Perform a hammer on
+    #: Perform a hammer on.
     hammer = 3
 
 
@@ -1252,20 +1265,52 @@ class Chord(GPObject):
 
 
 class ChordType(Enum):
+
+    """Type of the chord."""
+
+    #: Major chord.
     major = 0
+
+    #: Dominant seventh chord.
     seventh = 1
+
+    #: Major seventh chord.
     majorSeventh = 2
+
+    #: Add sixth chord.
     sixth = 3
+
+    #: Minor chord.
     minor = 4
+
+    #: Minor seventh chord.
     minorSeventh = 5
+
+    #: Minor major seventh chord.
     minorMajor = 6
+
+    #: Minor add sixth chord.
     minorSixth = 7
+
+    #: Suspended second chord.
     suspendedSecond = 8
+
+    #: Suspended fourth chord.
     suspendedFourth = 9
+
+    #: Seventh suspended second chord.
     seventhSuspendedSecond = 10
+
+    #: Seventh suspended fourth chord.
     seventhSuspendedFourth = 11
+
+    #: Diminished chord.
     diminished = 12
+
+    #: Augmented chord.
     augmented = 13
+
+    #: Power chord.
     power = 14
 
 
@@ -1290,25 +1335,53 @@ class Barre(GPObject):
 
 
 class Fingering(Enum):
+
+    """Left and right hand fingering used in tabs and chord diagram editor."""
+
+    #: Unknown (used only in chord editor).
     unknown = -2
+    #: Open or muted.
     open = -1
+    #: Thumb.
     thumb = 0
+    #: Index finger.
     index = 1
+    #: Middle finger.
     middle = 2
+    #: Annular finger.
     annular = 3
+    #: Little finger.
     little = 4
 
 
-class ChordTonality(Enum):
+class ChordAlteration(Enum):
+
+    """Tonality of the chord."""
+
+    #: Perfect.
     perfect = 0
+
+    #: Diminished.
     diminished = 1
+
+    #: Augmented.
     augmented = 2
 
 
 class ChordExtension(Enum):
+
+    """Extension type of the chord."""
+
+    #: No extension.
     none = 0
+
+    #: Ninth chord.
     ninth = 1
+
+    #: Eleventh chord.
     eleventh = 2
+
+    #: Thirteenth chord.
     thirteenth = 3
 
 
@@ -1413,7 +1486,7 @@ class BeatText(GPObject):
 
 class MixTableItem(GPObject):
 
-    """A mixtablechange describes several track changes."""
+    """A mix table change describes several track changes."""
 
     __attr__ = ('value', 'duration', 'allTracks')
 
@@ -1425,9 +1498,19 @@ class MixTableItem(GPObject):
 
 
 class WahState(Enum):
+
+    """State of wah-wah pedal."""
+
+    #: Wah-wah is off.
     off = -2
+
+    #: No wah-wah.
     none = -1
+
+    #: Wah-wah is opened.
     opened = 0
+
+    #: Wah-wah is closed.
     closed = 100
 
 
@@ -1457,46 +1540,46 @@ class BendType(Enum):
 
     """All Bend presets."""
 
-    #: No Preset
+    #: No Preset.
     none = 0
 
     # Bends
     # =====
 
-    #: A simple bend
+    #: A simple bend.
     bend = 1
 
-    #: A bend and release afterwards
+    #: A bend and release afterwards.
     bendRelease = 2
 
-    #: A bend, then release and rebend
+    #: A bend, then release and rebend.
     bendReleaseBend = 3
 
-    #: Prebend
+    #: Prebend.
     prebend = 4
 
-    #: Prebend and then release
+    #: Prebend and then release.
     prebendRelease = 5
 
     # Tremolobar
     # ==========
 
-    #: Dip the bar down and then back up
+    #: Dip the bar down and then back up.
     dip = 6
 
-    #: Dive the bar
+    #: Dive the bar.
     dive = 7
 
-    #: Release the bar up
+    #: Release the bar up.
     releaseUp = 8
 
-    #: Dip the bar up and then back down
+    #: Dip the bar up and then back down.
     invertedDip = 9
 
-    #: Return the bar
+    #: Return the bar.
     return_ = 10
 
-    #: Release the bar down
+    #: Release the bar down.
     releaseDown = 11
 
 
@@ -1546,8 +1629,14 @@ class BendEffect(GPObject):
 class TripletFeel(Enum):
 
     """A list of different triplet feels."""
+
+    #: No triplet feel.
     none = 0
+
+    #: Eighth triplet feel.
     eighth = 1
+
+    #: Sixteenth triplet feel.
     sixteenth = 2
 
 
@@ -1602,11 +1691,25 @@ class RSEEqualizer(GPObject):
 
 
 class Accentuation(Enum):
+
+    """Values of auto-accentuation on the beat found in track RSE settings."""
+
+    #: No auto-accentuation.
     none = 0
+
+    #: Very soft accentuation.
     verySoft = 1
+
+    #: Soft accentuation.
     soft = 2
+
+    #: Medium accentuation.
     medium = 3
+
+    #: Strong accentuation.
     strong = 4
+
+    #: Very strong accentuation.
     veryStrong = 5
 
 

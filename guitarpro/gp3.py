@@ -436,8 +436,8 @@ class GP3File(gp.GPFileBase):
         Flags are followed by:
 
         -   Status: :ref:`byte`. If flag at *0x40* is true, read one byte. If
-            value of the byte is ``0x00`` then beat is empty, if value is
-            ``0x02`` then the beat is rest.
+            value of the byte is *0x00* then beat is empty, if value is *0x02*
+            then the beat is rest.
 
         -   Beat duration: :ref:`byte`. See :meth:`readDuration`.
 
@@ -558,7 +558,7 @@ class GP3File(gp.GPFileBase):
 
         -   List of frets: 6 :ref:`Ints <int>`. Frets are listed in order:
             fret on the string 1, fret on the string 2, ..., fret on the string
-            6. If string is untouched then the values of fret is ``-1``.
+            6. If string is untouched then the values of fret is *-1*.
 
         """
         chord.name = self.readIntByteSizeString()
@@ -594,7 +594,7 @@ class GP3File(gp.GPFileBase):
 
         -   Bass note: :ref:`int`. Lowest note of chord as in *C/A*.
 
-        -   Tonality: :ref:`int`. See :class:`guitarpro.base.ChordTonality`
+        -   Tonality: :ref:`int`. See :class:`guitarpro.base.ChordAlteration`
             for mapping.
 
         -   Add: :ref:`bool`. Determines if a "add" (added note) is present in
@@ -602,14 +602,14 @@ class GP3File(gp.GPFileBase):
 
         -   Name: :ref:`byte-size-string`. Max length is 22.
 
-        -   Fifth tonality: :ref:`int`. Maps to
-            :class:`guitarpro.base.ChordExtension`.
+        -   Fifth alteration: :ref:`int`. Maps to
+            :class:`guitarpro.base.ChordAlteration`.
 
-        -   Ninth tonality: :ref:`int`. Maps to
-            :class:`guitarpro.base.ChordExtension`.
+        -   Ninth alteration: :ref:`int`. Maps to
+            :class:`guitarpro.base.ChordAlteration`.
 
-        -   Eleventh tonality: :ref:`int`. Maps to
-            :class:`guitarpro.base.ChordExtension`.
+        -   Eleventh alteration: :ref:`int`. Maps to
+            :class:`guitarpro.base.ChordAlteration`.
 
         -   List of frets: 6 :ref:`Ints <int>`. Fret values are saved as in
             default format.
@@ -635,12 +635,12 @@ class GP3File(gp.GPFileBase):
         chord.type = gp.ChordType(self.readInt())
         chord.extension = gp.ChordExtension(self.readInt())
         chord.bass = gp.PitchClass(self.readInt(), intonation=intonation)
-        chord.tonality = gp.ChordTonality(self.readInt())
+        chord.tonality = gp.ChordAlteration(self.readInt())
         chord.add = self.readBool()
         chord.name = self.readByteSizeString(22)
-        chord.fifth = gp.ChordTonality(self.readInt())
-        chord.ninth = gp.ChordTonality(self.readInt())
-        chord.eleventh = gp.ChordTonality(self.readInt())
+        chord.fifth = gp.ChordAlteration(self.readInt())
+        chord.ninth = gp.ChordAlteration(self.readInt())
+        chord.eleventh = gp.ChordAlteration(self.readInt())
         chord.firstFret = self.readInt()
         for i in range(6):
             fret = self.readInt()
@@ -737,8 +737,8 @@ class GP3File(gp.GPFileBase):
         """Read beat stroke.
 
         Beat stroke consists of two :ref:`Bytes <byte>` which correspond to
-        stroke up and stroke down speed. See :class:`guitarpro.base.BeatStroke`
-        for value mapping.
+        stroke up and stroke down speed. See
+        :class:`guitarpro.base.BeatStrokeDirection` for value mapping.
 
         """
         strokeUp = self.readSignedByte()
@@ -807,7 +807,7 @@ class GP3File(gp.GPFileBase):
         -   tremolo
         -   tempo
 
-        If signed byte is -1 then corresponding parameter hasn't changed.
+        If signed byte is *-1* then corresponding parameter hasn't changed.
 
         """
         instrument = self.readSignedByte()
@@ -1011,9 +1011,9 @@ class GP3File(gp.GPFileBase):
 
         -   List of points. Each point consists of:
 
-            *   Position: :ref:`int`. Shows where point is set along X axis.
+            *   Position: :ref:`int`. Shows where point is set along *x*-axis.
 
-            *   Value: :ref:`int`. Shows where point is set along Y axis.
+            *   Value: :ref:`int`. Shows where point is set along *y*-axis.
 
             *   Vibrato: :ref:`bool`.
 

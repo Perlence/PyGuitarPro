@@ -66,7 +66,7 @@ ByteSizeString
 ^^^^^^^^^^^^^^
 
 Values of type :ref:`byte-size-string` are represented by length of the string
-(1 byte) followed by character bytes.
+(1 :ref:`byte`) followed by character bytes.
 
 
 .. _int-size-string:
@@ -75,7 +75,7 @@ IntSizeString
 ^^^^^^^^^^^^^
 
 Values of type :ref:`int-size-string` are represented by length of the string (1
-int) followed by character bytes.
+:ref:`int`) followed by character bytes.
 
 
 .. _int-byte-size-string:
@@ -83,9 +83,9 @@ int) followed by character bytes.
 IntByteSizeString
 ^^^^^^^^^^^^^^^^^
 
-Values of type :ref:`int-byte-size-string` are represented by integer holding
-length of the string increased by 1, a byte holding length of the string and
-finally followed by character bytes.
+Values of type :ref:`int-byte-size-string` are represented by :ref:`int` holding
+length of the string increased by 1, a :ref:`byte` holding length of the string
+and finally followed by character bytes.
 
 
 Guitar Pro 3 format

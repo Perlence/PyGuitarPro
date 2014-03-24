@@ -172,7 +172,7 @@ class GP5File(gp4.GP4File):
         -   Score size proportion: :ref:`int`.
 
         -   Header and footer elements: :ref:`short`. See
-            :class:`HeaderFooterElements` for value mapping.
+            :class:`guitarpro.base.HeaderFooterElements` for value mapping.
 
         -   List of placeholders:
 
@@ -183,8 +183,8 @@ class GP5File(gp4.GP4File):
             *   words
             *   music
             *   wordsAndMusic
-            *   copyright1, e.g. Copyright %copyright%
-            *   copyright2, e.g. All Rights Reserved - International Copyright
+            *   copyright1, e.g. *"Copyright %copyright%"*
+            *   copyright2, e.g. *"All Rights Reserved - International Copyright"*
                 Secured
             *   pageNumber
 
