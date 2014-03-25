@@ -1489,5 +1489,6 @@ class GP3File(gp.GPFileBase):
         self.writeByte(8 - grace.duration.bit_length())
 
     def packVelocity(self, velocity):
-        return ((velocity + gp.Velocities.velocityIncrement -
-                 gp.Velocities.minVelocity) / gp.Velocities.velocityIncrement)
+        return int((velocity + gp.Velocities.velocityIncrement -
+                    gp.Velocities.minVelocity) /
+                   gp.Velocities.velocityIncrement)

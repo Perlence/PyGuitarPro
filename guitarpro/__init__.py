@@ -1,5 +1,7 @@
 import os
 
+from six import string_types
+
 from .base import GPFileBase, GPException
 from .gp3 import GP3File
 from .gp4 import GP4File
@@ -49,7 +51,7 @@ def _open(stream, mode='rb', format=None):
         raise ValueError(
             "cannot read or write unless in binary mode, not '%s'" % mode)
 
-    if isinstance(stream, basestring):
+    if isinstance(stream, string_types):
         fp = open(stream, mode)
         filename = stream
     else:

@@ -13,6 +13,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
+        'six',
         'enum34',
     ],
     classifiers=[
@@ -25,8 +26,10 @@ setup(
         'Operating System :: POSIX',
         'Operating System :: Unix',
         'Operating System :: MacOS :: MacOS X',
-        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.2',
         'Topic :: Artistic Software',
         'Topic :: Multimedia :: Sound/Audio',
     ],
