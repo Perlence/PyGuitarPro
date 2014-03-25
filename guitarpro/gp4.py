@@ -616,6 +616,46 @@ class GP4File(gp3.GP3File):
             flags |= 0x20
         self.writeSignedByte(flags)
 
+    def writeNote(self, note):
+        noteEffect = note.effect
+        flags = 0x00
+        try:
+            if note.duration is not None and note.tuplet is not None:
+                flags |= 0x01
+        except AttributeError:
+            pass
+        if noteEffect.heavyAccentuatedNote:
+            flags |= 0x02
+        if noteEffect.ghostNote:
+            flags |= 0x04
+        if not noteEffect.isDefault:
+            flags |= 0x08
+        if note.velocity != gp.Velocities.default:
+            flags |= 0x10
+        flags |= 0x20
+        if noteEffect.accentuatedNote:
+            flags |= 0x40
+        if note.effect.isFingering:
+            flags |= 0x80
+        self.writeByte(flags)
+        if flags & 0x20:
+            self.writeByte(note.type.value)
+        if flags & 0x01:
+            self.writeSignedByte(note.duration)
+            self.writeSignedByte(note.tuplet)
+        if flags & 0x10:
+            value = self.packVelocity(note.velocity)
+            self.writeSignedByte(value)
+        if flags & 0x20:
+            fret = note.value if note.type != gp.NoteType.tie else 0
+            self.writeSignedByte(fret)
+        if flags & 0x80:
+            self.writeSignedByte(noteEffect.leftHandFinger.value)
+            self.writeSignedByte(noteEffect.rightHandFinger.value)
+        if flags & 0x08:
+            self.writeNoteEffects(note)
+
+
     def writeNoteEffects(self, note):
         noteEffect = note.effect
         flags1 = 0x00

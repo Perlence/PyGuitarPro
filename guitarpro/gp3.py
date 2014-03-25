@@ -236,7 +236,6 @@ class GP3File(gp.GPFileBase):
             root = self.readSignedByte()
             type_ = self.readSignedByte()
             header.keySignature = gp.KeySignature((root, type_))
-            header.keySignaturePresence = True
         elif header.number > 1:
             header.keySignature = previous.keySignature
         header.hasDoubleBar = bool(flags & 0x80)
@@ -708,11 +707,9 @@ class GP3File(gp.GPFileBase):
         if flags1 & 0x40:
             beatEffects.stroke = self.readBeatStroke()
         if flags1 & 0x04:
-            harmonic = gp.NaturalHarmonic()
-            effect.harmonic = harmonic
+            effect.harmonic = gp.NaturalHarmonic()
         if flags1 & 0x08:
-            harmonic = gp.ArtificialHarmonic()
-            effect.harmonic = harmonic
+            effect.harmonic = gp.ArtificialHarmonic()
         return beatEffects
 
     def readTremoloBar(self):
@@ -922,9 +919,7 @@ class GP3File(gp.GPFileBase):
         flags = self.readByte()
         note.string = guitarString.number
         note.effect = effect
-        note.effect.heavyAccentuatedNote = bool(flags & 0x02)
         note.effect.ghostNote = bool(flags & 0x04)
-        note.effect.accentuatedNote = bool(flags & 0x40)
         if flags & 0x20:
             note.type = gp.NoteType(self.readByte())
             note.effect.deadNote = note.type == gp.NoteType.dead
@@ -946,7 +941,8 @@ class GP3File(gp.GPFileBase):
             note.effect.rightHandFinger = gp.Fingering(self.readSignedByte())
         if flags & 0x08:
             note.effect = self.readNoteEffects(note)
-            if note.effect.isHarmonic and isinstance(note.effect.harmonic, gp.TappedHarmonic):
+            if (note.effect.isHarmonic and
+                    isinstance(note.effect.harmonic, gp.TappedHarmonic)):
                 note.effect.harmonic.fret = note.value + 12
         return note
 
@@ -985,7 +981,7 @@ class GP3File(gp.GPFileBase):
         -   Grace note. See :meth:`readGrace`.
 
         """
-        noteEffect = gp.NoteEffect()
+        noteEffect = note.effect or gp.NoteEffect()
         flags = self.readByte()
         noteEffect.hammer = bool(flags & 0x02)
         noteEffect.letRing = bool(flags & 0x08)
@@ -1151,8 +1147,6 @@ class GP3File(gp.GPFileBase):
         if previous is not None:
             if header.keySignature != previous.keySignature:
                 flags |= 0x40
-        elif header.keySignaturePresence:
-            flags |= 0x40
         if header.hasDoubleBar:
             flags |= 0x80
         self.writeByte(flags)
@@ -1433,17 +1427,13 @@ class GP3File(gp.GPFileBase):
                 flags |= 0x01
         except AttributeError:
             pass
-        if note.effect.heavyAccentuatedNote:
-            flags |= 0x02
-        if note.effect.ghostNote:
+        if noteEffect.ghostNote:
             flags |= 0x04
         if not noteEffect.isDefault:
             flags |= 0x08
         if note.velocity != gp.Velocities.default:
             flags |= 0x10
         flags |= 0x20
-        if note.effect.accentuatedNote:
-            flags |= 0x40
         if note.effect.isFingering:
             flags |= 0x80
         self.writeByte(flags)
@@ -1459,8 +1449,8 @@ class GP3File(gp.GPFileBase):
             fret = note.value if note.type != gp.NoteType.tie else 0
             self.writeSignedByte(fret)
         if flags & 0x80:
-            self.writeSignedByte(note.effect.leftHandFinger.value)
-            self.writeSignedByte(note.effect.rightHandFinger.value)
+            self.writeSignedByte(noteEffect.leftHandFinger.value)
+            self.writeSignedByte(noteEffect.rightHandFinger.value)
         if flags & 0x08:
             self.writeNoteEffects(note)
 

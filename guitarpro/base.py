@@ -512,7 +512,6 @@ class MeasureHeader(GPObject):
         self.start = Duration.quarterTime
         self.timeSignature = TimeSignature()
         self.keySignature = KeySignature.CMajor
-        self.keySignaturePresence = False
         self.tempo = Tempo()
         self.tripletFeel = TripletFeel.none
         self.isRepeatOpen = False

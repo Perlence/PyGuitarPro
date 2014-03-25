@@ -5,10 +5,8 @@ from .gp3 import GP3File
 from .gp4 import GP4File
 from .gp5 import GP5File
 
-
-__all__ = ('parse', 'write')
-
 __version__ = '0.1'
+__all__ = ('parse', 'write')
 
 _GPFILES = {
     'FICHIER GUITAR PRO v3.00': GP3File,

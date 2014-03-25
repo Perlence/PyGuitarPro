@@ -767,9 +767,9 @@ class GP5File(gp4.GP4File):
         """
         flags = self.readByte()
         note.string = guitarString.number
-        note.effect.accentuatedNote = bool(flags & 0x40)
         note.effect.heavyAccentuatedNote = bool(flags & 0x02)
         note.effect.ghostNote = bool(flags & 0x04)
+        note.effect.accentuatedNote = bool(flags & 0x40)
         if flags & 0x20:
             note.type = gp.NoteType(self.readByte())
             note.effect.deadNote = note.type == gp.NoteType.dead
