@@ -271,7 +271,7 @@ class RepeatGroup(object):
 
 class Song(GPObject):
 
-    """This is the toplevel node of the song model.
+    """This is the top-level node of the song model.
 
     It contains basic information about the stored song.
 

@@ -23,6 +23,8 @@ class GP3File(gp.GPFileBase):
         MIDI channels, measure and track count, measure headers, tracks,
         measures.
 
+        -   Version: :ref:`byte-size-string` of size 30.
+
         -   Score information. See :meth:`readInfo`.
 
         -   Triplet feel: :ref:`bool`. If value is true, then triplet feel is

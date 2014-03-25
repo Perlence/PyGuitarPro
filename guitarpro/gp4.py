@@ -23,6 +23,8 @@ class GP4File(gp3.GP3File):
         key, MIDI channels, measure and track count, measure headers,
         tracks, measures.
 
+        -   Version: :ref:`byte-size-string` of size 30.
+
         -   Score information.
             See :meth:`readInfo`.
 
