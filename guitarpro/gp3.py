@@ -1,7 +1,5 @@
 from __future__ import division
 
-import math
-
 from . import base as gp
 from .utils import clamp
 
@@ -1260,7 +1258,7 @@ class GP3File(gp.GPFileBase):
         self.writeNotes(voice)
 
     def writeDuration(self, duration, flags):
-        value = round(math.log(duration.value, 2) - 2)
+        value = duration.value.bit_length() - 3
         self.writeSignedByte(value)
         if flags & 0x20:
             if (duration.tuplet.enters, duration.tuplet.times) == (3, 2):
