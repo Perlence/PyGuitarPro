@@ -17,7 +17,7 @@ tests = [
     'Slides.gp4',
     'Harmonics.gp4',
     'Key.gp4',
-    # 'Repeat.gp4',
+    'Repeat.gp4',
 
     'Mastodon - Curl of the Burl.gp5',
     'Mastodon - Ghost of Karelia.gp5',
@@ -29,7 +29,8 @@ tests = [
     'Chords.gp5',
     'Slides.gp5',
     'RSE.gp5',
-    # 'Repeat.gp5',
+    'Repeat.gp5',
+    'Demo v5.gp5',
 ]
 
 for test in tests:

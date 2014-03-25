@@ -125,12 +125,12 @@ class GP5File(gp4.GP4File):
         -   10-band equalizer. See :meth:`readEqualizer`.
 
         """
+        masterEffect = gp.RSEMasterEffect()
         if self.versionTuple > (5, 0):
-            masterEffect = gp.RSEMasterEffect()
             masterEffect.volume = self.readInt()
             self.readInt()  # ???
             masterEffect.equalizer = self.readEqualizer(11)
-            return masterEffect
+        return masterEffect
 
     def readEqualizer(self, knobsNumber):
         """Read equalizer values.
@@ -459,7 +459,7 @@ class GP5File(gp4.GP4File):
             trackRSE.humanize = self.readByte()
             self.readInt(3)  # ???
             self.skip(12)  # ???
-            self.skip(15)
+            trackRSE.instrument = self.readRSEInstrument()
         else:
             trackRSE.humanize = self.readByte()
             self.readInt(3)  # ???
@@ -467,7 +467,7 @@ class GP5File(gp4.GP4File):
             trackRSE.instrument = self.readRSEInstrument()
             trackRSE.equalizer = self.readEqualizer(4)
             self.readRSEInstrumentEffect(trackRSE.instrument)
-            return trackRSE
+        return trackRSE
 
     def readRSEInstrument(self):
         """Read RSE instrument.
@@ -482,10 +482,17 @@ class GP5File(gp4.GP4File):
 
         """
         instrument = gp.RSEInstrument()
-        instrument.instrument = self.readInt()
-        self.readInt()  # ??? mostly 1
-        instrument.soundBank = self.readInt()
-        self.readInt()  # ??? mostly -1
+        if self.versionTuple == (5, 0):
+            instrument.instrument = self.readInt()
+            self.readInt()  # ??? mostly 1
+            instrument.soundBank = self.readInt()
+            instrument.effectNumber = self.readShort()
+            self.skip(1)
+        else:
+            instrument.instrument = self.readInt()
+            self.readInt()  # ??? mostly 1
+            instrument.soundBank = self.readInt()
+            self.readInt()  # ??? mostly -1
         return instrument
 
     def readRSEInstrumentEffect(self, rseInstrument):
@@ -635,6 +642,8 @@ class GP5File(gp4.GP4File):
         """
         instrument = self.readSignedByte()
         rse = self.readRSEInstrument()
+        if self.versionTuple == (5, 0):
+            self.skip(1)
         volume = self.readSignedByte()
         balance = self.readSignedByte()
         chorus = self.readSignedByte()
@@ -942,9 +951,10 @@ class GP5File(gp4.GP4File):
         if self.versionTuple > (5, 0):
             if masterEffect is None:
                 masterEffect = gp.RSEMasterEffect()
-                masterEffect.volume = 100
-                masterEffect.reverb = 0
-                masterEffect.equalizer = gp.RSEEqualizer(knobs=[0] * 10, gain=0)
+            masterEffect.volume = masterEffect.volume or 100
+            masterEffect.reverb = masterEffect.reverb or 0
+            masterEffect.equalizer = (masterEffect.equalizer or
+                                      gp.RSEEqualizer(knobs=[0] * 10, gain=0))
             self.writeInt(masterEffect.volume)
             self.writeInt(0)
             self.writeEqualizer(masterEffect.equalizer)
@@ -1022,10 +1032,9 @@ class GP5File(gp4.GP4File):
 
     def writeMasterReverb(self, masterEffect):
         if masterEffect is not None:
-            self.writeByte(masterEffect.reverb)
+            self.writeInt(masterEffect.reverb)
         else:
-            self.writeByte(0)
-        self.placeholder(3)
+            self.writeInt(0)
 
     def writeMeasureHeader(self, header, previous=None):
         flags = 0x00
@@ -1172,7 +1181,7 @@ class GP5File(gp4.GP4File):
             self.writeInt(0)
             self.writeInt(100)
             self.placeholder(12)
-            self.placeholder(15, '\xff')
+            self.writeRSEInstrument(trackRSE.instrument)
         else:
             self.writeByte(trackRSE.humanize)
             self.writeInt(0)
@@ -1186,10 +1195,16 @@ class GP5File(gp4.GP4File):
     def writeRSEInstrument(self, instrument):
         if instrument is None:
             instrument = gp.RSEInstrument()
-        self.writeInt(instrument.instrument)
-        self.writeInt(1)
-        self.writeInt(instrument.soundBank)
-        self.writeInt(-1)
+        if self.versionTuple == (5, 0):
+            self.writeInt(instrument.instrument)
+            self.writeInt(1)
+            self.writeInt(instrument.soundBank)
+            self.writeShort(instrument.effectNumber)
+        else:
+            self.writeInt(instrument.instrument)
+            self.writeInt(1)
+            self.writeInt(instrument.soundBank)
+            self.writeInt(-1)
 
     def writeRSEInstrumentEffect(self, rseInstrument):
         if self.versionTuple > (5, 0):
@@ -1256,6 +1271,8 @@ class GP5File(gp4.GP4File):
         self.writeSignedByte(tableChange.instrument.value
                              if tableChange.instrument is not None else -1)
         self.writeRSEInstrument(tableChange.rse)
+        if self.versionTuple == (5, 0):
+            self.placeholder(1)
         self.writeSignedByte(tableChange.volume.value
                              if tableChange.volume is not None else -1)
         self.writeSignedByte(tableChange.balance.value

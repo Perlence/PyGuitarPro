@@ -1745,11 +1745,13 @@ class Accentuation(Enum):
 
 
 class RSEInstrument(GPObject):
-    __attr__ = ('instrument', 'soundBank', 'effectCategory', 'effect')
+    __attr__ = ('instrument', 'soundBank', 'effectNumber', 'effectCategory',
+                'effect')
 
     def __init__(self, *args, **kwargs):
         self.instrument = -1
         self.soundBank = -1
+        self.effectNumber = -1
         self.effectCategory = ''
         self.effect = ''
         GPObject.__init__(self, *args, **kwargs)
