@@ -11,6 +11,7 @@ tests = [
     'CarpeDiem - I Ching.gp3',
     'Chords.gp3',
     'Harmonics.gp3',
+    'Demo v5.gp3',
 
     'Effects.gp4',
     'Vibrato.gp4',

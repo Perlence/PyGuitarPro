@@ -1039,61 +1039,18 @@ class GP5File(gp4.GP4File):
             self.writeInt(0)
 
     def writeMeasureHeader(self, header, previous=None):
-        flags = 0x00
-        if previous is not None:
-            if header.timeSignature.numerator != previous.timeSignature.numerator:
-                flags |= 0x01
-            if header.timeSignature.denominator.value != previous.timeSignature.denominator.value:
-                flags |= 0x02
-        else:
-            flags |= 0x01
-            flags |= 0x02
-        if header.isRepeatOpen:
-            flags |= 0x04
-        if header.repeatClose > -1:
-            flags |= 0x08
-        if header.repeatAlternative:
-            flags |= 0x10
-        if header.marker is not None:
-            flags |= 0x20
-        if previous is not None:
-            if header.keySignature != previous.keySignature:
-                flags |= 0x40
-        else:
-            flags |= 0x40
-        if header.hasDoubleBar:
-            flags |= 0x80
-
+        flags = super(GP5File, self).packMeasureHeaderFlags(header, previous)
         if previous is not None:
             self.placeholder(1)
+        self.writeMeasureHeaderValues(header, flags)
 
-        self.writeByte(flags)
-
-        if flags & 0x01:
-            self.writeByte(header.timeSignature.numerator)
-        if flags & 0x02:
-            self.writeByte(header.timeSignature.denominator.value)
-
-        if flags & 0x08:
-            self.writeByte(header.repeatClose + 1)
-
-        if flags & 0x20:
-            self.writeMarker(header.marker)
-
-        if flags & 0x10:
-            self.writeRepeatAlternative(header.repeatAlternative)
-
-        if flags & 0x40:
-            self.writeSignedByte(header.keySignature.value[0])
-            self.writeByte(header.keySignature.value[1])
-
+    def writeMeasureHeaderValues(self, header, flags):
+        super(GP5File, self).writeMeasureHeaderValues(header, flags)
         if flags & 0x01:
             for beam in header.timeSignature.beams:
                 self.writeByte(beam)
-
         if flags & 0x10 == 0:
             self.placeholder(1)
-
         self.writeByte(header.tripletFeel.value)
 
     def writeRepeatAlternative(self, repeatAlternative):

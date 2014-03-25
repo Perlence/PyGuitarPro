@@ -1127,6 +1127,10 @@ class GP3File(gp.GPFileBase):
             previous = measure.header
 
     def writeMeasureHeader(self, header, previous=None):
+        flags = self.packMeasureHeaderFlags(header, previous=previous)
+        self.writeMeasureHeaderValues(header, flags)
+
+    def packMeasureHeaderFlags(self, header, previous=None):
         flags = 0x00
         if previous is not None:
             if header.timeSignature.numerator != previous.timeSignature.numerator:
@@ -1144,11 +1148,9 @@ class GP3File(gp.GPFileBase):
             flags |= 0x10
         if header.marker is not None:
             flags |= 0x20
-        if previous is not None:
-            if header.keySignature != previous.keySignature:
-                flags |= 0x40
-        if header.hasDoubleBar:
-            flags |= 0x80
+        return flags
+
+    def writeMeasureHeaderValues(self, header, flags):
         self.writeByte(flags)
         if flags & 0x01:
             self.writeSignedByte(header.timeSignature.numerator)
@@ -1160,9 +1162,6 @@ class GP3File(gp.GPFileBase):
             self.writeRepeatAlternative(header.repeatAlternative)
         if flags & 0x20:
             self.writeMarker(header.marker)
-        if flags & 0x40:
-            self.writeSignedByte(header.keySignature.value[0])
-            self.writeSignedByte(header.keySignature.value[1])
 
     def writeRepeatAlternative(self, value):
         first_one = False

@@ -87,6 +87,21 @@ class GP4File(gp3.GP3File):
             line.lyrics = self.readIntSizeString()
         return lyrics
 
+    def packMeasureHeaderFlags(self, header, previous=None):
+        flags = super(GP4File, self).packMeasureHeaderFlags(header, previous)
+        if (previous is not None and
+                header.keySignature != previous.keySignature):
+            flags |= 0x40
+        if header.hasDoubleBar:
+            flags |= 0x80
+        return flags
+
+    def writeMeasureHeaderValues(self, header, flags):
+        super(GP4File, self).writeMeasureHeaderValues(header, flags)
+        if flags & 0x40:
+            self.writeSignedByte(header.keySignature.value[0])
+            self.writeSignedByte(header.keySignature.value[1])
+
     def readNewChord(self, chord):
         """Read new-style (GP4) chord diagram.
 
