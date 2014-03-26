@@ -1450,8 +1450,6 @@ class GP3File(gp.GPFileBase):
         if note.velocity != gp.Velocities.default:
             flags |= 0x10
         flags |= 0x20
-        if note.effect.accentuatedNote:
-            flags |= 0x40
         return flags
 
     def writeNoteEffects(self, note):
