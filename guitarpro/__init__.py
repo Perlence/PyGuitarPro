@@ -38,13 +38,15 @@ def findFormatExtFile(path):
         return 'gp5'
 
 
-def _open(stream, mode='rb', format=None):
+def _open(stream, mode='rb', format=None, encoding=None):
     """Open a GP file path for reading or writing.
 
     :param stream: filename or file-like object.
     :param mode: should be either "rb" or "wb".
     :param format: may be one of the supported formats, e.g. "gp5". If no
-                   explicit format given, guess what it might be.
+        explicit format given, guess what it might be.
+    :param encoding: treat strings found in tablature as encoded in given 8-bit
+        encoding.
 
     """
     if mode not in ('rb', 'wb'):
@@ -59,7 +61,7 @@ def _open(stream, mode='rb', format=None):
         filename = getattr(fp, 'name', '<file>')
 
     if mode == 'rb':
-        gpfilebase = GPFileBase(fp)
+        gpfilebase = GPFileBase(fp, encoding=encoding)
         if format is None:
             gpfilebase.readVersion()
             version = gpfilebase.version
@@ -76,32 +78,35 @@ def _open(stream, mode='rb', format=None):
         GPFile = _GPFILES[version]
     except KeyError:
         raise GPException("unsupported version '%r'" % gpfilebase.version)
-    gpfile = GPFile(fp)
+    gpfile = GPFile(fp, encoding=encoding)
     gpfile.version = version
     return gpfile
 
 
-def parse(stream, format=None):
+def parse(stream, format=None, encoding=None):
     """Open a GP file and read its contents.
 
     :param stream: path to a GP file or file-like object.
     :param format: explicitly set format of GP file.
+    :param encoding: decode strings in tablature using this charset. Given
+        encoding must be an 8-bit charset.
 
     """
-    gpfile = _open(stream, 'rb', format)
+    gpfile = _open(stream, 'rb', format=format, encoding=encoding)
     song = gpfile.readSong()
     gpfile.close()
     return song
 
 
-def write(song, stream, format=None):
+def write(song, stream, format=None, encoding=None):
     """Write a song into GP file.
 
     :param song: a :class:`guitarpro.base.GPFileBase` instance.
     :param stream: path to save GP file or file-like object.
     :param format: explicitly set format of saved GP file.
+    :param encoding: encode strings into given 8-bit charset.
 
     """
-    gpfile = _open(stream, 'wb', format)
+    gpfile = _open(stream, 'wb', format=format, encoding=encoding)
     song = gpfile.writeSong(song)
     gpfile.close()

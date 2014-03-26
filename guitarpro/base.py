@@ -2,7 +2,7 @@ from __future__ import division
 
 import struct
 
-from six import add_metaclass, string_types, binary_type, PY2, PY3
+from six import add_metaclass, string_types
 from enum import Enum
 
 
@@ -11,7 +11,6 @@ class GPException(Exception):
 
 
 class GPFileBase(object):
-    defaultCharset = 'UTF-8'
     bendPosition = 60
     bendSemitone = 25
 
@@ -19,8 +18,9 @@ class GPFileBase(object):
     _versionTuple = None
     version = None
 
-    def __init__(self, data=None):
+    def __init__(self, data=None, encoding=None):
         self.data = data
+        self.encoding = encoding or 'cp1252'
 
     def close(self):
         self.data.close()
@@ -95,7 +95,7 @@ class GPFileBase(object):
         count = size if size > 0 else length
         s = self.data.read(count)
         ss = s[:(length if length >= 0 else size)]
-        return ss.decode('cp1252')
+        return ss.decode(self.encoding)
 
     def readByteSizeString(self, size):
         """Read length of the string stored in 1 byte and followed by character
@@ -163,9 +163,7 @@ class GPFileBase(object):
     def writeString(self, data, size=None):
         if size is None:
             size = len(data)
-        if PY3 and isinstance(data, string_types):
-            data = bytes(data, 'cp1252')
-        self.data.write(data)
+        self.data.write(data.encode(self.encoding))
         self.placeholder(size - len(data))
 
     def writeByteSizeString(self, data, size=None):
