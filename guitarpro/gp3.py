@@ -721,11 +721,12 @@ class GP3File(gp.GPFileBase):
         barEffect = gp.BendEffect()
         barEffect.type = gp.BendType.dip
         barEffect.value = self.readInt()
-        barEffect.points.append(gp.BendPoint(0, 0))
-        barEffect.points.append(
+        barEffect.points = [
+            gp.BendPoint(0, 0),
             gp.BendPoint(round(gp.BendEffect.maxPosition / 2),
-                         round(-barEffect.value / (self.bendSemitone * 2))))
-        barEffect.points.append(gp.BendPoint(gp.BendEffect.maxPosition, 0))
+                         round(-barEffect.value / self.bendSemitone)),
+            gp.BendPoint(gp.BendEffect.maxPosition, 0),
+        ]
         return barEffect
 
     def readBeatStroke(self):
@@ -1054,7 +1055,7 @@ class GP3File(gp.GPFileBase):
         return grace
 
     def readSlides(self):
-        return [gp.SlideType.legatoSlideTo]
+        return [gp.SlideType.shiftSlideTo]
 
     # Writing
     # =======
