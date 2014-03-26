@@ -1418,22 +1418,7 @@ class GP3File(gp.GPFileBase):
             self.writeNote(note)
 
     def writeNote(self, note):
-        noteEffect = note.effect
-        flags = 0x00
-        try:
-            if note.duration is not None and note.tuplet is not None:
-                flags |= 0x01
-        except AttributeError:
-            pass
-        if noteEffect.ghostNote:
-            flags |= 0x04
-        if not noteEffect.isDefault:
-            flags |= 0x08
-        if note.velocity != gp.Velocities.default:
-            flags |= 0x10
-        flags |= 0x20
-        if note.effect.isFingering:
-            flags |= 0x80
+        flags = self.packNoteFlags(note)
         self.writeByte(flags)
         if flags & 0x20:
             self.writeByte(note.type.value)
@@ -1446,11 +1431,28 @@ class GP3File(gp.GPFileBase):
         if flags & 0x20:
             fret = note.value if note.type != gp.NoteType.tie else 0
             self.writeSignedByte(fret)
-        if flags & 0x80:
-            self.writeSignedByte(noteEffect.leftHandFinger.value)
-            self.writeSignedByte(noteEffect.rightHandFinger.value)
         if flags & 0x08:
             self.writeNoteEffects(note)
+
+    def packNoteFlags(self, note):
+        flags = 0x00
+        try:
+            if note.duration is not None and note.tuplet is not None:
+                flags |= 0x01
+        except AttributeError:
+            pass
+        if note.effect.heavyAccentuatedNote:
+            flags |= 0x02
+        if note.effect.ghostNote:
+            flags |= 0x04
+        if not note.effect.isDefault:
+            flags |= 0x08
+        if note.velocity != gp.Velocities.default:
+            flags |= 0x10
+        flags |= 0x20
+        if note.effect.accentuatedNote:
+            flags |= 0x40
+        return flags
 
     def writeNoteEffects(self, note):
         noteEffect = note.effect

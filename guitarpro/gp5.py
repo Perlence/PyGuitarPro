@@ -1040,7 +1040,7 @@ class GP5File(gp4.GP4File):
             self.writeInt(0)
 
     def writeMeasureHeader(self, header, previous=None):
-        flags = super(GP5File, self).packMeasureHeaderFlags(header, previous)
+        flags = self.packMeasureHeaderFlags(header, previous)
         if previous is not None:
             self.placeholder(1)
         self.writeMeasureHeaderValues(header, flags)
@@ -1294,51 +1294,33 @@ class GP5File(gp4.GP4File):
             self.writeSignedByte(gp.WahState.none.value)
 
     def writeNote(self, note):
-        flags = 0x00
-        if abs(note.durationPercent - 1.0) >= 1e-2:
-            flags |= 0x01
-        if note.effect.heavyAccentuatedNote:
-            flags |= 0x02
-        if note.effect.ghostNote:
-            flags |= 0x04
-        if not note.effect.isDefault:
-            flags |= 0x08
-        if note.velocity != gp.Velocities.default:
-            flags |= 0x10
-        flags |= 0x20
-        if note.effect.accentuatedNote:
-            flags |= 0x40
-        if note.effect.isFingering:
-            flags |= 0x80
-
+        flags = self.packNoteFlags(note)
         self.writeByte(flags)
-
         if flags & 0x20:
             self.writeByte(note.type.value)
-
         if flags & 0x10:
             value = self.packVelocity(note.velocity)
             self.writeSignedByte(value)
-
         if flags & 0x20:
             fret = note.value if note.type != gp.NoteType.tie else 0
             self.writeSignedByte(fret)
-
         if flags & 0x80:
             self.writeSignedByte(note.effect.leftHandFinger.value)
             self.writeSignedByte(note.effect.rightHandFinger.value)
-
         if flags & 0x01:
             self.writeDouble(note.durationPercent)
-
         flags2 = 0x00
         if note.swapAccidentals:
             flags2 |= 0x02
-
         self.writeByte(flags2)
-
         if flags & 0x08:
             self.writeNoteEffects(note)
+
+    def packNoteFlags(self, note):
+        flags = super(GP5File, self).packNoteFlags(note)
+        if abs(note.durationPercent - 1.0) >= 1e-3:
+            flags |= 0x01
+        return flags
 
     def writeGrace(self, grace):
         self.writeByte(grace.fret)
