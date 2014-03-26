@@ -1,7 +1,7 @@
 from __future__ import division
 
 from . import base as gp
-from .utils import clamp
+from .utils import clamp, bit_length
 
 
 class GP3File(gp.GPFileBase):
@@ -1164,7 +1164,7 @@ class GP3File(gp.GPFileBase):
     def writeRepeatAlternative(self, value):
         first_one = False
         i = 0
-        for i in range(value.bit_length() + 1):
+        for i in range(bit_length(value) + 1):
             if value & 1 << i:
                 first_one = True
             elif first_one:
@@ -1258,7 +1258,7 @@ class GP3File(gp.GPFileBase):
         self.writeNotes(voice)
 
     def writeDuration(self, duration, flags):
-        value = duration.value.bit_length() - 3
+        value = bit_length(duration.value) - 3
         self.writeSignedByte(value)
         if flags & 0x20:
             if (duration.tuplet.enters, duration.tuplet.times) == (3, 2):
@@ -1486,7 +1486,7 @@ class GP3File(gp.GPFileBase):
         self.writeByte(grace.fret)
         self.writeByte(self.packVelocity(grace.velocity))
         self.writeSignedByte(grace.transition.value)
-        self.writeByte(8 - grace.duration.bit_length())
+        self.writeByte(8 - bit_length(grace.duration))
 
     def packVelocity(self, velocity):
         return int((velocity + gp.Velocities.velocityIncrement -
