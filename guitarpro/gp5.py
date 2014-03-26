@@ -145,8 +145,8 @@ class GP5File(gp4.GP4File):
         :meth:`unpackVolumeValue`.
 
         """
-        knobs = map(self.unpackVolumeValue,
-                    self.readSignedByte(count=knobsNumber))
+        knobs = list(map(self.unpackVolumeValue,
+                         self.readSignedByte(count=knobsNumber)))
         return gp.RSEEqualizer(knobs=knobs[:-1], gain=knobs[-1])
 
     def unpackVolumeValue(self, value):
@@ -980,7 +980,7 @@ class GP5File(gp4.GP4File):
         self.writeInt(setup.pageMargin.right)
         self.writeInt(setup.pageMargin.top)
         self.writeInt(setup.pageMargin.bottom)
-        self.writeInt(setup.scoreSizeProportion * 100)
+        self.writeInt(int(setup.scoreSizeProportion * 100))
 
         self.writeByte(setup.headerAndFooter & 0xff)
 

@@ -193,7 +193,7 @@ class GP4File(gp3.GP3File):
             chord.barres.append(barre)
         chord.omissions = self.readBool(7)
         self.skip(1)
-        chord.fingerings = map(gp.Fingering, self.readSignedByte(7))
+        chord.fingerings = list(map(gp.Fingering, self.readSignedByte(7)))
         chord.show = self.readBool()
 
     def readBeatEffects(self, effect):

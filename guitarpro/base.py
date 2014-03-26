@@ -2,6 +2,7 @@ from __future__ import division
 
 import struct
 
+from six import add_metaclass, string_types
 from enum import Enum
 
 
@@ -10,7 +11,6 @@ class GPException(Exception):
 
 
 class GPFileBase(object):
-    defaultCharset = 'UTF-8'
     bendPosition = 60
     bendSemitone = 25
 
@@ -18,8 +18,9 @@ class GPFileBase(object):
     _versionTuple = None
     version = None
 
-    def __init__(self, data=None):
+    def __init__(self, data=None, encoding=None):
         self.data = data
+        self.encoding = encoding or 'cp1252'
 
     def close(self):
         self.data.close()
@@ -93,7 +94,8 @@ class GPFileBase(object):
             length = size
         count = size if size > 0 else length
         s = self.data.read(count)
-        return s[:(length if length >= 0 else size)]
+        ss = s[:(length if length >= 0 else size)]
+        return ss.decode(self.encoding)
 
     def readByteSizeString(self, size):
         """Read length of the string stored in 1 byte and followed by character
@@ -127,7 +129,7 @@ class GPFileBase(object):
     # Writing
     # =======
 
-    def placeholder(self, count, byte='\x00'):
+    def placeholder(self, count, byte=b'\x00'):
         self.data.write(byte * count)
 
     def writeByte(self, data):
@@ -161,7 +163,7 @@ class GPFileBase(object):
     def writeString(self, data, size=None):
         if size is None:
             size = len(data)
-        self.data.write(data)
+        self.data.write(data.encode(self.encoding))
         self.placeholder(size - len(data))
 
     def writeByteSizeString(self, data, size=None):
@@ -185,6 +187,19 @@ class GPFileBase(object):
             self.writeByteSizeString(self._supportedVersions[index], 30)
 
 
+class GPObjectMeta(type):
+
+    def __new__(cls, name, bases, dict_):
+        type_ = type.__new__(cls, name, bases, dict_)
+        for name in dict_['__attr__']:
+            try:
+                getattr(type_, name)
+            except AttributeError:
+                setattr(type_, name, None)
+        return type_
+
+
+@add_metaclass(GPObjectMeta)
 class GPObject(object):
 
     """GPObject is the base of all Guitar Pro objects.
@@ -196,17 +211,6 @@ class GPObject(object):
 
     """
     __attr__ = ()
-
-    class __metaclass__(type):
-
-        def __new__(cls, name, bases, dict_):
-            type_ = type.__new__(cls, name, bases, dict_)
-            for name in dict_['__attr__']:
-                try:
-                    getattr(type_, name)
-                except AttributeError:
-                    setattr(type_, name, None)
-            return type_
 
     def __init__(self, *args, **kwargs):
         for key, value in zip(self.__attr__, args):
@@ -829,10 +833,9 @@ class Measure(GPObject):
         return self.header.marker
 
     def voice(self, index):
-        sortedBeats = sorted(self.beats, key=lambda x: x.start)
-        return filter(lambda x: x.effect.mixTableChange is not None or 
-                                not x.voices[index].isEmpty,
-                      sortedBeats)
+        return [x for x in sorted(self.beats, key=lambda x: x.start)
+                  if x.effect.mixTableChange is not None or
+                          not x.voices[index].isEmpty]
 
     def addBeat(self, beat):
         beat.measure = self
@@ -1291,7 +1294,7 @@ class Chord(GPObject):
 
     @property
     def notes(self):
-        return filter(lambda string: string >= 0, self.strings)
+        return [string for string in self.strings if string >= 0]
 
 
 class ChordType(Enum):
@@ -1466,7 +1469,7 @@ class PitchClass(object):
     def __init__(self, *args, **kwargs):
         intonation = kwargs.get('intonation')
         if len(args) == 1:
-            if isinstance(args[0], basestring):
+            if isinstance(args[0], string_types):
                 # Assume string input
                 string = args[0]
                 try:
