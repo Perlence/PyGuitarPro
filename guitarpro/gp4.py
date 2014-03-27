@@ -504,10 +504,9 @@ class GP4File(gp3.GP3File):
             self.writeInt(line.startingMeasure)
             self.writeIntSizeString(line.lyrics)
 
-    def writeBeat(self, beat, voiceIndex=0):
-        voice = beat.voices[voiceIndex]
+    def writeBeat(self, beat):
         flags = 0x00
-        if voice.duration.isDotted:
+        if beat.duration.isDotted:
             flags |= 0x01
         if beat.effect.isChord:
             flags |= 0x02
@@ -517,24 +516,23 @@ class GP4File(gp3.GP3File):
             flags |= 0x08
         if beat.effect.mixTableChange is not None:
             flags |= 0x10
-        if voice.duration.tuplet != gp.Tuplet():
+        if beat.duration.tuplet != gp.Tuplet():
             flags |= 0x20
-        if voice.isEmpty or voice.isRestVoice:
+        if beat.status != gp.BeatStatus.normal:
             flags |= 0x40
         self.writeSignedByte(flags)
         if flags & 0x40:
-            beatType = 0x00 if voice.isEmpty else 0x02
-            self.writeSignedByte(beatType)
-        self.writeDuration(voice.duration, flags)
+            self.writeByte(beat.status.value)
+        self.writeDuration(beat.duration, flags)
         if flags & 0x02:
             self.writeChord(beat.effect.chord)
         if flags & 0x04:
             self.writeText(beat.text)
         if flags & 0x08:
-            self.writeBeatEffects(beat.effect)
+            self.writeBeatEffects(beat)
         if flags & 0x10:
             self.writeMixTableChange(beat.effect.mixTableChange)
-        self.writeNotes(voice)
+        self.writeNotes(beat)
 
     def writeChord(self, chord):
         self.writeSignedByte(1)  # signify GP4 chord format
@@ -576,37 +574,37 @@ class GP4File(gp3.GP3File):
             self.writeSignedByte(fingering.value)
         self.writeBool(chord.show)
 
-    def writeBeatEffects(self, beatEffect, voice=None):
+    def writeBeatEffects(self, beat):
         flags1 = 0x00
-        if beatEffect.vibrato:
+        if beat.effect.vibrato:
             flags1 |= 0x02
-        if beatEffect.fadeIn:
+        if beat.effect.fadeIn:
             flags1 |= 0x10
-        if beatEffect.isSlapEffect:
+        if beat.effect.isSlapEffect:
             flags1 |= 0x20
-        if beatEffect.stroke != gp.BeatStroke():
+        if beat.effect.stroke != gp.BeatStroke():
             flags1 |= 0x40
 
         self.writeSignedByte(flags1)
 
         flags2 = 0x00
-        if beatEffect.hasRasgueado:
+        if beat.effect.hasRasgueado:
             flags2 |= 0x01
-        if beatEffect.hasPickStroke:
+        if beat.effect.hasPickStroke:
             flags2 |= 0x02
-        if beatEffect.isTremoloBar:
+        if beat.effect.isTremoloBar:
             flags2 |= 0x04
 
         self.writeSignedByte(flags2)
 
         if flags1 & 0x20:
-            self.writeSignedByte(beatEffect.slapEffect.value)
+            self.writeSignedByte(beat.effect.slapEffect.value)
         if flags2 & 0x04:
-            self.writeTremoloBar(beatEffect.tremoloBar)
+            self.writeTremoloBar(beat.effect.tremoloBar)
         if flags1 & 0x40:
-            self.writeBeatStroke(beatEffect.stroke)
+            self.writeBeatStroke(beat.effect.stroke)
         if flags2 & 0x02:
-            self.writeSignedByte(beatEffect.pickStroke.value)
+            self.writeSignedByte(beat.effect.pickStroke.value)
 
     def writeTremoloBar(self, tremoloBar):
         self.writeBend(tremoloBar)

@@ -516,7 +516,7 @@ class GP5File(gp4.GP4File):
                 rseInstrument.effectCategory = effectCategory
         return rseInstrument
 
-    def readMeasure(self, measure, track, voiceIndex=None):
+    def readMeasure(self, measure):
         """Read measure.
 
         Guitar Pro 5 stores twice more measures compared to Guitar Pro 3.
@@ -526,11 +526,11 @@ class GP5File(gp4.GP4File):
         stored in :ref:`byte`.
 
         """
-        for voiceIndex in range(gp.Beat.maxVoices):
-            super(GP5File, self).readMeasure(measure, track, voiceIndex)
+        for voiceIndex in range(gp.Measure.maxVoices):
+            super(GP5File, self).readMeasure(measure)
         measure.lineBreak = gp.LineBreak(self.readByte(default=0))
 
-    def readBeat(self, start, measure, track, voiceIndex):
+    def readBeat(self, start, voice):
         """Read beat.
 
         First, beat is read is in Guitar Pro 3 :meth:`guitarpro.gp3.readBeat`.
@@ -554,9 +554,8 @@ class GP5File(gp4.GP4File):
             set. Signifies how much beams should be broken.
 
         """
-        duration = super(GP5File, self).readBeat(start, measure, track,
-                                                 voiceIndex)
-        beat = self.getBeat(measure, start)
+        duration = super(GP5File, self).readBeat(start, voice)
+        beat = self.getBeat(voice, start)
         flags2 = self.readShort()
         if flags2 & 0x0010:
             beat.octave = gp.Octave.ottava
@@ -1180,15 +1179,14 @@ class GP5File(gp4.GP4File):
             self.writeIntByteSizeString(rseInstrument.effectCategory)
 
     def writeMeasure(self, measure):
-        for index in range(gp.Beat.maxVoices):
-            beats = measure.voice(index)
-            self.writeInt(len(beats))
-            for beat in beats:
-                self.writeBeat(beat, index)
+        for voice in measure.voices:
+            self.writeInt(len(voice.beats))
+            for beat in voice.beats:
+                self.writeBeat(beat)
         self.writeByte(measure.lineBreak.value)
 
-    def writeBeat(self, beat, voiceIndex=0):
-        super(GP5File, self).writeBeat(beat, voiceIndex)
+    def writeBeat(self, beat):
+        super(GP5File, self).writeBeat(beat)
         flags2 = 0x0000
         if beat.display.breakBeam:
             flags2 |= 0x0001

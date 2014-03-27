@@ -761,14 +761,16 @@ class LineBreak(Enum):
 
 class Measure(GPObject):
 
-    """A measure contains multiple beats."""
+    """A measure contains multiple voices of beats."""
 
-    __attr__ = ('clef', 'beats', 'header', 'lineBreak')
+    __attr__ = ('clef', 'voices', 'header', 'lineBreak')
+
+    maxVoices = 2
 
     def __init__(self, header, *args, **kwargs):
         self.header = header
         self.clef = MeasureClef.treble
-        self.beats = []
+        self.voices = []
         self.lineBreak = LineBreak.none
         GPObject.__init__(self, *args, **kwargs)
 
@@ -785,8 +787,8 @@ class Measure(GPObject):
 
     @property
     def isEmpty(self):
-        return (len(self.beats) == 0 or all(beat.isRestBeat
-                                            for beat in self.beats))
+        return (len(self.beats) == 0 or all(voice.isEmpty
+                                            for voice in self.voices))
 
     @property
     def end(self):
@@ -836,24 +838,9 @@ class Measure(GPObject):
     def marker(self):
         return self.header.marker
 
-    def voice(self, index):
-        result = []
-        for x in sorted(self.beats, key=lambda x: x.start):
-            if (x.effect.mixTableChange is not None or
-                    not x.voices[index].isEmpty):
-                result.append(x)
-        if result:
-            return result
-        else:
-            beat = Beat()
-            for voice1, voice2 in zip(beat.voices, self.beats[0].voices):
-                voice1.duration = voice2.duration
-            return [beat]
-
-    def addBeat(self, beat):
-        beat.measure = self
-        beat.index = len(self.beats)
-        self.beats.append(beat)
+    def addVoice(self, voice):
+        voice.measure = self
+        self.voices.append(voice)
 
 
 class VoiceDirection(Enum):
@@ -867,38 +854,22 @@ class VoiceDirection(Enum):
 
 class Voice(GPObject):
 
-    """A voice contains multiple notes."""
+    """A voice contains multiple beats."""
 
-    __attr__ = ('index', 'duration', 'notes', 'direction', 'isEmpty')
+    __attr__ = ('beats', 'direction', 'isEmpty')
 
     def __init__(self, *args, **kwargs):
-        self.duration = Duration()
-        self.notes = []
+        self.beats = []
         self.direction = VoiceDirection.none
-        self.isEmpty = True
         GPObject.__init__(self, *args, **kwargs)
 
     @property
-    def isRestVoice(self):
-        return len(self.notes) == 0
+    def isEmpty(self):
+        return len(self.beats) == 0
 
-    @property
-    def hasVibrato(self):
-        for note in self.notes:
-            if note.effect.vibrato:
-                return True
-        return False
-
-    @property
-    def hasHarmonic(self):
-        for note in self.notes:
-            if note.effect.isHarmonic:
-                return note.effect.harmonic
-
-    def addNote(self, note):
-        note.voice = self
-        self.notes.append(note)
-        self.isEmpty = False
+    def addBeat(self, beat):
+        beat.voice = self
+        self.beats.append(beat)
 
 
 class BeatStrokeDirection(Enum):
@@ -1042,46 +1013,46 @@ class Beat(GPObject):
 
     """A beat contains multiple voices."""
 
-    __attr__ = ('voices', 'text', 'start', 'effect', 'index', 'octave',
-                'display')
-
-    maxVoices = 2
+    __attr__ = ('notes', 'duration', 'text', 'start', 'effect', 'index',
+                'octave', 'display', 'status')
 
     def __init__(self, *args, **kwargs):
+        self.duration = Duration()
         self.start = Duration.quarterTime
         self.effect = BeatEffect()
         self.octave = Octave.none
         self.display = BeatDisplay()
-        self.voices = []
-        self.ensureVoices()
+        self.notes = []
+        self.status = True
         GPObject.__init__(self, *args, **kwargs)
-
-    @property
-    def isRestBeat(self):
-        for voice in self.voices:
-            if not voice.isEmpty and not voice.isRestVoice:
-                return False
-        return True
 
     @property
     def realStart(self):
         offset = self.start - self.measure.start()
         return self.measure.header.realStart + offset
 
-    def ensureVoices(self, count=maxVoices):
-        while len(self.voices) < count:  # as long we have not enough voice
-            # create new ones
-            voice = Voice(len(self.voices))
-            voice.beat = self
-            self.voices.append(voice)
+    @property
+    def hasVibrato(self):
+        for note in self.notes:
+            if note.effect.vibrato:
+                return True
+        return False
 
     @property
-    def notes(self):
-        notes = []
-        for voice in self.voices:
-            for note in voice.notes:
-                notes.append(note)
-        return notes
+    def hasHarmonic(self):
+        for note in self.notes:
+            if note.effect.isHarmonic:
+                return note.effect.harmonic
+
+    def addNote(self, note):
+        note.beat = self
+        self.notes.append(note)
+
+
+class BeatStatus(Enum):
+    empty = 0
+    normal = 1
+    rest = 2
 
 
 class HarmonicEffect(GPObject):
@@ -1290,7 +1261,7 @@ class Note(GPObject):
     @property
     def realValue(self):
         return (self.value +
-                self.voice.beat.measure.track.strings[self.string - 1].value)
+                self.beat.voice.measure.track.strings[self.string - 1].value)
 
 
 class Chord(GPObject):
