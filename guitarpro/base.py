@@ -234,6 +234,7 @@ class GPObject(object):
             return False
         for name in self.__attr__:
             if getattr(self, name) != getattr(other, name):
+                print self, other, name, getattr(self, name), getattr(other, name)
                 return False
         return True
 
@@ -841,7 +842,10 @@ class Measure(GPObject):
         if result:
             return result
         else:
-            return [Beat()]
+            beat = Beat()
+            for voice1, voice2 in zip(beat.voices, self.beats[0].voices):
+                voice1.duration = voice2.duration
+            return [beat]
 
     def addBeat(self, beat):
         beat.measure = self
@@ -1285,7 +1289,8 @@ class Chord(GPObject):
 
     __attr__ = ('sharp', 'root', 'type', 'extension', 'bass', 'tonality',
                 'add', 'name', 'fifth', 'ninth', 'eleventh', 'firstFret',
-                'strings', 'barres', 'omissions', 'fingerings', 'show')
+                'strings', 'barres', 'omissions', 'fingerings', 'show',
+                'newFormat')
 
     def __init__(self, length, *args, **kwargs):
         self.strings = [-1] * length

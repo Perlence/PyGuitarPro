@@ -535,8 +535,8 @@ class GP3File(gp.GPFileBase):
 
         """
         chord = gp.Chord(stringCount)
-        newFormat = self.readBool()
-        if not newFormat:
+        chord.newFormat = self.readBool()
+        if not chord.newFormat:
             self.readOldChord(chord)
         else:
             self.readNewChord(chord)
@@ -1290,7 +1290,19 @@ class GP3File(gp.GPFileBase):
             self.writeInt(iTuplet)
 
     def writeChord(self, chord):
-        self.writeSignedByte(1)  # signify GP4 chord format
+        self.writeBool(chord.newFormat)
+        if chord.newFormat:
+            self.writeNewChord(chord)
+        else:
+            self.writeOldChord(chord)
+
+    def writeOldChord(self, chord):
+        self.writeIntByteSizeString(chord.name)
+        self.writeInt(chord.firstFret)
+        for fret in clamp(chord.strings, 6, fillvalue=-1):
+            self.writeInt(fret)
+
+    def writeNewChord(self, chord):
         self.writeBool(chord.sharp)
         self.placeholder(3)
         self.writeInt(chord.root.value if chord.root else 0)
