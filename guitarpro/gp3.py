@@ -411,7 +411,8 @@ class GP3File(gp.GPFileBase):
 
         """
         start = measure.start
-        measure.voices = [gp.Voice()]
+        voice = gp.Voice()
+        measure.addVoice(voice)
         for voice in measure.voices:
             beats = self.readInt()
             for beat in range(beats):

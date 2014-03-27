@@ -836,6 +836,10 @@ class Measure(GPObject):
     def marker(self):
         return self.header.marker
 
+    def addVoice(self, voice):
+        voice.measure = self
+        self.voices.append(voice)
+
 
 class VoiceDirection(Enum):
 
@@ -1257,7 +1261,7 @@ class Note(GPObject):
     @property
     def realValue(self):
         return (self.value +
-                self.voice.beat.measure.track.strings[self.string - 1].value)
+                self.beat.voice.measure.track.strings[self.string - 1].value)
 
 
 class Chord(GPObject):
