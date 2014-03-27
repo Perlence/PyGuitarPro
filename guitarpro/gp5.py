@@ -481,7 +481,7 @@ class GP5File(gp4.GP4File):
 
         -   Sound bank: :ref:`int`.
 
-        -   Unknown :ref:`int`.
+        -   Effect number: :ref:`int`. Vestige of Guitar Pro 5.0 format.
 
         """
         instrument = gp.RSEInstrument()
@@ -495,7 +495,7 @@ class GP5File(gp4.GP4File):
             instrument.instrument = self.readInt()
             self.readInt()  # ??? mostly 1
             instrument.soundBank = self.readInt()
-            self.readInt()  # ??? mostly -1
+            instrument.effectNumber = self.readInt()
         return instrument
 
     def readRSEInstrumentEffect(self, rseInstrument):
