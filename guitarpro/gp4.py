@@ -342,7 +342,7 @@ class GP4File(gp3.GP3File):
         -   Trill. See :meth:`readTrill`.
 
         """
-        noteEffect = gp.NoteEffect()
+        noteEffect = note.effect or gp.NoteEffect()
         flags1 = self.readSignedByte()
         flags2 = self.readSignedByte()
         noteEffect.hammer = bool(flags1 & 0x02)

@@ -234,7 +234,10 @@ class GPObject(object):
             return False
         for name in self.__attr__:
             if getattr(self, name) != getattr(other, name):
-                print self, other, name, getattr(self, name), getattr(other, name)
+                if not hasattr(getattr(self, name), '__iter__'):
+                    print self, other, name, getattr(self, name), getattr(other, name)
+                else:
+                    print self, other, name
                 return False
         return True
 
