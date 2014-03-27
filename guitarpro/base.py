@@ -765,6 +765,8 @@ class Measure(GPObject):
 
     __attr__ = ('clef', 'voices', 'header', 'lineBreak')
 
+    maxVoices = 2
+
     def __init__(self, header, *args, **kwargs):
         self.header = header
         self.clef = MeasureClef.treble
@@ -1013,8 +1015,6 @@ class Beat(GPObject):
 
     __attr__ = ('notes', 'duration', 'text', 'start', 'effect', 'index',
                 'octave', 'display', 'status')
-
-    maxVoices = 2
 
     def __init__(self, *args, **kwargs):
         self.duration = Duration()

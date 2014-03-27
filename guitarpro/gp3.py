@@ -413,12 +413,11 @@ class GP3File(gp.GPFileBase):
         start = measure.start
         voice = gp.Voice()
         measure.addVoice(voice)
-        for voice in measure.voices:
-            beats = self.readInt()
-            for beat in range(beats):
-                start += self.readBeat(start, measure, voice)
+        beats = self.readInt()
+        for beat in range(beats):
+            start += self.readBeat(start, voice)
 
-    def readBeat(self, start, measure, voice):
+    def readBeat(self, start, voice):
         """Read beat.
 
         The first byte is the beat flags. It lists the data present in the
@@ -459,15 +458,15 @@ class GP3File(gp.GPFileBase):
         duration = self.readDuration(flags)
         effect = gp.NoteEffect()
         if flags & 0x02:
-            beat.effect.chord = self.readChord(len(measure.track.strings))
+            beat.effect.chord = self.readChord(len(voice.measure.track.strings))
         if flags & 0x04:
             beat.text = self.readText()
         if flags & 0x08:
             beat.effect = self.readBeatEffects(effect)
         if flags & 0x10:
-            mixTableChange = self.readMixTableChange(measure)
+            mixTableChange = self.readMixTableChange(voice.measure)
             beat.effect.mixTableChange = mixTableChange
-        self.readNotes(measure.track, beat, duration, effect)
+        self.readNotes(voice.measure.track, beat, duration, effect)
         return duration.time if not beat.status == gp.BeatStatus.empty else 0
 
     def getBeat(self, voice, start):
