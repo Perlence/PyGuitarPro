@@ -87,6 +87,7 @@ class GP3File(gp.GPFileBase):
         song.artist = self.readIntByteSizeString()
         song.album = self.readIntByteSizeString()
         song.words = self.readIntByteSizeString()
+        song.music = words
         song.copyright = self.readIntByteSizeString()
         song.tab = self.readIntByteSizeString()
         song.instructions = self.readIntByteSizeString()
@@ -1081,13 +1082,22 @@ class GP3File(gp.GPFileBase):
         self.writeIntByteSizeString(song.subtitle)
         self.writeIntByteSizeString(song.artist)
         self.writeIntByteSizeString(song.album)
-        self.writeIntByteSizeString(song.words)
+        self.writeIntByteSizeString(self.packAuthor(song))
         self.writeIntByteSizeString(song.copyright)
         self.writeIntByteSizeString(song.tab)
         self.writeIntByteSizeString(song.instructions)
         self.writeInt(len(song.notice))
         for line in song.notice:
             self.writeIntByteSizeString(line)
+
+    def packAuthor(self, song):
+        if song.words and song.music:
+            if song.words != song.music:
+                return song.words + ', ' + song.music
+            else:
+                return song.words
+        else:
+            return song.words + song.music
 
     def writeMidiChannels(self, tracks):
         def getTrackChannelByChannel(channel):
