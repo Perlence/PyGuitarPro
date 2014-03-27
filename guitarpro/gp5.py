@@ -1046,7 +1046,9 @@ class GP5File(gp4.GP4File):
         self.writeMeasureHeaderValues(header, flags)
 
     def writeMeasureHeaderValues(self, header, flags):
+        header.repeatClose += 1
         super(GP5File, self).writeMeasureHeaderValues(header, flags)
+        header.repeatClose -= 1
         if flags & 0x01:
             for beam in header.timeSignature.beams:
                 self.writeByte(beam)
