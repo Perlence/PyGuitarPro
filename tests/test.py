@@ -36,13 +36,27 @@ tests = [
 ]
 
 
-def product(test, song):
-    for destVersion in range(3, 6):
+def product(test, song, versions=(3, 4, 5)):
+    """Save song in given format *versions*."""
+    for destVersion in versions:
         destPath = path.join(output, test + '.gp%d' % destVersion)
         guitarpro.write(song, destPath)
 
 
 def bisect(test, song, destVersion=3):
+    """Save song in *n* files, where *n* is number of measures in song.
+
+    Resulting tabs have following measures:
+
+    -   ``*-001.gp?``: *1st* measure
+    -   ``*-002.gp?``: *1st* and *2nd* measure
+    -   ...
+    -   ``*-nnn.gp?``: *1st*, *2nd*, ..., *nth* measure
+
+    This function helps to find the measure where erroneous data was written
+    using bisection method.
+
+    """
     folder, _ = path.splitext(test)
     try:
         os.mkdir(path.join(output, folder))
@@ -58,6 +72,19 @@ def bisect(test, song, destVersion=3):
 
 
 def trackBisect(test, song, destVersion=3):
+    """Save song in *n* files, where *n* is number of tracks in song.
+
+    Resulting tabs have following tracks:
+
+    -   ``*-T01.gp?``: *1st* track
+    -   ``*-T02.gp?``: *1st* and *2nd* track
+    -   ...
+    -   ``*-Tnn.gp?``: *1st*, *2nd*, ..., *nth* track
+
+    This function helps to find the track where erroneous data was written
+    using bisection method.
+
+    """
     folder, _ = path.splitext(test)
     try:
         os.mkdir(path.join(output, folder))
