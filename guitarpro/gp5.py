@@ -554,7 +554,8 @@ class GP5File(gp4.GP4File):
             set. Signifies how much beams should be broken.
 
         """
-        duration = super(GP5File, self).readBeat(start, measure, track, voiceIndex)
+        duration = super(GP5File, self).readBeat(start, measure, track,
+                                                 voiceIndex)
         beat = self.getBeat(measure, start)
         flags2 = self.readShort()
         if flags2 & 0x0010:
@@ -592,11 +593,7 @@ class GP5File(gp4.GP4File):
 
         """
         stroke = super(GP5File, self).readBeatStroke()
-        if stroke.direction == gp.BeatStrokeDirection.up:
-            stroke.direction = gp.BeatStrokeDirection.down
-        elif stroke.direction == gp.BeatStrokeDirection.down:
-            stroke.direction = gp.BeatStrokeDirection.up
-        return stroke
+        return stroke.swapDirection()
 
     def readMixTableChange(self, measure):
         """Read mix table change.
@@ -1224,11 +1221,7 @@ class GP5File(gp4.GP4File):
             self.writeByte(beat.display.breakSecondary)
 
     def writeBeatStroke(self, stroke):
-        if stroke.direction == gp.BeatStrokeDirection.up:
-            stroke.direction = gp.BeatStrokeDirection.down
-        elif stroke.direction == gp.BeatStrokeDirection.down:
-            stroke.direction = gp.BeatStrokeDirection.up
-        super(GP5File, self).writeBeatStroke(stroke)
+        super(GP5File, self).writeBeatStroke(stroke.swapDirection())
 
     def writeMixTableChange(self, tableChange):
         super(gp4.GP4File, self).writeMixTableChange(tableChange)

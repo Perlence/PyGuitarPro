@@ -935,6 +935,13 @@ class BeatStroke(GPObject):
                 return round((duration / 8.0) * (4.0 / self.value))
         return 0
 
+    def swapDirection(self):
+        if self.direction == BeatStrokeDirection.up:
+            direction = BeatStrokeDirection.down
+        elif self.direction == BeatStrokeDirection.down:
+            direction = BeatStrokeDirection.up
+        return BeatStroke(direction, self.value)
+
 
 class SlapEffect(Enum):
 
