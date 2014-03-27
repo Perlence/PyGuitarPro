@@ -1493,10 +1493,10 @@ class GP3File(gp.GPFileBase):
             self.writeBool(point.vibrato)
 
     def writeGrace(self, grace):
-        self.writeByte(grace.fret)
+        self.writeSignedByte(grace.fret)
         self.writeByte(self.packVelocity(grace.velocity))
-        self.writeSignedByte(grace.transition.value)
         self.writeByte(8 - bit_length(grace.duration))
+        self.writeSignedByte(grace.transition.value)
 
     def packVelocity(self, velocity):
         return int((velocity + gp.Velocities.velocityIncrement -
