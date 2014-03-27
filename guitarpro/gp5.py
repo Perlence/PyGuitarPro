@@ -1166,7 +1166,7 @@ class GP5File(gp4.GP4File):
             self.writeInt(instrument.instrument)
             self.writeInt(1)
             self.writeInt(instrument.soundBank)
-            self.writeInt(-1)
+            self.writeInt(instrument.effectNumber)
 
     def writeRSEInstrumentEffect(self, rseInstrument):
         if self.versionTuple > (5, 0):

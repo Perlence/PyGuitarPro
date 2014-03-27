@@ -3,9 +3,9 @@ from os import path
 
 import guitarpro
 
-location = '.'
-output = './output'
-tests = [
+LOCATION = path.dirname(__file__)
+OUTPUT = path.join(LOCATION, 'output')
+TESTS = [
     'Effects.gp3',
     'Ephemera - Dust for Tears.gp3',
     'CarpeDiem - I Ching.gp3',
@@ -38,12 +38,12 @@ tests = [
 
 def product(test, song, versions=(3, 4, 5)):
     """Save song in given format *versions*."""
-    for destVersion in versions:
-        destPath = path.join(output, test + '.gp%d' % destVersion)
-        guitarpro.write(song, destPath)
+    for dest_version in versions:
+        dest_path = path.join(OUTPUT, test + '.gp%d' % dest_version)
+        guitarpro.write(song, dest_path)
 
 
-def bisect(test, song, destVersion=3):
+def bisect(test, song, dest_version=3):
     """Save song in *n* files, where *n* is number of measures in song.
 
     Resulting tabs have following measures:
@@ -59,19 +59,19 @@ def bisect(test, song, destVersion=3):
     """
     folder, _ = path.splitext(test)
     try:
-        os.mkdir(path.join(output, folder))
+        os.mkdir(path.join(OUTPUT, folder))
     except OSError:
         pass
     trackMeasures = [track.measures for track in song.tracks]
     for number, _ in enumerate(trackMeasures[0], 1):
-        destPath = path.join(output, folder, test + '-%03d.gp%d' %
-                             (number, destVersion))
+        dest_path = path.join(OUTPUT, folder, test + '-%03d.gp%d' %
+                             (number, dest_version))
         for track in song.tracks:
             track.measures = trackMeasures[track.number - 1][:number]
-        guitarpro.write(song, destPath)
+        guitarpro.write(song, dest_path)
 
 
-def trackBisect(test, song, destVersion=3):
+def track_bisect(test, song, dest_version=3):
     """Save song in *n* files, where *n* is number of tracks in song.
 
     Resulting tabs have following tracks:
@@ -87,23 +87,28 @@ def trackBisect(test, song, destVersion=3):
     """
     folder, _ = path.splitext(test)
     try:
-        os.mkdir(path.join(output, folder))
+        os.mkdir(path.join(OUTPUT, folder))
     except OSError:
         pass
     tracks = song.tracks[:]
     for number, track in enumerate(tracks, 1):
-        destPath = path.join(output, folder, test + '-T%02d.gp%d' %
-                             (number, destVersion))
+        dest_path = path.join(OUTPUT, folder, test + '-T%02d.gp%d' %
+                             (number, dest_version))
         song.tracks = tracks[:number]
-        guitarpro.write(song, destPath)
+        guitarpro.write(song, dest_path)
 
 
-def main():
-    for test in tests:
-        filepath = path.join(location, test)
-        song = guitarpro.parse(filepath)
-        product(test, song)
+def test_conversion():
+    for filename in TESTS:
+        yield convert_and_compare, filename
 
 
-if __name__ == '__main__':
-    main()
+def convert_and_compare(filename):
+    __, ext = path.splitext(filename)
+    filepath = path.join(LOCATION, filename)
+    song_a = guitarpro.parse(filepath)
+    destpath = path.join(OUTPUT, filename + ext)
+    guitarpro.write(song_a, destpath)
+    song_b = guitarpro.parse(destpath)
+    print '--------'
+    assert song_a == song_b

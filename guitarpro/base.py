@@ -786,7 +786,7 @@ class Measure(GPObject):
 
     @property
     def end(self):
-        return self.start() + self.length()
+        return self.start + self.length
 
     @property
     def number(self):
@@ -806,7 +806,7 @@ class Measure(GPObject):
 
     @property
     def length(self):
-        return self.header.length()
+        return self.header.length
 
     @property
     def tempo(self):
@@ -826,16 +826,22 @@ class Measure(GPObject):
 
     @property
     def hasMarker(self):
-        return self.header.hasMarker()
+        return self.header.hasMarker
 
     @property
     def marker(self):
         return self.header.marker
 
     def voice(self, index):
-        return [x for x in sorted(self.beats, key=lambda x: x.start)
-                  if x.effect.mixTableChange is not None or
-                          not x.voices[index].isEmpty]
+        result = []
+        for x in sorted(self.beats, key=lambda x: x.start):
+            if (x.effect.mixTableChange is not None or
+                    not x.voices[index].isEmpty):
+                result.append(x)
+        if result:
+            return result
+        else:
+            return [Beat()]
 
     def addBeat(self, beat):
         beat.measure = self
@@ -1033,10 +1039,7 @@ class Beat(GPObject):
         self.octave = Octave.none
         self.display = BeatDisplay()
         self.voices = []
-        for i in range(Beat.maxVoices):
-            voice = Voice(i)
-            voice.beat = self
-            self.voices.append(voice)
+        self.ensureVoices()
         GPObject.__init__(self, *args, **kwargs)
 
     @property
@@ -1051,7 +1054,7 @@ class Beat(GPObject):
         offset = self.start - self.measure.start()
         return self.measure.header.realStart + offset
 
-    def ensureVoices(self, count):
+    def ensureVoices(self, count=maxVoices):
         while len(self.voices) < count:  # as long we have not enough voice
             # create new ones
             voice = Voice(len(self.voices))
