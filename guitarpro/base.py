@@ -775,7 +775,7 @@ class Measure(GPObject):
                                                      self.isEmpty)
 
     def __str__(self):
-        measure = self.number()
+        measure = self.number
         track = self.track.number
         return '<guitarpro.base.Measure {} on Track {}>'.format(measure, track)
 
@@ -1418,7 +1418,7 @@ class ChordExtension(Enum):
     thirteenth = 3
 
 
-class PitchClass(object):
+class PitchClass(GPObject):
 
     """A pitch class.
 
@@ -1461,6 +1461,8 @@ class PitchClass(object):
     D#
 
     """
+    __attr__ = ('just', 'accidental', 'value', 'intonation')
+
     _notes = {
         'sharp': 'C C# D D# E F F# G G# A A# B'.split(),
         'flat': 'C Db D Eb E F Gb G Ab A Bb B'.split(),

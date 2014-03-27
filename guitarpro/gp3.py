@@ -87,7 +87,6 @@ class GP3File(gp.GPFileBase):
         song.artist = self.readIntByteSizeString()
         song.album = self.readIntByteSizeString()
         song.words = self.readIntByteSizeString()
-        song.music = song.words
         song.copyright = self.readIntByteSizeString()
         song.tab = self.readIntByteSizeString()
         song.instructions = self.readIntByteSizeString()
