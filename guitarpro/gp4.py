@@ -89,8 +89,8 @@ class GP4File(gp3.GP3File):
 
     def packMeasureHeaderFlags(self, header, previous=None):
         flags = super(GP4File, self).packMeasureHeaderFlags(header, previous)
-        if (previous is not None and
-                header.keySignature != previous.keySignature):
+        if (previous is None or (previous is not None and
+                header.keySignature != previous.keySignature)):
             flags |= 0x40
         if header.hasDoubleBar:
             flags |= 0x80

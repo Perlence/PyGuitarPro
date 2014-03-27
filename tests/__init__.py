@@ -13,12 +13,12 @@ TESTS = [
     'Harmonics.gp3',
 
     'Effects.gp4',
-    # 'Vibrato.gp4',
-    # 'CarpeDiem - Ink.gp4',
-    # 'Chords.gp4',
-    # 'Slides.gp4',
-    # 'Harmonics.gp4',
-    # 'Key.gp4',
+    'Vibrato.gp4',
+    'CarpeDiem - Ink.gp4',
+    'Chords.gp4',
+    'Slides.gp4',
+    'Harmonics.gp4',
+    'Key.gp4',
     # 'Repeat.gp4',
 
     # 'Mastodon - Curl of the Burl.gp5',
