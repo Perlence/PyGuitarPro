@@ -471,7 +471,7 @@ class GP3File(gp.GPFileBase):
 
     def getBeat(self, voice, start):
         """Get beat from measure by start time."""
-        for beat in voice.beats:
+        for beat in reversed(voice.beats):
             if beat.start == start:
                 return beat
         newBeat = gp.Beat()
@@ -1247,7 +1247,8 @@ class GP3File(gp.GPFileBase):
         if (not beat.effect.isDefault or beat.hasVibrato or
                 beat.hasHarmonic):
             flags |= 0x08
-        if beat.effect.mixTableChange is not None:
+        if (beat.effect.mixTableChange is not None and
+                not beat.effect.mixTableChange.isJustWah):
             flags |= 0x10
         if beat.duration.tuplet != gp.Tuplet():
             flags |= 0x20

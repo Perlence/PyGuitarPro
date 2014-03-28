@@ -234,10 +234,6 @@ class GPObject(object):
             return False
         for name in self.__attr__:
             if getattr(self, name) != getattr(other, name):
-                if not hasattr(getattr(self, name), '__iter__'):
-                    print self, other, name, getattr(self, name), getattr(other, name)
-                else:
-                    print self, other, name
                 return False
         return True
 
@@ -1002,6 +998,7 @@ class BeatDisplay(GPObject):
 class Octave(Enum):
 
     """Octave signs."""
+
     none = 0
     ottava = 1
     quindicesima = 2
@@ -1558,6 +1555,18 @@ class MixTableChange(GPObject):
         self.hideTempo = True
         self.useRSE = False
         GPObject.__init__(self, *args, **kwargs)
+
+    @property
+    def isJustWah(self):
+        return (self.instrument is None and
+                self.volume is None and
+                self.balance is None and
+                self.chorus is None and
+                self.reverb is None and
+                self.phaser is None and
+                self.tremolo is None and
+                self.tempo is None and
+                self.wah is not None)
 
 
 class BendType(Enum):

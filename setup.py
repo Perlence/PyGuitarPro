@@ -15,6 +15,7 @@ setup(
     install_requires=[
         'six',
         'enum34',
+        'nose',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

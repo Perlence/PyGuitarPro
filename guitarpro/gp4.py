@@ -514,7 +514,8 @@ class GP4File(gp3.GP3File):
             flags |= 0x04
         if not beat.effect.isDefault:
             flags |= 0x08
-        if beat.effect.mixTableChange is not None:
+        if (beat.effect.mixTableChange is not None and
+                not beat.effect.mixTableChange.isJustWah):
             flags |= 0x10
         if beat.duration.tuplet != gp.Tuplet():
             flags |= 0x20

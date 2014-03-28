@@ -110,5 +110,4 @@ def convert_and_compare(filename):
     destpath = path.join(OUTPUT, filename + ext)
     guitarpro.write(song_a, destpath)
     song_b = guitarpro.parse(destpath)
-    print '--------'
     assert song_a == song_b
