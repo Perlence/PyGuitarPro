@@ -133,31 +133,31 @@ class GPFileBase(object):
         self.data.write(byte * count)
 
     def writeByte(self, data):
-        packed = struct.pack('B', data)
+        packed = struct.pack('B', int(data))
         self.data.write(packed)
 
     def writeSignedByte(self, data):
-        packed = struct.pack('b', data)
+        packed = struct.pack('b', int(data))
         self.data.write(packed)
 
     def writeBool(self, data):
-        packed = struct.pack('?', data)
+        packed = struct.pack('?', bool(data))
         self.data.write(packed)
 
     def writeShort(self, data):
-        packed = struct.pack('<h', data)
+        packed = struct.pack('<h', int(data))
         self.data.write(packed)
 
     def writeInt(self, data):
-        packed = struct.pack('<i', data)
+        packed = struct.pack('<i', int(data))
         self.data.write(packed)
 
     def writeFloat(self, data):
-        packed = struct.pack('<f', data)
+        packed = struct.pack('<f', float(data))
         self.data.write(packed)
 
     def writeDouble(self, data):
-        packed = struct.pack('<d', data)
+        packed = struct.pack('<d', float(data))
         self.data.write(packed)
 
     def writeString(self, data, size=None):
