@@ -399,11 +399,11 @@ class GP3File(gp.GPFileBase):
                 measure = gp.Measure(header)
                 tempo = header.tempo
                 track.addMeasure(measure)
-                self.readMeasure(measure, track)
+                self.readMeasure(measure)
             header.tempo = tempo
             start += header.length
 
-    def readMeasure(self, measure, track, voiceIndex=0):
+    def readMeasure(self, measure):
         """Read measure.
 
         The measure is written as number of beats followed by sequence
@@ -411,11 +411,13 @@ class GP3File(gp.GPFileBase):
 
         """
         start = measure.start
+        voice = gp.Voice()
+        measure.addVoice(voice)
         beats = self.readInt()
         for beat in range(beats):
-            start += self.readBeat(start, measure, track, voiceIndex)
+            start += self.readBeat(start, voice)
 
-    def readBeat(self, start, measure, track, voiceIndex):
+    def readBeat(self, start, voice):
         """Read beat.
 
         The first byte is the beat flags. It lists the data present in the
@@ -448,33 +450,33 @@ class GP3File(gp.GPFileBase):
 
         """
         flags = self.readByte()
-        beat = self.getBeat(measure, start)
-        voice = beat.voices[voiceIndex]
+        beat = self.getBeat(voice, start)
         if flags & 0x40:
-            beatType = self.readByte()
-            voice.isEmpty = (beatType & 0x02) == 0
+            beat.status = gp.BeatStatus(self.readByte())
+        else:
+            beat.status = gp.BeatStatus.normal
         duration = self.readDuration(flags)
         effect = gp.NoteEffect()
         if flags & 0x02:
-            beat.effect.chord = self.readChord(len(track.strings))
+            beat.effect.chord = self.readChord(len(voice.measure.track.strings))
         if flags & 0x04:
             beat.text = self.readText()
         if flags & 0x08:
             beat.effect = self.readBeatEffects(effect)
         if flags & 0x10:
-            mixTableChange = self.readMixTableChange(measure)
+            mixTableChange = self.readMixTableChange(voice.measure)
             beat.effect.mixTableChange = mixTableChange
-        self.readNotes(track, voice, duration, effect)
-        return duration.time if not voice.isEmpty else 0
+        self.readNotes(voice.measure.track, beat, duration, effect)
+        return duration.time if not beat.status == gp.BeatStatus.empty else 0
 
-    def getBeat(self, measure, start):
+    def getBeat(self, voice, start):
         """Get beat from measure by start time."""
-        for beat in measure.beats:
+        for beat in reversed(voice.beats):
             if beat.start == start:
                 return beat
         newBeat = gp.Beat()
         newBeat.start = start
-        measure.addBeat(newBeat)
+        voice.addBeat(newBeat)
         return newBeat
 
     def readDuration(self, flags):
@@ -535,8 +537,8 @@ class GP3File(gp.GPFileBase):
 
         """
         chord = gp.Chord(stringCount)
-        newFormat = self.readBool()
-        if not newFormat:
+        chord.newFormat = self.readBool()
+        if not chord.newFormat:
             self.readOldChord(chord)
         else:
             self.readNewChord(chord)
@@ -856,7 +858,7 @@ class GP3File(gp.GPFileBase):
             tableChange.tempo.duration = self.readSignedByte()
             tableChange.hideTempo = False
 
-    def readNotes(self, track, voice, duration, effect=None):
+    def readNotes(self, track, beat, duration, effect=None):
         """Read notes.
 
         First byte lists played strings:
@@ -875,11 +877,11 @@ class GP3File(gp.GPFileBase):
         for string in track.strings:
             if stringFlags & 1 << (7 - string.number):
                 note = gp.Note()
-                voice.addNote(note)
+                beat.addNote(note)
                 if effect is None:
                     effect = gp.NoteEffect()
                 self.readNote(note, string, track, effect)
-            voice.duration = duration
+            beat.duration = duration
 
     def readNote(self, note, guitarString, track, effect):
         """Read note.
@@ -954,10 +956,10 @@ class GP3File(gp.GPFileBase):
     def getTiedNoteValue(self, stringIndex, track):
         """Get note value of tied note."""
         for measure in reversed(track.measures):
-            for beat in reversed(measure.beats):
-                for voice in beat.voices:
-                    if not voice.isEmpty:
-                        for note in voice.notes:
+            for voice in reversed(measure.voices):
+                for beat in voice.beats:
+                    if beat.status != gp.BeatStatus.empty:
+                        for note in beat.notes:
                             if note.string == stringIndex:
                                 return note.value
         return -1
@@ -1229,43 +1231,42 @@ class GP3File(gp.GPFileBase):
                 self.writeMeasure(measure)
 
     def writeMeasure(self, measure):
-        beats = measure.voice(0)
-        self.writeInt(len(beats))
-        for beat in beats:
-            self.writeBeat(beat)
+        for voice in measure.voices[:1]:
+            self.writeInt(len(voice.beats))
+            for beat in voice.beats:
+                self.writeBeat(beat)
 
-    def writeBeat(self, beat, voiceIndex=0):
-        voice = beat.voices[voiceIndex]
+    def writeBeat(self, beat):
         flags = 0x00
-        if voice.duration.isDotted:
+        if beat.duration.isDotted:
             flags |= 0x01
         if beat.effect.isChord:
             flags |= 0x02
         if beat.text is not None:
             flags |= 0x04
-        if (not beat.effect.isDefault or voice.hasVibrato or
-                voice.hasHarmonic):
+        if (not beat.effect.isDefault or beat.hasVibrato or
+                beat.hasHarmonic):
             flags |= 0x08
-        if beat.effect.mixTableChange is not None:
+        if (beat.effect.mixTableChange is not None and
+                not beat.effect.mixTableChange.isJustWah):
             flags |= 0x10
-        if voice.duration.tuplet != gp.Tuplet():
+        if beat.duration.tuplet != gp.Tuplet():
             flags |= 0x20
-        if voice.isEmpty or voice.isRestVoice:
+        if beat.status != gp.BeatStatus.normal:
             flags |= 0x40
         self.writeByte(flags)
         if flags & 0x40:
-            beatType = 0x00 if voice.isEmpty else 0x02
-            self.writeByte(beatType)
-        self.writeDuration(voice.duration, flags)
+            self.writeByte(beat.status.value)
+        self.writeDuration(beat.duration, flags)
         if flags & 0x02:
             self.writeChord(beat.effect.chord)
         if flags & 0x04:
             self.writeText(beat.text)
         if flags & 0x08:
-            self.writeBeatEffects(beat.effect, voice)
+            self.writeBeatEffects(beat)
         if flags & 0x10:
             self.writeMixTableChange(beat.effect.mixTableChange)
-        self.writeNotes(voice)
+        self.writeNotes(beat)
 
     def writeDuration(self, duration, flags):
         value = bit_length(duration.value) - 3
@@ -1290,7 +1291,19 @@ class GP3File(gp.GPFileBase):
             self.writeInt(iTuplet)
 
     def writeChord(self, chord):
-        self.writeSignedByte(1)  # signify GP4 chord format
+        self.writeBool(chord.newFormat)
+        if chord.newFormat:
+            self.writeNewChord(chord)
+        else:
+            self.writeOldChord(chord)
+
+    def writeOldChord(self, chord):
+        self.writeIntByteSizeString(chord.name)
+        self.writeInt(chord.firstFret)
+        for fret in clamp(chord.strings, 6, fillvalue=-1):
+            self.writeInt(fret)
+
+    def writeNewChord(self, chord):
         self.writeBool(chord.sharp)
         self.placeholder(3)
         self.writeInt(chord.root.value if chord.root else 0)
@@ -1325,28 +1338,28 @@ class GP3File(gp.GPFileBase):
     def writeText(self, text):
         self.writeIntByteSizeString(text.value)
 
-    def writeBeatEffects(self, beatEffect, voice):
+    def writeBeatEffects(self, beat):
         flags1 = 0x00
-        if voice.hasVibrato:
+        if beat.hasVibrato:
             flags1 |= 0x01
-        if beatEffect.vibrato:
+        if beat.effect.vibrato:
             flags1 |= 0x02
-        if isinstance(voice.hasHarmonic, gp.NaturalHarmonic):
+        if isinstance(beat.hasHarmonic, gp.NaturalHarmonic):
             flags1 |= 0x04
-        if isinstance(voice.hasHarmonic, gp.ArtificialHarmonic):
+        if isinstance(beat.hasHarmonic, gp.ArtificialHarmonic):
             flags1 |= 0x08
-        if beatEffect.fadeIn:
+        if beat.effect.fadeIn:
             flags1 |= 0x10
-        if beatEffect.isTremoloBar or beatEffect.isSlapEffect:
+        if beat.effect.isTremoloBar or beat.effect.isSlapEffect:
             flags1 |= 0x20
-        if beatEffect.stroke != gp.BeatStroke():
+        if beat.effect.stroke != gp.BeatStroke():
             flags1 |= 0x40
         self.writeByte(flags1)
         if flags1 & 0x20:
-            self.writeByte(beatEffect.slapEffect.value)
-            self.writeTremoloBar(beatEffect.tremoloBar)
+            self.writeByte(beat.effect.slapEffect.value)
+            self.writeTremoloBar(beat.effect.tremoloBar)
         if flags1 & 0x40:
-            self.writeBeatStroke(beatEffect.stroke)
+            self.writeBeatStroke(beat.effect.stroke)
 
     def writeTremoloBar(self, tremoloBar):
         if tremoloBar is not None:
@@ -1418,12 +1431,12 @@ class GP3File(gp.GPFileBase):
         if tableChange.tempo is not None:
             self.writeSignedByte(tableChange.tempo.duration)
 
-    def writeNotes(self, voice):
+    def writeNotes(self, beat):
         stringFlags = 0x00
-        for note in voice.notes:
+        for note in beat.notes:
             stringFlags |= 1 << (7 - note.string)
         self.writeByte(stringFlags)
-        for note in voice.notes:
+        for note in beat.notes:
             self.writeNote(note)
 
     def writeNote(self, note):
@@ -1493,10 +1506,10 @@ class GP3File(gp.GPFileBase):
             self.writeBool(point.vibrato)
 
     def writeGrace(self, grace):
-        self.writeByte(grace.fret)
+        self.writeSignedByte(grace.fret)
         self.writeByte(self.packVelocity(grace.velocity))
-        self.writeSignedByte(grace.transition.value)
         self.writeByte(8 - bit_length(grace.duration))
+        self.writeSignedByte(grace.transition.value)
 
     def packVelocity(self, velocity):
         return int((velocity + gp.Velocities.velocityIncrement -

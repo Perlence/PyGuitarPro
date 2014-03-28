@@ -481,7 +481,7 @@ class GP5File(gp4.GP4File):
 
         -   Sound bank: :ref:`int`.
 
-        -   Unknown :ref:`int`.
+        -   Effect number: :ref:`int`. Vestige of Guitar Pro 5.0 format.
 
         """
         instrument = gp.RSEInstrument()
@@ -495,7 +495,7 @@ class GP5File(gp4.GP4File):
             instrument.instrument = self.readInt()
             self.readInt()  # ??? mostly 1
             instrument.soundBank = self.readInt()
-            self.readInt()  # ??? mostly -1
+            instrument.effectNumber = self.readInt()
         return instrument
 
     def readRSEInstrumentEffect(self, rseInstrument):
@@ -516,7 +516,7 @@ class GP5File(gp4.GP4File):
                 rseInstrument.effectCategory = effectCategory
         return rseInstrument
 
-    def readMeasure(self, measure, track, voiceIndex=None):
+    def readMeasure(self, measure):
         """Read measure.
 
         Guitar Pro 5 stores twice more measures compared to Guitar Pro 3.
@@ -526,11 +526,11 @@ class GP5File(gp4.GP4File):
         stored in :ref:`byte`.
 
         """
-        for voiceIndex in range(gp.Beat.maxVoices):
-            super(GP5File, self).readMeasure(measure, track, voiceIndex)
+        for voiceIndex in range(gp.Measure.maxVoices):
+            super(GP5File, self).readMeasure(measure)
         measure.lineBreak = gp.LineBreak(self.readByte(default=0))
 
-    def readBeat(self, start, measure, track, voiceIndex):
+    def readBeat(self, start, voice):
         """Read beat.
 
         First, beat is read is in Guitar Pro 3 :meth:`guitarpro.gp3.readBeat`.
@@ -554,8 +554,8 @@ class GP5File(gp4.GP4File):
             set. Signifies how much beams should be broken.
 
         """
-        duration = super(GP5File, self).readBeat(start, measure, track, voiceIndex)
-        beat = self.getBeat(measure, start)
+        duration = super(GP5File, self).readBeat(start, voice)
+        beat = self.getBeat(voice, start)
         flags2 = self.readShort()
         if flags2 & 0x0010:
             beat.octave = gp.Octave.ottava
@@ -592,11 +592,7 @@ class GP5File(gp4.GP4File):
 
         """
         stroke = super(GP5File, self).readBeatStroke()
-        if stroke.direction == gp.BeatStrokeDirection.up:
-            stroke.direction = gp.BeatStrokeDirection.down
-        elif stroke.direction == gp.BeatStrokeDirection.down:
-            stroke.direction = gp.BeatStrokeDirection.up
-        return stroke
+        return stroke.swapDirection()
 
     def readMixTableChange(self, measure):
         """Read mix table change.
@@ -1045,11 +1041,18 @@ class GP5File(gp4.GP4File):
             self.placeholder(1)
         self.writeMeasureHeaderValues(header, flags)
 
+    def packMeasureHeaderFlags(self, header, previous=None):
+        flags = super(GP5File, self).packMeasureHeaderFlags(header, previous)
+        if previous is not None:
+            if header.timeSignature.beams != previous.timeSignature.beams:
+                flags |= 0x03
+        return flags
+
     def writeMeasureHeaderValues(self, header, flags):
         header.repeatClose += 1
         super(GP5File, self).writeMeasureHeaderValues(header, flags)
         header.repeatClose -= 1
-        if flags & 0x01:
+        if flags & 0x03:
             for beam in header.timeSignature.beams:
                 self.writeByte(beam)
         if flags & 0x10 == 0:
@@ -1166,7 +1169,7 @@ class GP5File(gp4.GP4File):
             self.writeInt(instrument.instrument)
             self.writeInt(1)
             self.writeInt(instrument.soundBank)
-            self.writeInt(-1)
+            self.writeInt(instrument.effectNumber)
 
     def writeRSEInstrumentEffect(self, rseInstrument):
         if self.versionTuple > (5, 0):
@@ -1176,15 +1179,14 @@ class GP5File(gp4.GP4File):
             self.writeIntByteSizeString(rseInstrument.effectCategory)
 
     def writeMeasure(self, measure):
-        for index in range(gp.Beat.maxVoices):
-            beats = measure.voice(index)
-            self.writeInt(len(beats))
-            for beat in beats:
-                self.writeBeat(beat, index)
+        for voice in measure.voices:
+            self.writeInt(len(voice.beats))
+            for beat in voice.beats:
+                self.writeBeat(beat)
         self.writeByte(measure.lineBreak.value)
 
-    def writeBeat(self, beat, voiceIndex=0):
-        super(GP5File, self).writeBeat(beat, voiceIndex)
+    def writeBeat(self, beat):
+        super(GP5File, self).writeBeat(beat)
         flags2 = 0x0000
         if beat.display.breakBeam:
             flags2 |= 0x0001
@@ -1217,11 +1219,7 @@ class GP5File(gp4.GP4File):
             self.writeByte(beat.display.breakSecondary)
 
     def writeBeatStroke(self, stroke):
-        if stroke.direction == gp.BeatStrokeDirection.up:
-            stroke.direction = gp.BeatStrokeDirection.down
-        elif stroke.direction == gp.BeatStrokeDirection.down:
-            stroke.direction = gp.BeatStrokeDirection.up
-        super(GP5File, self).writeBeatStroke(stroke)
+        super(GP5File, self).writeBeatStroke(stroke.swapDirection())
 
     def writeMixTableChange(self, tableChange):
         super(gp4.GP4File, self).writeMixTableChange(tableChange)
