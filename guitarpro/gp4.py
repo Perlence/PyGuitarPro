@@ -90,7 +90,7 @@ class GP4File(gp3.GP3File):
     def packMeasureHeaderFlags(self, header, previous=None):
         flags = super(GP4File, self).packMeasureHeaderFlags(header, previous)
         if (previous is None or (previous is not None and
-                header.keySignature != previous.keySignature)):
+                                 header.keySignature != previous.keySignature)):
             flags |= 0x40
         if header.hasDoubleBar:
             flags |= 0x80
@@ -245,9 +245,9 @@ class GP4File(gp3.GP3File):
             value = self.readSignedByte()
             beatEffect.slapEffect = gp.SlapEffect(value)
         if flags2 & 0x04:
-            beatEffect.tremoloBar =  self.readTremoloBar()
+            beatEffect.tremoloBar = self.readTremoloBar()
         if flags1 & 0x40:
-            beatEffect.stroke =  self.readBeatStroke()
+            beatEffect.stroke = self.readBeatStroke()
         beatEffect.hasRasgueado = bool(flags2 & 0x01)
         if flags2 & 0x02:
             direction = self.readSignedByte()
