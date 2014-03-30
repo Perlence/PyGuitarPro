@@ -487,13 +487,13 @@ class GP5File(gp4.GP4File):
         instrument = gp.RSEInstrument()
         if self.versionTuple == (5, 0):
             instrument.instrument = self.readInt()
-            self.readInt()  # ??? mostly 1
+            instrument.unknown = self.readInt()  # ??? mostly 1
             instrument.soundBank = self.readInt()
             instrument.effectNumber = self.readShort()
             self.skip(1)
         else:
             instrument.instrument = self.readInt()
-            self.readInt()  # ??? mostly 1
+            instrument.unknown = self.readInt()  # ??? mostly 1
             instrument.soundBank = self.readInt()
             instrument.effectNumber = self.readInt()
         return instrument
@@ -1162,12 +1162,12 @@ class GP5File(gp4.GP4File):
             instrument = gp.RSEInstrument()
         if self.versionTuple == (5, 0):
             self.writeInt(instrument.instrument)
-            self.writeInt(1)
+            self.writeInt(instrument.unknown)
             self.writeInt(instrument.soundBank)
             self.writeShort(instrument.effectNumber)
         else:
             self.writeInt(instrument.instrument)
-            self.writeInt(1)
+            self.writeInt(instrument.unknown)
             self.writeInt(instrument.soundBank)
             self.writeInt(instrument.effectNumber)
 

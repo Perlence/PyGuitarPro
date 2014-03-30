@@ -90,7 +90,7 @@ class GP4File(gp3.GP3File):
     def packMeasureHeaderFlags(self, header, previous=None):
         flags = super(GP4File, self).packMeasureHeaderFlags(header, previous)
         if (previous is None or (previous is not None and
-                header.keySignature != previous.keySignature)):
+                                 header.keySignature != previous.keySignature)):
             flags |= 0x40
         if header.hasDoubleBar:
             flags |= 0x80
@@ -245,9 +245,9 @@ class GP4File(gp3.GP3File):
             value = self.readSignedByte()
             beatEffect.slapEffect = gp.SlapEffect(value)
         if flags2 & 0x04:
-            beatEffect.tremoloBar =  self.readTremoloBar()
+            beatEffect.tremoloBar = self.readTremoloBar()
         if flags1 & 0x40:
-            beatEffect.stroke =  self.readBeatStroke()
+            beatEffect.stroke = self.readBeatStroke()
         beatEffect.hasRasgueado = bool(flags2 & 0x01)
         if flags2 & 0x02:
             direction = self.readSignedByte()
@@ -514,9 +514,10 @@ class GP4File(gp3.GP3File):
             flags |= 0x04
         if not beat.effect.isDefault:
             flags |= 0x08
-        if (beat.effect.mixTableChange is not None and
-                not beat.effect.mixTableChange.isJustWah):
-            flags |= 0x10
+        if beat.effect.mixTableChange is not None:
+            if (not beat.effect.mixTableChange.isJustWah or
+                    self.versionTuple[0] > 4):
+                flags |= 0x10
         if beat.duration.tuplet != gp.Tuplet():
             flags |= 0x20
         if beat.status != gp.BeatStatus.normal:

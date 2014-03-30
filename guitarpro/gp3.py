@@ -227,7 +227,8 @@ class GP3File(gp.GPFileBase):
         if flags & 0x08:
             header.repeatClose = self.readSignedByte()
         if flags & 0x10:
-            header.repeatAlternative = self.readRepeatAlternative(song.measureHeaders)
+            header.repeatAlternative = self.readRepeatAlternative(
+                song.measureHeaders)
         if flags & 0x20:
             header.marker = self.readMarker(header)
         if flags & 0x40:
@@ -458,7 +459,8 @@ class GP3File(gp.GPFileBase):
         duration = self.readDuration(flags)
         effect = gp.NoteEffect()
         if flags & 0x02:
-            beat.effect.chord = self.readChord(len(voice.measure.track.strings))
+            beat.effect.chord = self.readChord(
+                len(voice.measure.track.strings))
         if flags & 0x04:
             beat.text = self.readText()
         if flags & 0x08:
