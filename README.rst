@@ -17,14 +17,14 @@ This package helps you achieve several goals you might find yourself yearning to
 
 -   map percussion notes to different values.
 
-Reading ``.gp*`` files is as easy as::
+Reading ``.gp*`` files is as easy as:
 
 .. sourcecode:: python
 
     import guitarpro
     curl = guitarpro.parse('Mastodon - Curl of the Burl.gp5')
 
-Writing ``.gp*`` files isn't that hard as well::
+Writing ``.gp*`` files isn't that hard as well:
 
 .. sourcecode:: python
 
@@ -40,7 +40,7 @@ Examples
 
 Several usage examples are included in the ``/examples`` folder. Please feel free to add your own examples, or improve on some of the existing ones, and then submit them via Bitbucket as a pull-request.
 
-To run one of the examples in your local environment, simply::
+To run one of the examples in your local environment, simply:
 
 .. sourcecode:: console
 
@@ -51,7 +51,7 @@ To run one of the examples in your local environment, simply::
 Installation
 ------------
 
-To install PyGuitarPro download the repository and install manually by doing::
+To install PyGuitarPro download the repository and install manually by doing:
 
 .. sourcecode:: console
 
