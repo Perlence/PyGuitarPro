@@ -7,7 +7,7 @@ from .gp3 import GP3File
 from .gp4 import GP4File
 from .gp5 import GP5File
 
-__version__ = '0.2'
+__version__ = '0.2.1'
 __all__ = ('parse', 'write')
 
 _GPFILES = {
