@@ -19,14 +19,14 @@ This package helps you achieve several goals you might find yourself yearning to
 
 Reading ``.gp*`` files is as easy as:
 
-.. code-block:: python
+.. sourcecode:: python
 
     import guitarpro
     curl = guitarpro.parse('Mastodon - Curl of the Burl.gp5')
 
 Writing ``.gp*`` files isn't that hard as well:
 
-.. code-block:: python
+.. sourcecode:: python
 
     guitarpro.write(curl, 'Mastodon - Curl of the Burl 2.gp5')
 
@@ -42,7 +42,7 @@ Several usage examples are included in the ``/examples`` folder. Please feel fre
 
 To run one of the examples in your local environment, simply:
 
-.. code-block:: console
+.. sourcecode:: console
 
     $ cd pyguitarpro
     $ python examples/transpose.py --help
@@ -53,7 +53,7 @@ Installation
 
 To install PyGuitarPro download the repository and install manually by doing:
 
-.. code-block:: console
+.. sourcecode:: console
 
     $ hg clone ssh://hg@bitbucket.org/Perlence/pyguitarpro
     $ cd pyguitarpro
