@@ -1,311 +1,492 @@
-# This file is part of alphaTab.
-#
-#  alphaTab is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  alphaTab is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with alphaTab.  If not, see <http://www.gnu.org/licenses/>.
-
 from __future__ import division
 
-import math
-import copy
+from . import base as gp
+from . import gp3
+from .utils import clamp
 
-import base as gp
-import gp3
 
 class GP4File(gp3.GP3File):
-    '''A reader for GuitarPro 4 files. 
-    '''
-    _supportedVersions = ['FICHIER GUITAR PRO v4.00', 'FICHIER GUITAR PRO v4.06', 'FICHIER GUITAR PRO L4.06']
 
-    def __init__(self, *args, **kwargs):
-        super(GP4File, self).__init__(*args, **kwargs)
-    
-    #################################################################
-    ### Reading
-    #################################################################
+    '''A reader for GuitarPro 4 files.
+    '''
+    _supportedVersions = ['FICHIER GUITAR PRO v4.00',
+                          'FICHIER GUITAR PRO v4.06',
+                          'FICHIER GUITAR PRO L4.06']
+
+    # Reading
+    # =======
 
     def readSong(self):
+        """Read the song.
+
+        A song consists of score information, triplet feel, lyrics, tempo, song
+        key, MIDI channels, measure and track count, measure headers,
+        tracks, measures.
+
+        -   Version: :ref:`byte-size-string` of size 30.
+
+        -   Score information.
+            See :meth:`readInfo`.
+
+        -   Triplet feel: :ref:`bool`.
+            If value is true, then triplet feel is set to eigth.
+
+        -   Lyrics. See :meth:`readLyrics`.
+
+        -   Tempo: :ref:`int`.
+
+        -   Key: :ref:`int`. Key signature of the song.
+
+        -   Octave: :ref:`signed-byte`. Reserved for future uses.
+
+        -   MIDI channels. See :meth:`readMidiChannels`.
+
+        -   Number of measures: :ref:`int`.
+
+        -   Number of tracks: :ref:`int`.
+
+        -   Measure headers. See :meth:`readMeasureHeaders`.
+
+        -   Tracks. See :meth:`readTracks`.
+
+        -   Measures. See :meth:`readMeasures`.
+
+        """
         if not self.readVersion():
-            raise gp.GuitarProException("unsupported version '%s'" % self.version)
-        
+            raise gp.GPException("unsupported version '%s'" %
+                                 self.version)
         song = gp.Song()
-        
         self.readInfo(song)
-        
-        self._tripletFeel = (gp.TripletFeel.Eighth if self.readBool()
-                             else gp.TripletFeel.None_)
-        
-        self.readLyrics(song)
-        
-        self.readPageSetup(song)
-        
-        song.tempoName = ""
+        self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
+                             else gp.TripletFeel.none)
+        song.lyrics = self.readLyrics()
         song.tempo = self.readInt()
-        song.hideTempo = False
-        
-        song.key = self.readInt()
-        song.octave = self.readSignedByte()
-        
+        song.key = gp.KeySignature((self.readInt(), 0))
+        self.readSignedByte()  # octave
         channels = self.readMidiChannels()
-        
         measureCount = self.readInt()
         trackCount = self.readInt()
-        
         self.readMeasureHeaders(song, measureCount)
         self.readTracks(song, trackCount, channels)
         self.readMeasures(song)
-        
         return song
-    
-    def readLyrics(self, song):
-        song.lyrics = gp.Lyrics()
-        song.lyrics.trackChoice = self.readInt()
-        for i in range(gp.Lyrics.MAX_LINE_COUNT):
-            line = gp.LyricLine()            
+
+    def readLyrics(self):
+        """Read lyrics.
+
+        First, read an :ref:`int` that points to the track lyrics are bound to.
+        Then it is followed by 5 lyric lines.
+        Each one constists of number of starting measure encoded in :ref:`int`
+        and :ref:`int-size-string` holding text of the lyric line.
+
+        """
+        lyrics = gp.Lyrics()
+        lyrics.trackChoice = self.readInt()
+        for line in lyrics.lines:
             line.startingMeasure = self.readInt()
             line.lyrics = self.readIntSizeString()
-            song.lyrics.lines.append(line)
+        return lyrics
 
-    def readBeat(self, start, measure, track, voiceIndex):
-        flags = self.readSignedByte()
-        
-        beat = self.getBeat(measure, start)
-        voice = beat.voices[voiceIndex]
-        
-        if flags & 0x40 != 0:
-            beatType = self.readSignedByte()
-            voice.isEmpty = (beatType & 0x02) == 0
-        
-        duration = self.readDuration(flags)
-        if flags & 0x02 != 0:
-            self.readChord(track.stringCount(), beat)
+    def packMeasureHeaderFlags(self, header, previous=None):
+        flags = super(GP4File, self).packMeasureHeaderFlags(header, previous)
+        if (previous is None or (previous is not None and
+                                 header.keySignature != previous.keySignature)):
+            flags |= 0x40
+        if header.hasDoubleBar:
+            flags |= 0x80
+        return flags
 
-        if flags & 0x04 != 0:
-            self.readText(beat)
+    def writeMeasureHeaderValues(self, header, flags):
+        super(GP4File, self).writeMeasureHeaderValues(header, flags)
+        if flags & 0x40:
+            self.writeSignedByte(header.keySignature.value[0])
+            self.writeSignedByte(header.keySignature.value[1])
 
-        if flags & 0x08 != 0:
-            self.readBeatEffects(beat, None)
+    def readNewChord(self, chord):
+        """Read new-style (GP4) chord diagram.
 
-        if flags & 0x10 != 0:
-            mixTableChange = self.readMixTableChange(measure)
-            beat.effect.mixTableChange = mixTableChange
+        New-style chord diagram is read as follows:
 
-        stringFlags = self.readSignedByte()
-        for j in range(7):
-            i = 6 - j
-            if stringFlags & (1 << i) != 0 and (6 - i) < track.stringCount():
-                # guitarString = track.strings[6 - i].clone(factory)
-                guitarString = copy.copy(track.strings[6 - i])
-                note = self.readNote(guitarString, track, gp.NoteEffect())
-                voice.addNote(note)
-            # duration.copy(voice.duration)
-            voice.duration = copy.copy(duration)
-        
-        return duration.time() if not voice.isEmpty else 0
-    
-    def fromSlideType(self, slideType):
-        if slideType == 1:
-            return gp.SlideType.ShiftSlideTo
-        elif slideType == 2:
-            return gp.SlideType.LegatoSlideTo
-        elif slideType == 3:
-            return gp.SlideType.OutDownWards
-        elif slideType == 4:
-            return gp.SlideType.OutUpWards
-        elif slideType == -1:
-            return gp.SlideType.IntoFromBelow
-        elif slideType == -2:
-            return gp.SlideType.IntoFromAbove
+        -   Sharp: :ref:`bool`. If true, display all semitones as sharps,
+            otherwise display as flats.
 
-    def readNoteEffects(self, noteEffect):
+        -   Blank space, 3 :ref:`Bytes <byte>`.
+
+        -   Root: :ref:`byte`. Values are:
+
+            *   -1 for customized chords
+            *    0: C
+            *    1: C#
+            *   ...
+
+        -   Type: :ref:`byte`. Determines the chord type as followed. See
+            :class:`guitarpro.base.ChordType` for mapping.
+
+        -   Chord extension: :ref:`byte`. See
+            :class:`guitarpro.base.ChordExtension` for mapping.
+
+        -   Bass note: :ref:`int`. Lowest note of chord as in *C/A*.
+
+        -   Tonality: :ref:`int`. See :class:`guitarpro.base.ChordAlteration`
+            for mapping.
+
+        -   Add: :ref:`bool`. Determines if an "add" (added note) is present in
+            the chord.
+
+        -   Name: :ref:`byte-size-string`. Max length is 22.
+
+        -   Fifth tonality: :ref:`byte`. Maps to
+            :class:`guitarpro.base.ChordExtension`.
+
+        -   Ninth tonality: :ref:`byte`. Maps to
+            :class:`guitarpro.base.ChordExtension`.
+
+        -   Eleventh tonality: :ref:`byte`. Maps to
+            :class:`guitarpro.base.ChordExtension`.
+
+        -   List of frets: 6 :ref:`Ints <int>`. Fret values are saved as in
+            default format.
+
+        -   Count of barres: :ref:`byte`. Maximum count is 5.
+
+        -   Barre frets: 5 :ref:`Bytes <byte>`.
+
+        -   Barre start strings: 5 :ref:`Bytes <byte>`.
+
+        -   Barre end string: 5 :ref:`Bytes <byte>`.
+
+        -   Omissions: 7 :ref:`Bools <bool>`. If the value is true then note
+            is played in chord.
+
+        -   Blank space, 1 :ref:`byte`.
+
+        -   Fingering: 7 :ref:`SignedBytes <signed-byte>`. For value mapping,
+            see :class:`guitarpro.base.Fingering`.
+
+        """
+        chord.sharp = self.readBool()
+        intonation = 'sharp' if chord.sharp else 'flat'
+        self.skip(3)
+        chord.root = gp.PitchClass(self.readByte(), intonation=intonation)
+        chord.type = gp.ChordType(self.readByte())
+        chord.extension = gp.ChordExtension(self.readByte())
+        chord.bass = gp.PitchClass(self.readInt(), intonation=intonation)
+        chord.tonality = gp.ChordAlteration(self.readInt())
+        chord.add = self.readBool()
+        chord.name = self.readByteSizeString(22)
+        chord.fifth = gp.ChordAlteration(self.readByte())
+        chord.ninth = gp.ChordAlteration(self.readByte())
+        chord.eleventh = gp.ChordAlteration(self.readByte())
+        chord.firstFret = self.readInt()
+        for i in range(7):
+            fret = self.readInt()
+            if i < len(chord.strings):
+                chord.strings[i] = fret
+        chord.barres = []
+        barresCount = self.readByte()
+        barreFrets = self.readByte(5)
+        barreStarts = self.readByte(5)
+        barreEnds = self.readByte(5)
+        for fret, start, end, __ in zip(barreFrets, barreStarts, barreEnds,
+                                        range(barresCount)):
+            barre = gp.Barre(fret, start, end)
+            chord.barres.append(barre)
+        chord.omissions = self.readBool(7)
+        self.skip(1)
+        chord.fingerings = list(map(gp.Fingering, self.readSignedByte(7)))
+        chord.show = self.readBool()
+
+    def readBeatEffects(self, effect):
+        """Read beat effects.
+
+        Beat effects are read using two byte flags.
+
+        The first byte of flags is:
+
+        -   *0x01*: *blank*
+        -   *0x02*: wide vibrato
+        -   *0x04*: *blank*
+        -   *0x08*: *blank*
+        -   *0x10*: fade in
+        -   *0x20*: slap effect
+        -   *0x40*: beat stroke
+        -   *0x80*: *blank*
+
+        The second byte of flags is:
+
+        -   *0x01*: rasgueado
+        -   *0x02*: pick stroke
+        -   *0x04*: tremolo bar
+        -   *0x08*: *blank*
+        -   *0x10*: *blank*
+        -   *0x20*: *blank*
+        -   *0x40*: *blank*
+        -   *0x80*: *blank*
+
+        Flags are followed by:
+
+        -   Slap effect: :ref:`signed-byte`. For value mapping see
+            :class:`guitarpro.base.SlapEffect`.
+
+        -   Tremolo bar. See :meth:`readTremoloBar`.
+
+        -   Beat stroke. See :meth:`readBeatStroke`.
+
+        -   Pick stroke: :ref:`signed-byte`. For value mapping see
+            :class:`guitarpro.base.BeatStrokeDirection`.
+
+        """
+        beatEffect = gp.BeatEffect()
         flags1 = self.readSignedByte()
         flags2 = self.readSignedByte()
-        if flags1 & 0x01 != 0:
-            self.readBend(noteEffect)
-        if flags1 & 0x10 != 0:
-            self.readGrace(noteEffect)
-        if flags2 & 0x04 != 0:
-            self.readTremoloPicking(noteEffect)
-        if flags2 & 0x08 != 0:
-            noteEffect.slide = self.fromSlideType(self.readSignedByte())
-        if flags2 & 0x10 != 0:
-            self.readArtificialHarmonic(noteEffect)
-        if flags2 & 0x20 != 0:
-            self.readTrill(noteEffect)
-        noteEffect.letRing = (flags1 & 0x08) != 0
-        noteEffect.hammer = (flags1 & 0x02) != 0
-        noteEffect.vibrato = (flags2 & 0x40) != 0 or noteEffect.vibrato
-        noteEffect.palmMute = (flags2 & 0x02) != 0
-        noteEffect.staccato = (flags2 & 0x01) != 0
-    
-    def fromTrillPeriod(self, period):
-        if period == 1:
-            return gp.Duration.SIXTEENTH
-        elif period == 2:
-            return gp.Duration.THIRTY_SECOND
-        elif period == 3:
-            return gp.Duration.SIXTY_FOURTH
+        beatEffect.vibrato = bool(flags1 & 0x02) or beatEffect.vibrato
+        beatEffect.fadeIn = bool(flags1 & 0x10)
+        if flags1 & 0x20:
+            value = self.readSignedByte()
+            beatEffect.slapEffect = gp.SlapEffect(value)
+        if flags2 & 0x04:
+            beatEffect.tremoloBar = self.readTremoloBar()
+        if flags1 & 0x40:
+            beatEffect.stroke = self.readBeatStroke()
+        beatEffect.hasRasgueado = bool(flags2 & 0x01)
+        if flags2 & 0x02:
+            direction = self.readSignedByte()
+            beatEffect.pickStroke = gp.BeatStrokeDirection(direction)
+        return beatEffect
 
-    def readTrill(self, noteEffect):
-        fret = self.readSignedByte()
-        period = self.readSignedByte()
-        trill = gp.TrillEffect()
-        trill.fret = fret
-        trill.duration.value = self.fromTrillPeriod(period)
-        noteEffect.trill = trill
-    
-    def fromHarmonicType(self, harmonicType):
-        if harmonicType == 1:
-            return (0, gp.HarmonicType.Natural)
-        elif harmonicType == 3:
-            return (0, gp.HarmonicType.Tapped)
-        elif harmonicType == 4:
-            return (0, gp.HarmonicType.Pinch)
-        elif harmonicType == 5:
-            return (0, gp.HarmonicType.Semi)
-        elif harmonicType == 15:
-            data = 0, 0, 1
-            return (data, gp.HarmonicType.Artificial)
-        elif harmonicType == 17:
-            data = 7, 0, 1
-            return (data, gp.HarmonicType.Artificial)
-        elif harmonicType == 22:
-            data = 0, 0, 0
-            return (data, gp.HarmonicType.Artificial)
+    def readTremoloBar(self):
+        return self.readBend()
 
-    def readArtificialHarmonic(self, noteEffect):
-        harmonicType = self.readSignedByte()
-        oHarmonic = gp.HarmonicEffect()
-        oHarmonic.data, oHarmonic.type = self.fromHarmonicType(harmonicType)
-        noteEffect.harmonic = oHarmonic
+    def readMixTableChange(self, measure):
+        """Read mix table change.
 
-    def fromTremoloValue(self, value):
-        if value == 1:
-            return gp.Duration.EIGHTH
-        elif value == 2:
-            return gp.Duration.SIXTEENTH
-        elif value == 3:
-            return gp.Duration.THIRTY_SECOND
-    
-    def readTremoloPicking(self, noteEffect):
+        Mix table change in Guitar Pro 4 format extends Guitar Pro 3 format.
+        It constists of
+        :meth:`values <guitarpro.gp3.GP3File.readMixTableChangeValues>`,
+        :meth:`durations <guitarpro.gp3.GP3File.readMixTableChangeDurations>`,
+        and, new to GP3, :meth:`flags <readMixTableChangeFlags>`.
+
+        """
+        tableChange = super(GP4File, self).readMixTableChange(measure)
+        self.readMixTableChangeFlags(tableChange)
+        return tableChange
+
+    def readMixTableChangeFlags(self, tableChange):
+        """Read mix table change flags.
+
+        The meaning of flags:
+
+        -   *0x01*: change volume for all tracks
+        -   *0x02*: change balance for all tracks
+        -   *0x04*: change chorus for all tracks
+        -   *0x08*: change reverb for all tracks
+        -   *0x10*: change phaser for all tracks
+        -   *0x20*: change tremolo for all tracks
+
+        """
+        flags = self.readSignedByte()
+        if tableChange.volume is not None:
+            tableChange.volume.allTracks = bool(flags & 0x01)
+        if tableChange.balance is not None:
+            tableChange.balance.allTracks = bool(flags & 0x02)
+        if tableChange.chorus is not None:
+            tableChange.chorus.allTracks = bool(flags & 0x04)
+        if tableChange.reverb is not None:
+            tableChange.reverb.allTracks = bool(flags & 0x08)
+        if tableChange.phaser is not None:
+            tableChange.phaser.allTracks = bool(flags & 0x10)
+        if tableChange.tremolo is not None:
+            tableChange.tremolo.allTracks = bool(flags & 0x20)
+        return flags
+
+    def readNoteEffects(self, note):
+        """Read note effects.
+
+        The effects presence for the current note is set by the 2 bytes of
+        flags.
+
+        First set of flags:
+
+        -   *0x01*: bend
+        -   *0x02*: hammer-on/pull-off
+        -   *0x04*: *blank*
+        -   *0x08*: let-ring
+        -   *0x10*: grace note
+        -   *0x20*: *blank*
+        -   *0x40*: *blank*
+        -   *0x80*: *blank*
+
+        Second set of flags:
+
+        -   *0x01*: staccato
+        -   *0x02*: palm mute
+        -   *0x04*: tremolo picking
+        -   *0x08*: slide
+        -   *0x10*: harmonic
+        -   *0x20*: trill
+        -   *0x40*: vibrato
+        -   *0x80*: *blank*
+
+        Flags are followed by:
+
+        -   Bend. See :meth:`readBend`.
+
+        -   Grace note. See :meth:`readGrace`.
+
+        -   Tremolo picking. See :meth:`readTremoloPicking`.
+
+        -   Slide. See :meth:`readSlides`.
+
+        -   Harmonic. See :meth:`readHarmonic`.
+
+        -   Trill. See :meth:`readTrill`.
+
+        """
+        noteEffect = note.effect or gp.NoteEffect()
+        flags1 = self.readSignedByte()
+        flags2 = self.readSignedByte()
+        noteEffect.hammer = bool(flags1 & 0x02)
+        noteEffect.letRing = bool(flags1 & 0x08)
+        noteEffect.staccato = bool(flags2 & 0x01)
+        noteEffect.palmMute = bool(flags2 & 0x02)
+        noteEffect.vibrato = bool(flags2 & 0x40) or noteEffect.vibrato
+        if flags1 & 0x01:
+            noteEffect.bend = self.readBend()
+        if flags1 & 0x10:
+            noteEffect.grace = self.readGrace()
+        if flags2 & 0x04:
+            noteEffect.tremoloPicking = self.readTremoloPicking()
+        if flags2 & 0x08:
+            noteEffect.slides = self.readSlides()
+        if flags2 & 0x10:
+            noteEffect.harmonic = self.readHarmonic(note)
+        if flags2 & 0x20:
+            noteEffect.trill = self.readTrill()
+        return noteEffect
+
+    def readTremoloPicking(self):
+        """Read tremolo picking.
+
+        Tremolo constists of picking speed encoded in :ref:`signed-byte`. For
+        value mapping refer to :meth:`fromTremoloValue`.
+
+        """
         value = self.readSignedByte()
         tp = gp.TremoloPickingEffect()
         tp.duration.value = self.fromTremoloValue(value)
-        noteEffect.tremoloPicking = tp
-    
-    def readMixTableChange(self, measure):
-        tableChange = super(GP4File, self).readMixTableChange(measure)
-        
-        allTracksFlags = self.readSignedByte()
-        if tableChange.volume is not None:
-            tableChange.volume.allTracks = (allTracksFlags & 0x01) != 0
-        if tableChange.balance is not None:
-            tableChange.balance.allTracks = (allTracksFlags & 0x02) != 0
-        if tableChange.chorus is not None:
-            tableChange.chorus.allTracks = (allTracksFlags & 0x04) != 0
-        if tableChange.reverb is not None:
-            tableChange.reverb.allTracks = (allTracksFlags & 0x08) != 0
-        if tableChange.phaser is not None:
-            tableChange.phaser.allTracks = (allTracksFlags & 0x10) != 0
-        if tableChange.tremolo is not None:
-            tableChange.tremolo.allTracks = (allTracksFlags & 0x20) != 0
-        if tableChange.tempo is not None:
-            tableChange.tempo.allTracks = True
+        return tp
 
-        return tableChange
-    
-    def readBeatEffects(self, beat, effect):
-        flags1 = self.readSignedByte()
-        flags2 = self.readSignedByte()
-        beat.effect.fadeIn = (flags1 & 0x10) != 0
-        beat.effect.vibrato = (flags1 & 0x02) != 0 or beat.effect.vibrato
-        if flags1 & 0x20 != 0:
-            slapEffect = self.readSignedByte()
-            beat.effect.tapping = slapEffect == 1
-            beat.effect.slapping = slapEffect == 2
-            beat.effect.popping = slapEffect == 3
-        if flags2 & 0x04 != 0:
-            self.readTremoloBar(beat.effect)
-        if flags1 & 0x40 != 0:
-            strokeUp = self.readSignedByte()
-            strokeDown = self.readSignedByte()
-            if strokeUp > 0:
-                beat.effect.stroke.direction = gp.BeatStrokeDirection.Up
-                beat.effect.stroke.value = self.toStrokeValue(strokeUp)
-            elif strokeDown > 0:
-                beat.effect.stroke.direction = gp.BeatStrokeDirection.Down
-                beat.effect.stroke.value = self.toStrokeValue(strokeDown)
-        beat.effect.hasRasgueado = (flags2 & 0x01) != 0
-        if flags2 & 0x02 != 0:
-            beat.effect.pickStroke = self.readSignedByte()
-            beat.effect.hasPickStroke = True
-    
-    def readTremoloBar(self, effect):
-        barEffect = gp.BendEffect()
-        barEffect.type = self.readSignedByte()
-        barEffect.value = self.readInt()
-        pointCount = self.readInt()
-        for i in range(pointCount):
-            pointPosition = round(self.readInt() * gp.BendEffect.MAX_POSITION / self.BEND_POSITION)
-            pointValue = round(self.readInt() / (self.BEND_SEMITONE * 2.0))
-            vibrato = self.readBool()
-            barEffect.points.append(gp.BendPoint(pointPosition, pointValue, vibrato))
-        
-        if pointCount > 0:
-            effect.tremoloBar = barEffect
-    
-    def readChord(self, stringCount, beat):
-        chord = gp.Chord(stringCount)
-        if self.readSignedByte() & 0x01 == 0:
-            chord.name = self.readIntSizeCheckByteString()
-            chord.firstFret = self.readInt()
-            if chord.firstFret != 0:
-                for i in range(6):
-                    fret = self.readInt()
-                    if i < len(chord.strings):
-                        chord.strings[i] = fret
-        else:
-            self.skip(16)
-            chord.name = self.readByteSizeString(21)
-            self.skip(4)
-            chord.firstFret = self.readInt()
-            for i in range(7):
-                fret = self.readInt()
-                if i < len(chord.strings):
-                    chord.strings[i] = fret
-            self.skip(32)
-        if chord.noteCount() > 0:
-            beat.setChord(chord)
+    def fromTremoloValue(self, value):
+        """Convert tremolo picking speed to actual duration.
 
-    #################################################################
-    ### Writing
-    #################################################################
+        Values are:
+
+        -   *1*: eighth
+        -   *2*: sixteenth
+        -   *3*: thirtySecond
+
+        """
+        if value == 1:
+            return gp.Duration.eighth
+        elif value == 2:
+            return gp.Duration.sixteenth
+        elif value == 3:
+            return gp.Duration.thirtySecond
+
+    def readSlides(self):
+        """Read slides.
+
+        Slide is encoded in :ref:`signed-byte`. See
+        :class:`guitarpro.base.SlideType` for value mapping.
+
+        """
+        return [gp.SlideType(self.readSignedByte())]
+
+    def readHarmonic(self, note):
+        """Read harmonic.
+
+        Harmonic is encoded in :ref:`signed-byte`. Values correspond to:
+
+        -   *1*: natural harmonic
+        -   *3*: tapped harmonic
+        -   *4*: pinch harmonic
+        -   *5*: semi-harmonic
+        -   *15*: artificial harmonic on (*n + 5*)th fret
+        -   *17*: artificial harmonic on (*n + 7*)th fret
+        -   *22*: artificial harmonic on (*n + 12*)th fret
+
+        """
+        harmonicType = self.readSignedByte()
+        if harmonicType == 1:
+            harmonic = gp.NaturalHarmonic()
+        elif harmonicType == 3:
+            harmonic = gp.TappedHarmonic()
+        elif harmonicType == 4:
+            harmonic = gp.PinchHarmonic()
+        elif harmonicType == 5:
+            harmonic = gp.SemiHarmonic()
+        elif harmonicType == 15:
+            pitch = gp.PitchClass((note.realValue + 7) % 12)
+            octave = gp.Octave.ottava
+            harmonic = gp.ArtificialHarmonic(pitch, octave)
+        elif harmonicType == 17:
+            pitch = gp.PitchClass(note.realValue)
+            octave = gp.Octave.quindicesima
+            harmonic = gp.ArtificialHarmonic(pitch, octave)
+        elif harmonicType == 22:
+            pitch = gp.PitchClass(note.realValue)
+            octave = gp.Octave.ottava
+            harmonic = gp.ArtificialHarmonic(pitch, octave)
+        return harmonic
+
+    def readTrill(self):
+        """Read trill.
+
+        -   Fret: :ref:`signed-byte`.
+
+        -   Period: :ref:`signed-byte`. See :meth:`fromTrillPeriod`.
+
+        """
+        trill = gp.TrillEffect()
+        trill.fret = self.readSignedByte()
+        trill.duration.value = self.fromTrillPeriod(self.readSignedByte())
+        return trill
+
+    def fromTrillPeriod(self, period):
+        """Convert trill period to actual duration.
+
+        Values are:
+
+        -   *1*: sixteenth
+        -   *2*: thirty-second
+        -   *3*: sixty-fourth
+
+        """
+        if period == 1:
+            return gp.Duration.sixteenth
+        elif period == 2:
+            return gp.Duration.thirtySecond
+        elif period == 3:
+            return gp.Duration.sixtyFourth
+
+    # Writing
+    # =======
 
     def writeSong(self, song):
         self.writeVersion(1)
         self.writeInfo(song)
-        
-        self._tripletFeel = song.tracks[0].measures[0].tripletFeel()
+
+        self._tripletFeel = song.tracks[0].measures[0].tripletFeel.value
         self.writeBool(self._tripletFeel)
-        
+
         self.writeLyrics(song.lyrics)
-        self.writePageSetup(None)
-        
+
         self.writeInt(song.tempo)
-        self.writeInt(song.key)
-        self.writeSignedByte(song.octave)
-        
+        self.writeInt(song.key.value[0])
+        self.writeSignedByte(0)  # octave
+
         self.writeMidiChannels(song.tracks)
-        
+
         measureCount = len(song.tracks[0].measures)
         trackCount = len(song.tracks)
         self.writeInt(measureCount)
@@ -316,302 +497,252 @@ class GP4File(gp3.GP3File):
         self.writeMeasures(song.tracks)
 
     def writeLyrics(self, lyrics):
+        if lyrics is None:
+            lyrics = gp.Lyrics()
         self.writeInt(lyrics.trackChoice)
         for line in lyrics.lines:
             self.writeInt(line.startingMeasure)
             self.writeIntSizeString(line.lyrics)
 
-    def writeBeat(self, beat, voiceIndex=0):
-        voice = beat.voices[voiceIndex]
-
+    def writeBeat(self, beat):
         flags = 0x00
-        if voice.duration.isDotted:
+        if beat.duration.isDotted:
             flags |= 0x01
-        if beat.effect.isChord():
+        if beat.effect.isChord:
             flags |= 0x02
         if beat.text is not None:
             flags |= 0x04
-        if not beat.effect.isDefault():
+        if not beat.effect.isDefault:
             flags |= 0x08
         if beat.effect.mixTableChange is not None:
-            flags |= 0x10
-        if voice.duration.tuplet != gp.Tuplet():
+            if (not beat.effect.mixTableChange.isJustWah or
+                    self.versionTuple[0] > 4):
+                flags |= 0x10
+        if beat.duration.tuplet != gp.Tuplet():
             flags |= 0x20
-        if voice.isEmpty or voice.isRestVoice():
+        if beat.status != gp.BeatStatus.normal:
             flags |= 0x40
-
         self.writeSignedByte(flags)
-                
-        if flags & 0x40 != 0:
-            beatType = 0x00 if voice.isEmpty else 0x02
-            self.writeSignedByte(beatType)
-        
-        self.writeDuration(voice.duration, flags)
-
-        if flags & 0x02 != 0:
+        if flags & 0x40:
+            self.writeByte(beat.status.value)
+        self.writeDuration(beat.duration, flags)
+        if flags & 0x02:
             self.writeChord(beat.effect.chord)
-
-        if flags & 0x04 != 0:
+        if flags & 0x04:
             self.writeText(beat.text)
-
-        if flags & 0x08 != 0:
-            self.writeBeatEffects(beat.effect)
-
-        if flags & 0x10 != 0:
+        if flags & 0x08:
+            self.writeBeatEffects(beat)
+        if flags & 0x10:
             self.writeMixTableChange(beat.effect.mixTableChange)
+        self.writeNotes(beat)
 
-        stringFlags = 0x00
-        for note in voice.notes:
-            stringFlags |= 1 << (7 - note.string)
-        self.writeSignedByte(stringFlags)
+    def writeChord(self, chord):
+        self.writeSignedByte(1)  # signify GP4 chord format
+        self.writeBool(chord.sharp)
+        self.placeholder(3)
+        self.writeByte(chord.root.value if chord.root else 0)
+        self.writeByte(chord.type.value if chord.type else 0)
+        self.writeByte(chord.extension.value if chord.extension else 0)
+        self.writeInt(chord.bass.value if chord.bass else 0)
+        self.writeInt(chord.tonality.value if chord.tonality else 0)
+        self.writeBool(chord.add)
+        self.writeByteSizeString(chord.name, 22)
+        self.writeByte(chord.fifth.value if chord.fifth else 0)
+        self.writeByte(chord.ninth.value if chord.ninth else 0)
+        self.writeByte(chord.eleventh.value if chord.eleventh else 0)
 
-        previous = None
-        for note in voice.notes:
-            self.writeNote(note, previous)
-            previous = note
+        self.writeInt(chord.firstFret)
+        for fret in clamp(chord.strings, 7, fillvalue=-1):
+            self.writeInt(fret)
 
-    def writeNote(self, note, previous):
-        flags = 0x00
-        try:
-            if note.duration is not None and note.tuplet is not None:
-                flags |= 0x01
-        except AttributeError:
-            pass
-        if note.effect.heavyAccentuatedNote:
-            flags |= 0x02
-        if note.effect.ghostNote:
-            flags |= 0x04
-        if not note.effect.isDefault() or note.effect.presence:
-            flags |= 0x08
-        # if previous is not None and note.velocity != previous.velocity:
-        if note.velocity != gp.Velocities.DEFAULT:
-            flags |= 0x10
-        # if note.isTiedNote or note.effect.deadNote:
-        flags |= 0x20
-        if note.effect.accentuatedNote:
-            flags |= 0x40
-        if note.effect.isFingering:
-            flags |= 0x80
+        self.writeByte(len(chord.barres))
+        if chord.barres:
+            barreFrets, barreStarts, barreEnds = zip(*chord.barres)
+        else:
+            barreFrets, barreStarts, barreEnds = [], [], []
+        for fret in clamp(barreFrets, 5, fillvalue=0):
+            self.writeByte(fret)
+        for start in clamp(barreStarts, 5, fillvalue=0):
+            self.writeByte(start)
+        for end in clamp(barreEnds, 5, fillvalue=0):
+            self.writeByte(end)
 
-        self.writeByte(flags)
+        for omission in clamp(chord.omissions, 7, fillvalue=True):
+            self.writeBool(omission)
 
-        if flags & 0x20 != 0:
-            if note.isTiedNote:
-                noteType = 0x02
-            elif note.effect.deadNote:
-                noteType = 0x03
-            else:
-                noteType = 0x01
-            self.writeByte(noteType)
-        
-        if flags & 0x01 != 0:
-            self.writeSignedByte(note.duration)
-            self.writeSignedByte(note.tuplet)
-        
-        if flags & 0x10 != 0:
-            value = self.packVelocity(note.velocity)
-            self.writeSignedByte(value)
-        
-        if flags & 0x20 != 0:
-            fret = note.value if not note.isTiedNote else 0
-            self.writeSignedByte(fret)
-        
-        if flags & 0x80 != 0:
-            self.writeSignedByte(note.effect.leftHandFinger)
-            self.writeSignedByte(note.effect.rightHandFinger)
-        
-        if flags & 0x08 != 0:
-            self.writeNoteEffects(note.effect)
-    
-    def toSlideType(self, slide):
-        if slide == gp.SlideType.ShiftSlideTo:
-            return 1
-        elif slide == gp.SlideType.LegatoSlideTo:
-            return 2
-        elif slide == gp.SlideType.OutDownWards:
-            return 3
-        elif slide == gp.SlideType.OutUpWards:
-            return 4
-        elif slide == gp.SlideType.IntoFromBelow:
-            return -1
-        elif slide == gp.SlideType.IntoFromAbove:
-            return -2
+        self.placeholder(1)
+        for fingering in clamp(chord.fingerings, 7,
+                               fillvalue=gp.Fingering.unknown):
+            self.writeSignedByte(fingering.value)
+        self.writeBool(chord.show)
 
-    def writeNoteEffects(self, noteEffect):
+    def writeBeatEffects(self, beat):
         flags1 = 0x00
-        if noteEffect.isBend():
-            flags1 |= 0x01
-        if noteEffect.hammer:
+        if beat.effect.vibrato:
             flags1 |= 0x02
-        if noteEffect.letRing:
-            flags1 |= 0x08
-        if noteEffect.isGrace():
+        if beat.effect.fadeIn:
             flags1 |= 0x10
-
-        self.writeSignedByte(flags1)
-
-        flags2 = 0x00
-        if noteEffect.staccato:
-            flags2 |= 0x01
-        if noteEffect.palmMute:
-            flags2 |= 0x02
-        if noteEffect.isTremoloPicking():
-            flags2 |= 0x04
-        if noteEffect.slide:
-            flags2 |= 0x08
-        if noteEffect.isHarmonic():
-            flags2 |= 0x10
-        if noteEffect.isTrill():
-            flags2 |= 0x20
-        if noteEffect.vibrato:
-            flags2 |= 0x40
-
-        self.writeSignedByte(flags2)
-
-        if flags1 & 0x01 != 0:
-            self.writeBend(noteEffect.bend)
-        if flags1 & 0x10 != 0:
-            self.writeGrace(noteEffect.grace)
-        if flags2 & 0x04 != 0:
-            self.writeTremoloPicking(noteEffect.tremoloPicking)
-        if flags2 & 0x08 != 0:
-            self.writeSignedByte(self.toSlideType(noteEffect.slide))            
-        if flags2 & 0x10 != 0:
-            self.writeArtificialHarmonic(noteEffect.harmonic)
-        if flags2 & 0x20 != 0:
-            self.writeTrill(noteEffect.trill)
-    
-    def toTrillPeriod(self, value):
-        if value == gp.Duration.SIXTEENTH:
-            return 1
-        if value == gp.Duration.THIRTY_SECOND:
-            return 2
-        if value == gp.Duration.SIXTY_FOURTH:
-            return 3
-
-    def writeTrill(self, trill):
-        self.writeSignedByte(trill.fret)
-        self.writeSignedByte(self.toTrillPeriod(trill.duration.value))
-    
-    def toHarmonicType(self, harmonic):
-        if harmonic.type == gp.HarmonicType.Natural:
-            return 1
-        elif harmonic.type == gp.HarmonicType.Tapped:
-            return 3
-        elif harmonic.type == gp.HarmonicType.Pinch:
-            return 4
-        elif harmonic.type == gp.HarmonicType.Semi:
-            return 5
-        elif harmonic.type == gp.HarmonicType.Artificial:
-            if harmonic.data == (0, 0, 1):
-                return 15
-            elif harmonic.data == (7, 0, 1):
-                return 17
-            else:
-                return 22
-
-    def writeArtificialHarmonic(self, harmonic):
-        self.writeSignedByte(self.toHarmonicType(harmonic))
-    
-    def toTremoloValue(self, value):
-        if value == gp.Duration.EIGHTH:
-            return 1
-        elif value == gp.Duration.SIXTEENTH:
-            return 2
-        elif value == gp.Duration.THIRTY_SECOND:
-            return 3
-
-    def writeTremoloPicking(self, tremoloPicking):
-        self.writeSignedByte(self.toTremoloValue(tremoloPicking.duration.value))
-    
-    def writeMixTableChange(self, tableChange):
-        super(GP4File, self).writeMixTableChange(tableChange)
-
-        items = [tableChange.volume,
-                 tableChange.balance,
-                 tableChange.chorus,
-                 tableChange.reverb,
-                 tableChange.phaser,
-                 tableChange.tremolo]
-
-        allTracksFlags = 0x00
-        for i, item in enumerate(items):
-            if item is not None and item.allTracks:
-                allTracksFlags |= 1 << i
-
-        self.writeSignedByte(allTracksFlags)
-
-    def writeBeatEffects(self, beatEffect, voice=None):
-        flags1 = 0x00
-        if beatEffect.vibrato:
-            flags1 |= 0x02
-        if beatEffect.fadeIn: 
-            flags1 |= 0x10
-        if beatEffect.isSlapEffect():
+        if beat.effect.isSlapEffect:
             flags1 |= 0x20
-        if beatEffect.stroke != gp.BeatStroke():
+        if beat.effect.stroke != gp.BeatStroke():
             flags1 |= 0x40
 
         self.writeSignedByte(flags1)
 
         flags2 = 0x00
-        if beatEffect.hasRasgueado:
+        if beat.effect.hasRasgueado:
             flags2 |= 0x01
-        if beatEffect.hasPickStroke:
+        if beat.effect.hasPickStroke:
             flags2 |= 0x02
-        if beatEffect.isTremoloBar():
+        if beat.effect.isTremoloBar:
             flags2 |= 0x04
 
         self.writeSignedByte(flags2)
 
-        if flags1 & 0x20 != 0:
-            if beatEffect.tapping:
-                slapEffect = 1
-            if beatEffect.slapping:
-                slapEffect = 2
-            if beatEffect.popping:
-                slapEffect = 3
-            self.writeSignedByte(slapEffect)
-        if flags2 & 0x04 != 0:
-            self.writeTremoloBar(beatEffect.tremoloBar)
-        if flags1 & 0x40 != 0:
-            if beatEffect.stroke.direction == gp.BeatStrokeDirection.Up:
-                strokeUp = self.fromStrokeValue(beatEffect.stroke.value)
-                strokeDown = 0
-            elif beatEffect.stroke.direction == gp.BeatStrokeDirection.Down:
-                strokeUp = 0
-                strokeDown = self.fromStrokeValue(beatEffect.stroke.value)
-            self.writeSignedByte(strokeUp)
-            self.writeSignedByte(strokeDown)
-        if flags2 & 0x02 != 0:
-            self.writeSignedByte(beatEffect.pickStroke)
-    
+        if flags1 & 0x20:
+            self.writeSignedByte(beat.effect.slapEffect.value)
+        if flags2 & 0x04:
+            self.writeTremoloBar(beat.effect.tremoloBar)
+        if flags1 & 0x40:
+            self.writeBeatStroke(beat.effect.stroke)
+        if flags2 & 0x02:
+            self.writeSignedByte(beat.effect.pickStroke.value)
+
     def writeTremoloBar(self, tremoloBar):
-        self.writeSignedByte(tremoloBar.type)
-        self.writeInt(tremoloBar.value)
-        self.writeInt(len(tremoloBar.points))
-        for point in tremoloBar.points:
-            self.writeInt(round(point.position * self.BEND_POSITION / gp.BendEffect.MAX_POSITION))
-            self.writeInt(round(point.value * (self.BEND_SEMITONE * 2.0)))
-            self.writeBool(point.vibrato)
-    
-    def writeChord(self, chord):
-        # if self.writeSignedByte() & 0x01 == 0:
-        #     chord.name = self.writeIntSizeCheckByteString()
-        #     chord.firstFret = self.writeInt()
-        #     if chord.firstFret != 0:
-        #         for i in range(6):
-        #             fret = self.writeInt()
-        #             if i < len(chord.strings):
-        #                 chord.strings[i] = fret
-        self.writeSignedByte(1)
-        self.placeholder(16)
-        self.writeByteSizeString(chord.name, 21)
-        self.placeholder(4)
-        self.writeInt(chord.firstFret)
-        for i in range(7):
-            fret = -1
-            if i < len(chord.strings):
-                fret = chord.strings[i]
-            self.writeInt(fret)
-        self.placeholder(32)
+        self.writeBend(tremoloBar)
+
+    def writeMixTableChange(self, tableChange):
+        super(GP4File, self).writeMixTableChange(tableChange)
+        self.writeMixTableChangeFlags(tableChange)
+
+    def writeMixTableChangeFlags(self, tableChange):
+        flags = 0x00
+        if tableChange.volume is not None and tableChange.volume.allTracks:
+            flags |= 0x01
+        if tableChange.balance is not None and tableChange.balance.allTracks:
+            flags |= 0x02
+        if tableChange.chorus is not None and tableChange.chorus.allTracks:
+            flags |= 0x04
+        if tableChange.reverb is not None and tableChange.reverb.allTracks:
+            flags |= 0x08
+        if tableChange.phaser is not None and tableChange.phaser.allTracks:
+            flags |= 0x10
+        if tableChange.tremolo is not None and tableChange.tremolo.allTracks:
+            flags |= 0x20
+        self.writeSignedByte(flags)
+
+    def writeNote(self, note):
+        flags = self.packNoteFlags(note)
+        self.writeByte(flags)
+        if flags & 0x20:
+            self.writeByte(note.type.value)
+        if flags & 0x01:
+            self.writeSignedByte(note.duration)
+            self.writeSignedByte(note.tuplet)
+        if flags & 0x10:
+            value = self.packVelocity(note.velocity)
+            self.writeSignedByte(value)
+        if flags & 0x20:
+            fret = note.value if note.type != gp.NoteType.tie else 0
+            self.writeSignedByte(fret)
+        if flags & 0x80:
+            self.writeSignedByte(note.effect.leftHandFinger.value)
+            self.writeSignedByte(note.effect.rightHandFinger.value)
+        if flags & 0x08:
+            self.writeNoteEffects(note)
+
+    def packNoteFlags(self, note):
+        flags = super(GP4File, self).packNoteFlags(note)
+        if note.effect.accentuatedNote:
+            flags |= 0x40
+        if note.effect.isFingering:
+            flags |= 0x80
+        return flags
+
+    def writeNoteEffects(self, note):
+        noteEffect = note.effect
+        flags1 = 0x00
+        if noteEffect.isBend:
+            flags1 |= 0x01
+        if noteEffect.hammer:
+            flags1 |= 0x02
+        if noteEffect.letRing:
+            flags1 |= 0x08
+        if noteEffect.isGrace:
+            flags1 |= 0x10
+        self.writeSignedByte(flags1)
+        flags2 = 0x00
+        if noteEffect.staccato:
+            flags2 |= 0x01
+        if noteEffect.palmMute:
+            flags2 |= 0x02
+        if noteEffect.isTremoloPicking:
+            flags2 |= 0x04
+        if noteEffect.slides:
+            flags2 |= 0x08
+        if noteEffect.isHarmonic:
+            flags2 |= 0x10
+        if noteEffect.isTrill:
+            flags2 |= 0x20
+        if noteEffect.vibrato:
+            flags2 |= 0x40
+        self.writeSignedByte(flags2)
+        if flags1 & 0x01:
+            self.writeBend(noteEffect.bend)
+        if flags1 & 0x10:
+            self.writeGrace(noteEffect.grace)
+        if flags2 & 0x04:
+            self.writeTremoloPicking(noteEffect.tremoloPicking)
+        if flags2 & 0x08:
+            self.writeSlides(noteEffect.slides)
+        if flags2 & 0x10:
+            self.writeHarmonic(note, noteEffect.harmonic)
+        if flags2 & 0x20:
+            self.writeTrill(noteEffect.trill)
+
+    def writeTremoloPicking(self, tremoloPicking):
+        self.writeSignedByte(
+            self.toTremoloValue(tremoloPicking.duration.value))
+
+    def writeSlides(self, slides):
+        self.writeSignedByte(slides[0].value)
+
+    def toTremoloValue(self, value):
+        if value == gp.Duration.eighth:
+            return 1
+        elif value == gp.Duration.sixteenth:
+            return 2
+        elif value == gp.Duration.thirtySecond:
+            return 3
+
+    def writeHarmonic(self, note, harmonic):
+        if not isinstance(harmonic, gp.ArtificialHarmonic):
+            byte = harmonic.type
+        else:
+            if harmonic.pitch and harmonic.octave:
+                if (harmonic.pitch.value == (note.realValue + 7) % 12
+                        and harmonic.octave == gp.Octave.ottava):
+                    byte = 15
+                elif (harmonic.pitch.value == note.realValue % 12
+                        and harmonic.octave == gp.Octave.quindicesima):
+                    byte = 17
+                elif (harmonic.pitch.value == note.realValue % 12
+                        and harmonic.octave == gp.Octave.ottava):
+                    byte = 22
+                else:
+                    byte = 22
+            else:
+                byte = 22
+        self.writeSignedByte(byte)
+
+    def writeTrill(self, trill):
+        self.writeSignedByte(trill.fret)
+        self.writeSignedByte(self.toTrillPeriod(trill.duration.value))
+
+    def toTrillPeriod(self, value):
+        if value == gp.Duration.sixteenth:
+            return 1
+        if value == gp.Duration.thirtySecond:
+            return 2
+        if value == gp.Duration.sixtyFourth:
+            return 3

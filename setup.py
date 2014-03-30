@@ -1,10 +1,9 @@
 from setuptools import setup, find_packages
-from guitarpro import __version__
 
 setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
-    version=__version__,
+    version='0.2',
     author='Sviatoslav Abakumov',
     author_email='dust.harvesting@gmail.com',
     url='https://bitbucket.org/Perlence/pyguitarpro/',
@@ -13,6 +12,11 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
+    install_requires=[
+        'six',
+        'enum34',
+        'nose',
+    ],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
@@ -23,8 +27,13 @@ setup(
         'Operating System :: POSIX',
         'Operating System :: Unix',
         'Operating System :: MacOS :: MacOS X',
-        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
         'Topic :: Artistic Software',
         'Topic :: Multimedia :: Sound/Audio',
     ],
