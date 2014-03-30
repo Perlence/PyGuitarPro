@@ -44,8 +44,8 @@ To run one of the examples in your local environment, simply:
 
 .. code-block:: console
 
-    cd pyguitarpro
-    python examples/transpose.py --help
+    $ cd pyguitarpro
+    $ python examples/transpose.py --help
 
 
 Installation
@@ -55,9 +55,9 @@ To install PyGuitarPro download the repository and install manually by doing:
 
 .. code-block:: console
 
-    hg clone ssh://hg@bitbucket.org/Perlence/pyguitarpro
-    cd pyguitarpro
-    python setup.py install
+    $ hg clone ssh://hg@bitbucket.org/Perlence/pyguitarpro
+    $ cd pyguitarpro
+    $ python setup.py install
 
 Documentation
 -------------
