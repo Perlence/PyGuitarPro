@@ -10,15 +10,15 @@ Version 0.2
 
 -   Added support for RSE.
 
--   Added automated tests using [nose](https://nose.readthedocs.org/).
+-   Added automated tests using ``nose``.
 
 -   Fixed harmonics conversion.
 
--   Converted some classes to `Enum` subclasses.
+-   Converted some classes to ``Enum`` subclasses.
 
 -   Added support for chord diagrams.
 
--   Added generic arguments to `GPObject.__init__`.
+-   Added generic arguments to ``GPObject.__init__``.
 
 -   Cleaned up the code.
 

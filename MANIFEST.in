@@ -1,0 +1,4 @@
+include *.rst
+include LICENSE
+include tests/*.gp?
+recursive-include data *

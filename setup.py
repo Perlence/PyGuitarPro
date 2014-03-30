@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
-    version='0.2',
+    version='0.2.1',
     author='Sviatoslav Abakumov',
     author_email='dust.harvesting@gmail.com',
     url='https://bitbucket.org/Perlence/pyguitarpro/',
