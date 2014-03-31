@@ -1169,13 +1169,12 @@ class NoteEffect(GPObject):
     """Contains all effects which can be applied to one note."""
 
     __attr__ = ('leftHandFinger', 'rightHandFinger', 'bend', 'harmonic',
-                'grace', 'trill', 'tremoloPicking', 'vibrato', 'deadNote',
-                'slides', 'hammer', 'ghostNote', 'accentuatedNote',
+                'grace', 'trill', 'tremoloPicking', 'vibrato', 'slides',
+                'hammer', 'ghostNote', 'accentuatedNote',
                 'heavyAccentuatedNote', 'palmMute', 'staccato', 'letRing')
 
     def __init__(self, *args, **kwargs):
         self.vibrato = False
-        self.deadNote = False
         self.slides = []
         self.hammer = False
         self.ghostNote = False
@@ -1234,8 +1233,8 @@ class NoteEffect(GPObject):
 class NoteType(Enum):
     rest = 0
     normal = 1
-    dead = 2
-    tie = 3
+    tie = 2
+    dead = 3
 
 
 class Note(GPObject):
