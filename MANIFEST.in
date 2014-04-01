@@ -2,4 +2,4 @@ include *.rst
 include .pylintrc
 include LICENSE
 include tests/*.gp?
-recursive-include examples *.py
+include examples/*.py
