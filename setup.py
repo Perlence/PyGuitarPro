@@ -1,5 +1,11 @@
 from setuptools import setup, find_packages
 
+# http://bugs.python.org/issue15881
+try:
+    import multiprocessing
+except ImportError:
+    pass
+
 setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
@@ -12,9 +18,12 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
+    test_suite='nose.collector',
     install_requires=[
         'six',
         'enum34',
+    ],
+    tests_require=[
         'nose',
     ],
     classifiers=[
@@ -34,6 +43,8 @@ setup(
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: PyPy",
         'Topic :: Artistic Software',
         'Topic :: Multimedia :: Sound/Audio',
     ],
