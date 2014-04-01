@@ -925,7 +925,6 @@ class GP3File(gp.GPFileBase):
         note.effect.ghostNote = bool(flags & 0x04)
         if flags & 0x20:
             note.type = gp.NoteType(self.readByte())
-            note.effect.deadNote = note.type == gp.NoteType.dead
         if flags & 0x01:
             note.duration = self.readSignedByte()
             note.tuplet = self.readSignedByte()

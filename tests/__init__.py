@@ -35,6 +35,11 @@ TESTS = [
     'Demo v5.gp5',
 ]
 
+try:
+    os.mkdir(OUTPUT)
+except OSError:
+    pass
+
 
 def product(test, song, versions=(3, 4, 5)):
     """Save song in given format *versions*."""

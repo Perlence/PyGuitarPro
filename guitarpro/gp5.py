@@ -769,7 +769,6 @@ class GP5File(gp4.GP4File):
         note.effect.accentuatedNote = bool(flags & 0x40)
         if flags & 0x20:
             note.type = gp.NoteType(self.readByte())
-            note.effect.deadNote = note.type == gp.NoteType.dead
         if flags & 0x10:
             dyn = self.readSignedByte()
             note.velocity = self.unpackVelocity(dyn)
