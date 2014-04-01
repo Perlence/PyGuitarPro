@@ -17,11 +17,12 @@ def process(track, measure, voice, beat, note, semitone, stringmap):
     if (1 << (note.string - 1) & stringmap and
             not note.type == guitarpro.base.NoteType.dead):
         note.value += semitone
-        if note.value < 0:
+        capped = max(0, min(track.fretCount, note.value))
+        if note.value != capped:
             print ("Warning on track %d '%s', measure %d" %
                    (track.number, track.name, measure.number))
-            note.value = 0
             note.type = guitarpro.base.NoteType.dead
+            note.value = capped
     return note
 
 
