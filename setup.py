@@ -6,6 +6,20 @@ try:
 except ImportError:
     pass
 
+install_requires = [
+    'six',
+    'enum34',
+]
+
+tests_require = [
+    'nose',
+]
+
+try:
+    import argparse
+except ImportError:
+    install_requires.append('argparse')
+
 setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
@@ -19,13 +33,8 @@ setup(
     include_package_data=True,
     zip_safe=False,
     test_suite='nose.collector',
-    install_requires=[
-        'six',
-        'enum34',
-    ],
-    tests_require=[
-        'nose',
-    ],
+    install_requires=install_requires,
+    tests_require=tests_require,
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
