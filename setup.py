@@ -1,9 +1,29 @@
 from setuptools import setup, find_packages
 
+# http://bugs.python.org/issue15881
+try:
+    import multiprocessing
+except ImportError:
+    pass
+
+install_requires = [
+    'six',
+    'enum34',
+]
+
+tests_require = [
+    'nose',
+]
+
+try:
+    import argparse
+except ImportError:
+    install_requires.append('argparse')
+
 setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
-    version='0.2.1',
+    version='0.2.2',
     author='Sviatoslav Abakumov',
     author_email='dust.harvesting@gmail.com',
     url='https://bitbucket.org/Perlence/pyguitarpro/',
@@ -12,11 +32,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    install_requires=[
-        'six',
-        'enum34',
-        'nose',
-    ],
+    test_suite='nose.collector',
+    install_requires=install_requires,
+    tests_require=tests_require,
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
@@ -34,6 +52,8 @@ setup(
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: PyPy",
         'Topic :: Artistic Software',
         'Topic :: Multimedia :: Sound/Audio',
     ],

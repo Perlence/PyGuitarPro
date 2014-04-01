@@ -133,31 +133,31 @@ class GPFileBase(object):
         self.data.write(byte * count)
 
     def writeByte(self, data):
-        packed = struct.pack('B', data)
+        packed = struct.pack('B', int(data))
         self.data.write(packed)
 
     def writeSignedByte(self, data):
-        packed = struct.pack('b', data)
+        packed = struct.pack('b', int(data))
         self.data.write(packed)
 
     def writeBool(self, data):
-        packed = struct.pack('?', data)
+        packed = struct.pack('?', bool(data))
         self.data.write(packed)
 
     def writeShort(self, data):
-        packed = struct.pack('<h', data)
+        packed = struct.pack('<h', int(data))
         self.data.write(packed)
 
     def writeInt(self, data):
-        packed = struct.pack('<i', data)
+        packed = struct.pack('<i', int(data))
         self.data.write(packed)
 
     def writeFloat(self, data):
-        packed = struct.pack('<f', data)
+        packed = struct.pack('<f', float(data))
         self.data.write(packed)
 
     def writeDouble(self, data):
-        packed = struct.pack('<d', data)
+        packed = struct.pack('<d', float(data))
         self.data.write(packed)
 
     def writeString(self, data, size=None):
@@ -1169,13 +1169,12 @@ class NoteEffect(GPObject):
     """Contains all effects which can be applied to one note."""
 
     __attr__ = ('leftHandFinger', 'rightHandFinger', 'bend', 'harmonic',
-                'grace', 'trill', 'tremoloPicking', 'vibrato', 'deadNote',
-                'slides', 'hammer', 'ghostNote', 'accentuatedNote',
+                'grace', 'trill', 'tremoloPicking', 'vibrato', 'slides',
+                'hammer', 'ghostNote', 'accentuatedNote',
                 'heavyAccentuatedNote', 'palmMute', 'staccato', 'letRing')
 
     def __init__(self, *args, **kwargs):
         self.vibrato = False
-        self.deadNote = False
         self.slides = []
         self.hammer = False
         self.ghostNote = False
@@ -1234,8 +1233,8 @@ class NoteEffect(GPObject):
 class NoteType(Enum):
     rest = 0
     normal = 1
-    dead = 2
-    tie = 3
+    tie = 2
+    dead = 3
 
 
 class Note(GPObject):
