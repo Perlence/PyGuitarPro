@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.2.2
+-------------
+
+-   Fixed `NoteType` enumeration.
+-   Included examples into sdist.
+-   Create ``tests.OUTPUT`` directory before running tests.
+-   Type coercion before writing data (fixes py3k compatibility).
+
+
 Version 0.2.1
 -------------
 
