@@ -1,11 +1,83 @@
 import struct
-from cStringIO import StringIO
 
 from six import string_types
+from six.moves import cStringIO as StringIO
 
 
 _HEADER_BCFS = b'BCFS'
 _HEADER_BCFZ = b'BCFZ'
+
+
+class BitFile(object):
+    def __init__(self, stream):
+        self.stream = stream
+        self.currentByte = None
+        self.position = 8  # to ensure a byte is read on beginning
+
+    def __getattr__(self, name):
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            return object.__getattribute__(self, 'stream').__getattribute__(name)
+
+    def read(self, size=-1):
+        if size == -1:
+            return self.readbits(-1)
+        else:
+            return self.readbits(size * 8)
+
+    def readbits(self, size=-1, reversed_=False):
+        if size == -1:
+            bits = list(iter(self.readbit, None))
+        else:
+            bits = [self.readbit() for __ in range(size)]
+        return self._encodebits(bits, reversed_=reversed_)
+
+    def readbit(self):
+        try:
+            # need a new byte?
+            if self.position > 7:
+                self.currentByte, = struct.unpack('B', self.stream.read(1))
+                self.position = 0
+            # shift the desired byte to the least significant bit and
+            # get the value using masking
+            value = (self.currentByte >> (7 - self.position)) & 0x01
+            self.position += 1
+            return value
+        except struct.error:
+            return
+
+    def _encodebits(self, bits, reversed_=False):
+        result = b''
+        byte = 0
+        if reversed_:
+            bits = reversed(bits)
+        for index, bit in enumerate(bits):
+            if bit is None:
+                break
+            exp = (7 - index % 8) if not reversed_ else index % 8
+            byte |= bit << exp
+            if index % 8 == 7:
+                result += struct.pack('B', byte)
+                byte = 0
+        if byte != 0:
+            result += struct.pack('B', byte)
+        return result
+
+
+def testBitFileReading():
+    fp = StringIO('12')
+    bf = BitFile(fp)
+    assert bf.read() == b'12'
+
+    fp = StringIO('12')  # 00110001 00110010
+    bf = BitFile(fp)
+    assert bf.tell() == 0
+    assert bf.readbit() == 0
+    assert bf.readbits(3) == b'`'  # 01100000
+    assert bf.readbits(5, reversed_=True) == b'\x02'  # 00000010
+    assert bf.read(1) == b'd'
+    assert bf.tell() == 2
 
 
 class GPXFileSystem(object):
@@ -90,19 +162,17 @@ class GPXFileSystem(object):
         uncompressed = StringIO()
         expectedLength = struct.unpack('<i', self.fp.read(4))
 
-        # as long we reach our expected length we try to decompress, a EOF
-        # might occure.
         while uncompressed.tell() < expectedLength:
             # compression flag
-            flag = self.fp.readBits(1)
+            flag = self.fp.readbit(1)
 
             if flag:  # compressed content
                 # get offset and size of the content we need to read.
                 # compressed does mean we already have read the data and need
                 # to copy it from our uncompressed buffer to the end.
-                wordSize = self.fp.readBits(4)
-                offset = self.fp.readBitsReversed(wordSize)
-                size = self.fp.readBitsReversed(wordSize)
+                wordSize = self.fp.readbits(4)
+                offset = self.fp.readbitsReversed(wordSize)
+                size = self.fp.readbitsReversed(wordSize)
 
                 # the offset is relative to the end
                 sourcePosition = uncompressed.length - offset
