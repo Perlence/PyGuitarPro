@@ -1,5 +1,8 @@
+import os
 import struct
 from binascii import unhexlify
+from collections import OrderedDict
+from hashlib import md5
 
 from six import string_types
 from six.moves import cStringIO as StringIO
@@ -67,7 +70,7 @@ class BitFile(object):
 class GPXFileSystem(object):
 
     def __init__(self, stream, mode='r'):
-        self.filelist = []
+        self.files = OrderedDict()
         self.mode = key = mode.replace('b', '')[0]
         if isinstance(stream, string_types):
             self._filePassed = 0
@@ -104,31 +107,79 @@ class GPXFileSystem(object):
 
     def namelist(self):
         """Return a list of file names in the archive."""
-        result = []
-        for data in self.filelist:
-            result.append(data.fileName)
-        return result
+        return self.files.keys()
 
     def open(self, name, mode='r'):
-        pass
+        if mode not in ('r', 'U', 'rU'):
+            raise RuntimeError('open() requires mode "r", "U", or "rU"')
+        if not self.fp:
+            raise RuntimeError(
+                'Attempt to read ZIP archive that was already closed')
+        return StringIO(self.files[name].data)
 
     def extract(self, member, path=None):
-        pass
+        member = self.files[member]
+        if path is None:
+            path = os.getcwd()
+        return self._extract_member(member, path)
 
     def extractall(self, path=None, members=None):
-        pass
+        """Extract all members from the archive to the current working
+        directory. `path' specifies a different directory to extract to.
+        `members' is optional and must be a subset of the list returned by
+        namelist().
+        """
+        if members is None:
+            members = self.namelist()
+
+        for name in members:
+            self.extract(name, path)
+
+    def _extract_member(self, member, targetpath):
+        """Extract the ZipInfo object 'member' to a physical file on the path
+        targetpath."""
+        # build the destination pathname, replacing
+        # forward slashes to platform specific separators.
+        # Strip trailing path separator, unless it represents the root.
+        if (targetpath[-1:] in (os.path.sep, os.path.altsep)
+                and len(os.path.splitdrive(targetpath)[1]) > 1):
+            targetpath = targetpath[:-1]
+
+        # don't include leading "/" from file name if present
+        if member.filename[0] == '/':
+            targetpath = os.path.join(targetpath, member.filename[1:])
+        else:
+            targetpath = os.path.join(targetpath, member.filename)
+
+        targetpath = os.path.normpath(targetpath)
+
+        # Create all upper directories if necessary.
+        upperdirs = os.path.dirname(targetpath)
+        if upperdirs and not os.path.exists(upperdirs):
+            os.makedirs(upperdirs)
+
+        if member.filename[-1] == '/':
+            if not os.path.isdir(targetpath):
+                os.mkdir(targetpath)
+            return targetpath
+
+        source = member.data
+        with open(targetpath, "wb") as target:
+            target.write(source)
+
+        return targetpath
 
     def printdir(self):
-        pass
+        raise NotImplementedError
 
     def read(self, name):
-        pass
+        return self.files[name].data
 
     def write(self, filename, arcname=None):
-        pass
+        raise NotImplementedError
 
     def writestr(self, arcname, bytes_):
-        pass
+        raise NotImplementedError
 
     def _readContents(self):
         header = self.fp.read(4)
@@ -192,6 +243,7 @@ class GPXFileSystem(object):
         offset = sectorSize
         # We always need 4 bytes (+3 including offset) to read the type.
         while (offset + 3) < len(data):
+            # import ipdb; ipdb.set_trace()
             entryType = self._readInt(data, offset)
             if entryType == 2:  # is a file?
                 # File structure:
@@ -217,7 +269,7 @@ class GPXFileSystem(object):
                 dataPointerOffset = offset + 0x94
                 # We're keeping count so we can calculate the offset of the
                 # array item.
-                sectorCount = 1
+                sectorCount = 0
                 # This var is storing the sector index.
                 sector = self._readInt(data,
                                        (dataPointerOffset +
@@ -234,8 +286,13 @@ class GPXFileSystem(object):
                                            (dataPointerOffset +
                                             (4 * (sectorCount))))
 
-                gpxFile = GPXFile(fileName, fileSize, fileData)
-                self.filelist.append(gpxFile)
+                fileData = fileData.rstrip(b'\x00')
+                try:
+                    gpxFile = self.files[fileName]
+                    gpxFile.data += fileData
+                except KeyError:
+                    gpxFile = GPXFile(fileName, fileSize, fileData)
+                    self.files[fileName] = gpxFile
             # Let's move to the next sector.
             offset += sectorSize
 
@@ -250,8 +307,8 @@ class GPXFileSystem(object):
 class GPXFile(object):
 
     def __init__(self, name, size, data):
-        self.fileName = name
-        self.fileSize = size
+        self.filename = name
+        self.filesize = size
         self.data = data
 
 
@@ -274,3 +331,5 @@ def testGPXFileSystem():
     filename = '../tests/Queens of the Stone Age - I Appear Missing.gpx'
     with open(filename, 'rb') as fp:
         gpxfp = GPXFileSystem(fp)
+        assert (md5(gpxfp.read('score.gpif')).hexdigest() ==
+                'da09c7f29a11b19e34433747a0260f55')
