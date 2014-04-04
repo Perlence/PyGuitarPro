@@ -19,13 +19,14 @@ class BitFile(object):
         try:
             return object.__getattribute__(self, name)
         except AttributeError:
-            return object.__getattribute__(self, 'stream').__getattribute__(name)
+            return (object.__getattribute__(self, 'stream')
+                          .__getattribute__(name))
 
     def read(self, size=-1):
         if size == -1:
-            bits =  self.readbits(-1)
+            bits = self.readbits(-1)
         else:
-            bits =  self.readbits(size * 8)
+            bits = self.readbits(size * 8)
         result = hex(bits)[2:].rstrip('L').encode('ascii')
         if len(result) % 2:
             result = b'0' + result
@@ -35,7 +36,7 @@ class BitFile(object):
         if size == -1:
             bits = list(iter(self.readbit, None))
         else:
-            bits = [self.readbit() for __ in range(size)]
+            bits = [self.readbit() for _ in range(size)]
         return self._encodebits(bits, reversed_=reversed_)
 
     def readbit(self):
@@ -65,25 +66,25 @@ class BitFile(object):
 
 class GPXFileSystem(object):
 
-    def __init__(self, file, mode='r'):
+    def __init__(self, stream, mode='r'):
         self.filelist = []
         self.mode = key = mode.replace('b', '')[0]
-        if isinstance(file, string_types):
+        if isinstance(stream, string_types):
             self._filePassed = 0
-            self.filename = file
+            self.filename = stream
             modeDict = {'r': 'rb', 'w': 'wb', 'a': 'r+b'}
             try:
-                fp = open(file, modeDict[mode])
+                fp = open(stream, modeDict[mode])
             except IOError:
                 if mode == 'a':
                     mode = key = 'w'
-                    fp = open(file, modeDict[mode])
+                    fp = open(stream, modeDict[mode])
                 else:
                     raise
         else:
             self._filePassed = 1
-            fp = file
-            self.filename = getattr(file, 'name', None)
+            fp = stream
+            self.filename = getattr(stream, 'name', None)
 
         self.fp = BitFile(fp)
 
@@ -101,7 +102,7 @@ class GPXFileSystem(object):
         records."""
         self.fp.close()
 
-    def namelist():
+    def namelist(self):
         """Return a list of file names in the archive."""
         result = []
         for data in self.filelist:
@@ -165,18 +166,18 @@ class GPXFileSystem(object):
                 size = self.fp.readbits(wordSize, reversed_=True)
 
                 # The offset is relative to the end.
-                sourcePosition = len(uncompressed) - offset
+                position = len(uncompressed) - offset
                 toRead = min(offset, size)
 
                 # Get the subbuffer storing the data and add it again to the
                 # end.
-                subBuffer = uncompressed[sourcePosition:sourcePosition + toRead]
+                subBuffer = uncompressed[position:position + toRead]
                 uncompressed += subBuffer
             else:
                 # On raw content we need to read the data from the source
                 # buffer.
                 size = self.fp.readbits(2, reversed_=True)
-                for i in range(size):
+                for _ in range(size):
                     uncompressed += self.fp.read(1)
         return uncompressed[4:]
 
@@ -191,7 +192,7 @@ class GPXFileSystem(object):
         offset = sectorSize
         # We always need 4 bytes (+3 including offset) to read the type.
         while (offset + 3) < len(data):
-            entryType = self._readInt(data, offset);
+            entryType = self._readInt(data, offset)
             if entryType == 2:  # is a file?
                 # File structure:
 
@@ -208,7 +209,8 @@ class GPXFileSystem(object):
 
                 # The sectors marked at 0x94 are absolutely positioned
                 # (1*0x1000 is sector 1, 2*0x1000 is sector 2,...).
-                fileName = self._readString(data, offset + 0x04, 127).strip(b'\x00')
+                fileName = (self._readString(data, offset + 0x04, 127)
+                                .strip(b'\x00'))
                 fileSize = self._readInt(data, offset + 0x8C)
                 # We need to iterate the blocks because. We need to move after
                 # the last datasector.
@@ -225,7 +227,7 @@ class GPXFileSystem(object):
                 while sector != 0:
                     # The next file entry starts after the last data sector so
                     # we move the offset along.
-                    offset = sector * sectorSize;
+                    offset = sector * sectorSize
                     fileData += data[offset:offset + sectorSize]
                     sectorCount += 1
                     sector = self._readInt(data,
@@ -269,5 +271,6 @@ def testBitFileReading():
 
 
 def testGPXFileSystem():
-    with open('../tests/Queens of the Stone Age - I Appear Missing.gpx', 'rb') as fp:
+    filename = '../tests/Queens of the Stone Age - I Appear Missing.gpx'
+    with open(filename, 'rb') as fp:
         gpxfp = GPXFileSystem(fp)
