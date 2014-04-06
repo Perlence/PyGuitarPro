@@ -30,7 +30,10 @@ class BitFile(object):
             bits = self.readbits(-1)
         else:
             bits = self.readbits(size * 8)
-        result = hex(bits)[2:].rstrip('L').encode('ascii')
+        return self._int_to_bytes(bits)
+
+    def _int_to_bytes(self, value):
+        result = hex(value)[2:].rstrip('L').encode('ascii')
         if len(result) % 2:
             result = b'0' + result
         return unhexlify(result)
@@ -40,7 +43,7 @@ class BitFile(object):
             bits = list(iter(self.readbit, None))
         else:
             bits = [self.readbit() for _ in range(size)]
-        return self._encodebits(bits, reversed_=reversed_)
+        return self._bits_to_int(bits, reversed_=reversed_)
 
     def readbit(self):
         try:
@@ -56,15 +59,11 @@ class BitFile(object):
         except struct.error:
             return
 
-    def _encodebits(self, bits, reversed_=False):
-        length = len(bits)
-        result = 0
-        for index, bit in enumerate(bits):
-            if bit is None:
-                continue
-            exp = (length - index - 1) if not reversed_ else index
-            result |= bit << exp
-        return result
+    def _bits_to_int(self, bits, reversed_=False):
+        if reversed_:
+            bits = reversed(bits)
+        strbits = [str(bit) for bit in bits if bit is not None]
+        return int(''.join(strbits), 2)
 
 
 class GPXFileSystem(object):
@@ -184,23 +183,17 @@ class GPXFileSystem(object):
     def _readContents(self):
         header = self.fp.read(4)
         if header == _HEADER_BCFZ:
-            self._readUncompressedBlock(self.decompress())
+            self._readUncompressedBlock(self._decompress())
         elif header == _HEADER_BCFS:
             self._readUncompressedBlock(self.fp.read())
         else:
             pass
 
-    def decompress(self):
+    def _decompress(self):
         """Decompresses the given bitinput using the GPX compression format.
 
         Only use this method if you are sure the binary data is compressed
-        using the GPX format. Otherwise unexpected behavior can occure.
-
-        :param src: the bitInput to read the data from.
-        :param skipHeader: true if the header should NOT be included in the
-            result byteset, otherwise false.
-        :return: the decompressed byte data. if skipHeader is set to false the
-            BCFS header is included.
+        using the GPX format. Otherwise unexpected behavior can occur.
 
         """
         uncompressed = b''
@@ -212,8 +205,8 @@ class GPXFileSystem(object):
                 # Get offset and size of the content we need to read.
                 # Compressed does mean we already have read the data and need
                 # to copy it from our uncompressed buffer to the end.
-                wordSize = self.fp.readbits(4)
-                offset = self.fp.readbits(wordSize, reversed_=True)
+                wordSize = self.fp.readbits(4)  # word size: 0 .. 16
+                offset = self.fp.readbits(wordSize, reversed_=True)  # offset: 0 .. 65536
                 size = self.fp.readbits(wordSize, reversed_=True)
 
                 # The offset is relative to the end.
@@ -243,7 +236,6 @@ class GPXFileSystem(object):
         offset = sectorSize
         # We always need 4 bytes (+3 including offset) to read the type.
         while (offset + 3) < len(data):
-            # import ipdb; ipdb.set_trace()
             entryType = self._readInt(data, offset)
             if entryType == 2:  # is a file?
                 # File structure:
@@ -323,7 +315,7 @@ def testBitFileReading():
     assert bf.readbit() == 0
     assert bf.readbits(3) == 0b011
     assert bf.readbits(5, reversed_=True) == 0b01000
-    assert bf.read(1) == b'd'
+    assert bf.read(1) == b'2'
     assert bf.tell() == 2
 
 
