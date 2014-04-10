@@ -1,35 +1,91 @@
 import os
 import struct
-from binascii import unhexlify
+from binascii import unhexlify, hexlify
 from collections import OrderedDict
 from hashlib import md5
+from io import BytesIO
 
 from six import string_types
-from six.moves import cStringIO as StringIO
 
 
 _HEADER_BCFS = b'BCFS'
 _HEADER_BCFZ = b'BCFZ'
 
 
-class BitFile(object):
+def decompress(stream):
+    """Decompress the given stream using the GPX compression format."""
+    if isinstance(stream, BitsIO):
+        fp = stream
+    elif hasattr(stream, 'read'):
+        fp = BitsIO(stream)
+    elif isinstance(stream, string_types):
+        fp = BitsIO(BytesIO(stream))
+    else:
+        raise TypeError('given stream cannot be read')
+
+    uncompressed = b''
+    expected, = struct.unpack('<i', fp.read(4))
+    while len(uncompressed) < expected:
+        # Compression flag.
+        flag = fp.readbit()
+        if flag:
+            # Get offset and size of the content we need to read. Compressed
+            # does mean we already have read the data and need to copy it from
+            # our uncompressed buffer to the end.
+            wordsize = fp.readbits(4)  # word size: 0 .. 15
+            offset = fp.readbits(wordsize, reversed_=True)
+            size = fp.readbits(wordsize, reversed_=True)
+
+            # The offset is relative to the end.
+            position = len(uncompressed) - offset
+            to_read = min(offset, size)
+
+            # Get the subbuffer storing the data and add it again to the end.
+            subBuffer = uncompressed[position:position + to_read]
+            uncompressed += subBuffer
+        else:
+            # On raw content we need to read the data from the source buffer.
+            size = fp.readbits(2, reversed_=True)
+            for _ in range(size):
+                uncompressed += fp.read(1)
+    return uncompressed[4:]
+
+
+def compress(stream):
+    """Compress the given stream using the GPX compression format."""
+    if isinstance(stream, BitsIO):
+        fp = stream
+    elif hasattr(stream, 'read'):
+        fp = BitsIO(stream)
+    elif isinstance(stream, string_types):
+        fp = BitsIO(BytesIO(stream))
+    else:
+        raise TypeError('given stream cannot be read')
+
+
+class BitsIO(object):
     def __init__(self, stream):
-        self.stream = stream
-        self.currentByte = None
-        self.position = 8  # to ensure a byte is read on beginning
+        self._stream = stream
+        self._current = None
+        self._position = 0
 
     def __getattr__(self, name):
         try:
             return object.__getattribute__(self, name)
         except AttributeError:
-            return (object.__getattribute__(self, 'stream')
+            return (object.__getattribute__(self, '_stream')
                           .__getattribute__(name))
+
+    def seek(self, offset):
+        self._current = None
+        self._position = offset * 8
+        self._stream.seek(offset)
 
     def read(self, size=-1):
         if size == -1:
-            bits = self.readbits(-1)
+            bits = self.readbits(-1, pad=True)
         else:
-            bits = self.readbits(size * 8)
+            bits = self.readbits(size * 8, pad=True)
         return self._int_to_bytes(bits)
 
     def _int_to_bytes(self, value):
@@ -38,32 +94,77 @@ class BitFile(object):
             result = b'0' + result
         return unhexlify(result)
 
-    def readbits(self, size=-1, reversed_=False):
+    def readbits(self, size=-1, reversed_=False, pad=False):
         if size == -1:
             bits = list(iter(self.readbit, None))
         else:
             bits = [self.readbit() for _ in range(size)]
-        return self._bits_to_int(bits, reversed_=reversed_)
+        return self._bits_to_int(bits, reversed_, pad)
 
     def readbit(self):
+        local_position = self._position % 8
         try:
             # Need a new byte?
-            if self.position > 7:
-                self.currentByte, = struct.unpack('B', self.stream.read(1))
-                self.position = 0
+            if local_position == 0:
+                self._current, = struct.unpack('B', self._stream.read(1))
             # Shift the desired byte to the least significant bit and
             # get the value using masking.
-            value = (self.currentByte >> (7 - self.position)) & 0x01
-            self.position += 1
+            value = (self._current >> (7 - local_position)) & 0x01
+            self._position += 1
             return value
         except struct.error:
             return
 
-    def _bits_to_int(self, bits, reversed_=False):
+    def _bits_to_int(self, bits, reversed_, pad):
+        if pad:
+            padding = len(bits) % 8
+            if padding:
+                bits += [0] * padding
         if reversed_:
             bits = reversed(bits)
         strbits = [str(bit) for bit in bits if bit is not None]
         return int(''.join(strbits), 2)
+
+    def write(self, string):
+        return self.writebits(self._bytes_to_int(string), 8)
+
+    def _bytes_to_int(self, string):
+        return int(hexlify(string), 16)
+
+    def writebits(self, integer, length=None, reversed_=False):
+        written = 0
+        for bit in self._int_to_bits(integer, length, reversed_):
+            written += self.writebit(bit)
+        return written
+
+    def _int_to_bits(self, integer, length, reversed_):
+        binary = bin(integer)[2:].rstrip('L').encode('ascii')
+        if length:
+            padding = len(binary) % length
+            if padding:
+                binary = b'0' * (length - padding) + binary
+        result = list(map(int, binary))
+        if not reversed_:
+            return result
+        else:
+            return reversed(result)
+
+    def writebit(self, bit):
+        written = 0
+        local_position = self._position % 8
+        self._current = (self._current or 0) | bit << (7 - local_position)
+        if local_position == 7:
+            self._stream.write(struct.pack('B', self._current))
+            self._current = None
+            written = 1
+        self._position += 1
+        return written
+
+    def flush(self):
+        if self._current is not None:
+            self._stream.write(struct.pack('B', self._current))
+            self._position += 8 - self._position % 8
+        self._stream.flush()
 
 
 class GPXFileSystem(object):
@@ -88,7 +189,7 @@ class GPXFileSystem(object):
             fp = stream
             self.filename = getattr(stream, 'name', None)
 
-        self.fp = BitFile(fp)
+        self.fp = fp
 
         if key == 'r':
             self._readContents()
@@ -114,7 +215,7 @@ class GPXFileSystem(object):
         if not self.fp:
             raise RuntimeError(
                 'Attempt to read ZIP archive that was already closed')
-        return StringIO(self.files[name].data)
+        return BytesIO(self.files[name].data)
 
     def extract(self, member, path=None):
         member = self.files[member]
@@ -183,47 +284,11 @@ class GPXFileSystem(object):
     def _readContents(self):
         header = self.fp.read(4)
         if header == _HEADER_BCFZ:
-            self._readUncompressedBlock(self._decompress())
+            self._readUncompressedBlock(decompress(self.fp))
         elif header == _HEADER_BCFS:
             self._readUncompressedBlock(self.fp.read())
         else:
             pass
-
-    def _decompress(self):
-        """Decompresses the given bitinput using the GPX compression format.
-
-        Only use this method if you are sure the binary data is compressed
-        using the GPX format. Otherwise unexpected behavior can occur.
-
-        """
-        uncompressed = b''
-        expectedLength, = struct.unpack('<i', self.fp.read(4))
-        while len(uncompressed) < expectedLength:
-            # Compression flag.
-            flag = self.fp.readbit()
-            if flag:
-                # Get offset and size of the content we need to read.
-                # Compressed does mean we already have read the data and need
-                # to copy it from our uncompressed buffer to the end.
-                wordSize = self.fp.readbits(4)  # word size: 0 .. 16
-                offset = self.fp.readbits(wordSize, reversed_=True)  # offset: 0 .. 65536
-                size = self.fp.readbits(wordSize, reversed_=True)
-
-                # The offset is relative to the end.
-                position = len(uncompressed) - offset
-                toRead = min(offset, size)
-
-                # Get the subbuffer storing the data and add it again to the
-                # end.
-                subBuffer = uncompressed[position:position + toRead]
-                uncompressed += subBuffer
-            else:
-                # On raw content we need to read the data from the source
-                # buffer.
-                size = self.fp.readbits(2, reversed_=True)
-                for _ in range(size):
-                    uncompressed += self.fp.read(1)
-        return uncompressed[4:]
 
     def _readUncompressedBlock(self, data):
         # The uncompressed block contains a list of filesystem entries. As long
@@ -304,19 +369,41 @@ class GPXFile(object):
         self.data = data
 
 
-def testBitFileReading():
-    fp = StringIO('12')
-    bf = BitFile(fp)
-    assert bf.read() == b'12'
+def testBitsIO():
+    fp = BytesIO()
+    bf = BitsIO(fp)
 
-    fp = StringIO('12')  # 00110001 00110010
-    bf = BitFile(fp)
+    bf.write(b'12\x00')  # 00110001 00110010 00000000
+    bf.flush()
+    bf.seek(0)
+
+    assert bf.read() == b'12\x00'
+
+    fp = BytesIO()
+    bf = BitsIO(fp)
+
+    bf.writebit(0)
+    bf.writebits(0b011, length=3)
+    bf.writebits(0b01000, length=5, reversed_=True)
+    bf.write(b'd')
+    bf.flush()
+    bf.seek(0)
+
     assert bf.tell() == 0
     assert bf.readbit() == 0
     assert bf.readbits(3) == 0b011
     assert bf.readbits(5, reversed_=True) == 0b01000
-    assert bf.read(1) == b'2'
-    assert bf.tell() == 2
+    assert bf.read(1) == b'd'  # 01100100
+    assert bf.tell() == 3
+
+
+def _testCompression():
+    filename = '../tests/Queens of the Stone Age - I Appear Missing.gpx'
+    with open(filename, 'rb') as fp:
+        fp.read(4)  # header
+        data = decompress(fp)
+        comressed = compress(data)
+        assert data == comressed
 
 
 def testGPXFileSystem():
