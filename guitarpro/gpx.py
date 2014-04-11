@@ -4,7 +4,6 @@ from binascii import unhexlify, hexlify
 from collections import OrderedDict
 from hashlib import md5
 from io import BytesIO
-from collections import deque
 
 from six import string_types
 
@@ -56,7 +55,7 @@ def decompress(stream):
 def compress(stream):
     """Compress the given stream using the GPX compression format."""
     bits = BitsIO(BytesIO())
-    buffer = deque(maxlen=32768)
+    buffer = b''
     expected = len(stream)
     position = 0
     while position < expected:
@@ -65,7 +64,7 @@ def compress(stream):
         for i in range(position, expected):
             subbuffer = stream[position:i + 1]
             try:
-                offset = bytearray(buffer).index(subbuffer)
+                offset = buffer.rindex(subbuffer, -32768)
             except ValueError:
                 if offset > -1:
                     subbuffer = subbuffer[:-1]
@@ -88,7 +87,7 @@ def compress(stream):
             bits.writebits(wordsize, length=4)
             bits.writebits(reversed_offset, length=wordsize, reversed_=True)
             bits.writebits(length, length=wordsize, reversed_=True)
-        buffer.extend(bytearray(subbuffer))
+        buffer += subbuffer
 
     bits.flush()
     bits.seek(0)
@@ -159,7 +158,7 @@ class BitsIO(object):
         return int(''.join(strbits), 2)
 
     def write(self, string):
-        return self.writebits(self._bytes_to_int(string), 8)
+        return self.writebits(self._bytes_to_int(string), 8 * len(string))
 
     def _bytes_to_int(self, string):
         return int(hexlify(string), 16)
@@ -173,9 +172,7 @@ class BitsIO(object):
     def _int_to_bits(self, integer, length, reversed_):
         binary = bin(integer)[2:].rstrip('L').encode('ascii')
         if length:
-            padding = len(binary) % length
-            if padding:
-                binary = b'0' * (length - padding) + binary
+            binary = b'0' * (length - len(binary)) + binary
         result = list(map(int, binary))
         if not reversed_:
             return result
@@ -433,9 +430,13 @@ def testBitsIO():
 
 def testCompression():
     streams = [
-        'Quick brown fox jumps over the lazy dog.',
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        'ABCDABCDABCDABCDABCDABCDABCD',
         'Noooooooooooooooooooooooooooooooo',
         ':)',
+        '\x00\x00\x00\x00',
+        # And for something completely different.
+        open('tests/Mastodon - Ghost of Karelia.gp5').read(),
     ]
     for stream in streams:
         compressed = compress(stream)
@@ -450,7 +451,3 @@ def testGPXFileSystem():
         gpxfp.extract('score.gpif')
         score = gpxfp.read('score.gpif')
         assert md5(score).hexdigest() == 'da09c7f29a11b19e34433747a0260f55'
-        decompressed = decompress(compress(score))
-        with open('score-dec.gpif', 'wb') as fp:
-            fp.write(decompressed)
-        assert score == decompressed
