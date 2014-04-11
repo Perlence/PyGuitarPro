@@ -4,8 +4,11 @@ from binascii import unhexlify, hexlify
 from collections import OrderedDict
 from hashlib import md5
 from io import BytesIO
+from collections import deque
 
 from six import string_types
+
+from .utils import bit_length
 
 
 _HEADER_BCFS = b'BCFS'
@@ -23,47 +26,77 @@ def decompress(stream):
     else:
         raise TypeError('given stream cannot be read')
 
-    uncompressed = b''
+    result = b''
     expected, = struct.unpack('<i', fp.read(4))
-    while len(uncompressed) < expected:
+    while len(result) < expected:
         # Compression flag.
         flag = fp.readbit()
         if flag:
             # Get offset and size of the content we need to read. Compressed
             # does mean we already have read the data and need to copy it from
-            # our uncompressed buffer to the end.
+            # our result buffer to the end.
             wordsize = fp.readbits(4)  # word size: 0 .. 15
             offset = fp.readbits(wordsize, reversed_=True)
             size = fp.readbits(wordsize, reversed_=True)
 
             # The offset is relative to the end.
-            position = len(uncompressed) - offset
+            position = len(result) - offset
             to_read = min(offset, size)
 
             # Get the subbuffer storing the data and add it again to the end.
-            subBuffer = uncompressed[position:position + to_read]
-            uncompressed += subBuffer
+            result += result[position:position + to_read]
         else:
             # On raw content we need to read the data from the source buffer.
             size = fp.readbits(2, reversed_=True)
             for _ in range(size):
-                uncompressed += fp.read(1)
-    return uncompressed[4:]
+                result += fp.read(1)
+    return result
 
 
 def compress(stream):
     """Compress the given stream using the GPX compression format."""
-    if isinstance(stream, BitsIO):
-        fp = stream
-    elif hasattr(stream, 'read'):
-        fp = BitsIO(stream)
-    elif isinstance(stream, string_types):
-        fp = BitsIO(BytesIO(stream))
-    else:
-        raise TypeError('given stream cannot be read')
+    bits = BitsIO(BytesIO())
+    buffer = deque(maxlen=32768)
+    expected = len(stream)
+    position = 0
+    while position < expected:
+        subbuffer = b''
+        offset = -1
+        for i in range(position, expected):
+            subbuffer = stream[position:i + 1]
+            try:
+                offset = bytearray(buffer).index(subbuffer)
+            except ValueError:
+                if offset > -1:
+                    subbuffer = subbuffer[:-1]
+                    position = i
+                    break
+                if len(subbuffer) > 2:
+                    position = i + 1
+                    break
+        else:
+            position = expected
+        if offset < 0:
+            bits.writebit(0)
+            bits.writebits(len(subbuffer), length=2, reversed_=True)
+            bits.write(subbuffer)
+        else:
+            reversed_offset = len(buffer) - offset
+            length = len(subbuffer)
+            wordsize = max(map(bit_length, (reversed_offset, length)))
+            bits.writebit(1)
+            bits.writebits(wordsize, length=4)
+            bits.writebits(reversed_offset, length=wordsize, reversed_=True)
+            bits.writebits(length, length=wordsize, reversed_=True)
+        buffer.extend(bytearray(subbuffer))
+
+    bits.flush()
+    bits.seek(0)
+    return struct.pack('<i', expected) + bits.read()
 
 
 class BitsIO(object):
+
     def __init__(self, stream):
         self._stream = stream
         self._current = None
@@ -284,14 +317,15 @@ class GPXFileSystem(object):
     def _readContents(self):
         header = self.fp.read(4)
         if header == _HEADER_BCFZ:
-            self._readUncompressedBlock(decompress(self.fp))
+            decompressed = decompress(self.fp)[4:]
         elif header == _HEADER_BCFS:
-            self._readUncompressedBlock(self.fp.read())
+            decompressed = self.fp.read()
         else:
             pass
+        self._readBlock(decompressed)
 
-    def _readUncompressedBlock(self, data):
-        # The uncompressed block contains a list of filesystem entries. As long
+    def _readBlock(self, data):
+        # The decompressed block contains a list of filesystem entries. As long
         # as we have data we will try to read more entries.
 
         # The first sector (0x1000 bytes) is empty (filled with 0xFF) so the
@@ -397,18 +431,26 @@ def testBitsIO():
     assert bf.tell() == 3
 
 
-def _testCompression():
-    filename = '../tests/Queens of the Stone Age - I Appear Missing.gpx'
-    with open(filename, 'rb') as fp:
-        fp.read(4)  # header
-        data = decompress(fp)
-        comressed = compress(data)
-        assert data == comressed
+def testCompression():
+    streams = [
+        'Quick brown fox jumps over the lazy dog.',
+        'Noooooooooooooooooooooooooooooooo',
+        ':)',
+    ]
+    for stream in streams:
+        compressed = compress(stream)
+        decompressed = decompress(compressed)
+        assert stream == decompressed
 
 
 def testGPXFileSystem():
-    filename = '../tests/Queens of the Stone Age - I Appear Missing.gpx'
+    filename = 'tests/Queens of the Stone Age - I Appear Missing.gpx'
     with open(filename, 'rb') as fp:
         gpxfp = GPXFileSystem(fp)
-        assert (md5(gpxfp.read('score.gpif')).hexdigest() ==
-                'da09c7f29a11b19e34433747a0260f55')
+        gpxfp.extract('score.gpif')
+        score = gpxfp.read('score.gpif')
+        assert md5(score).hexdigest() == 'da09c7f29a11b19e34433747a0260f55'
+        decompressed = decompress(compress(score))
+        with open('score-dec.gpif', 'wb') as fp:
+            fp.write(decompressed)
+        assert score == decompressed
