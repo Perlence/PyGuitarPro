@@ -707,9 +707,10 @@ class Duration(GPObject):
 
     @classmethod
     def fromTime(cls, time, minimum=None, diff=0):
+        import copy
         if minimum is None:
             minimum = Duration()
-        duration = minimum
+        duration = copy.copy(minimum)
         tmp = Duration()
         tmp.value = cls.whole
         tmp.isDotted = True
@@ -717,7 +718,7 @@ class Duration(GPObject):
             tmpTime = tmp.time
             if tmpTime - diff <= time:
                 if abs(tmpTime - time) < abs(duration.time - time):
-                    duration = tmp
+                    duration = copy.copy(tmp)
             if tmp.isDotted:
                 tmp.isDotted = False
             elif tmp.tuplet == Tuplet():
