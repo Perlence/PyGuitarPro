@@ -102,11 +102,7 @@ class BitsIO(object):
         self._position = 0
 
     def __getattr__(self, name):
-        try:
-            return object.__getattribute__(self, name)
-        except AttributeError:
-            return (object.__getattribute__(self, '_stream')
-                          .__getattribute__(name))
+        return getattr(self._stream, name)
 
     def seek(self, offset):
         self._current = None
