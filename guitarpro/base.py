@@ -783,8 +783,7 @@ class Measure(GPObject):
 
     @property
     def isEmpty(self):
-        return (len(self.beats) == 0 or all(voice.isEmpty
-                                            for voice in self.voices))
+        return all(voice.isEmpty for voice in self.voices)
 
     @property
     def end(self):
