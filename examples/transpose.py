@@ -15,7 +15,8 @@ def unfold_tracknumber(tracknumber, tracks):
 
 def process(track, measure, voice, beat, note, semitone, stringmap):
     if (1 << (note.string - 1) & stringmap and
-            not note.type == guitarpro.base.NoteType.dead):
+            not (note.type == guitarpro.base.NoteType.dead or
+                 note.type == guitarpro.base.NoteType.tie)):
         note.value += semitone
         capped = max(0, min(track.fretCount, note.value))
         if note.value != capped:
