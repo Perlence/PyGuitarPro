@@ -446,7 +446,8 @@ class PageSetup(GPObject):
         self.music = 'Music by %music%'
         self.wordsAndMusic = 'Words & Music by %WORDSMUSIC%'
         self.copyright = ('Copyright %copyright%\n'
-                          'All Rights Reserved - International Copyright Secured')
+                          'All Rights Reserved - '
+                          'International Copyright Secured')
         self.pageNumber = 'Page %N%/%P%'
         GPObject.__init__(self, *args, **kwargs)
 
@@ -764,17 +765,16 @@ class Measure(GPObject):
     maxVoices = 2
 
     def __init__(self, header, *args, **kwargs):
-        self.header = header
+        self._header = header
         self.clef = MeasureClef.treble
         self.voices = []
         self.lineBreak = LineBreak.none
         GPObject.__init__(self, *args, **kwargs)
 
     def __repr__(self):
-        return '<{}.{} object {} isEmpty={}>'.format(self.__module__,
-                                                     self.__class__.__name__,
-                                                     hex(hash(self)),
-                                                     self.isEmpty)
+        return '<{}.{} object {} isEmpty={}>'.format(
+            self.__module__, self.__class__.__name__, hex(hash(self)),
+            self.isEmpty)
 
     def __str__(self):
         measure = self.number
@@ -788,6 +788,10 @@ class Measure(GPObject):
     @property
     def end(self):
         return self.start + self.length
+
+    @property
+    def header(self):
+        return self._header
 
     @property
     def number(self):
@@ -895,7 +899,8 @@ class BeatStroke(GPObject):
                     continue
                 currentDuration = voice.duration.time()
                 if duration == 0 or currentDuration < duration:
-                    duration = (currentDuration if currentDuration <= Duration.quarterTime
+                    duration = (currentDuration
+                                if currentDuration <= Duration.quarterTime
                                 else Duration.quarterTime)
             if duration > 0:
                 return round((duration / 8.0) * (4.0 / self.value))
@@ -1209,7 +1214,8 @@ class NoteEffect(GPObject):
 
     @property
     def isFingering(self):
-        return self.leftHandFinger.value > -1 or self.rightHandFinger.value > -1
+        return (self.leftHandFinger.value > -1 or
+                self.rightHandFinger.value > -1)
 
     @property
     def isDefault(self):
