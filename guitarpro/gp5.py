@@ -1065,8 +1065,8 @@ class GP5File(gp4.GP4File):
         super(GP5File, self).writeTracks(tracks)
         self.placeholder(2 if self.versionTuple == (5, 0) else 1)
 
-    def writeTrack(self, track):
-        if track.number == 1 or self.versionTuple == (5, 0):
+    def writeTrack(self, track, number):
+        if number == 1 or self.versionTuple == (5, 0):
             self.placeholder(1)
 
         flags1 = 0x00

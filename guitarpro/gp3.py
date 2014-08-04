@@ -1193,10 +1193,10 @@ class GP3File(gp.GPFileBase):
         self.placeholder(1)
 
     def writeTracks(self, tracks):
-        for track in tracks:
-            self.writeTrack(track)
+        for number, track in enumerate(tracks, 1):
+            self.writeTrack(track, number)
 
-    def writeTrack(self, track):
+    def writeTrack(self, track, number):
         flags = 0x00
         if track.isPercussionTrack:
             flags |= 0x01

@@ -1012,7 +1012,7 @@ class Octave(Enum):
 
 class Beat(GPObject):
 
-    """A beat contains multiple voices."""
+    """A beat contains multiple notes."""
 
     __attr__ = ('notes', 'duration', 'text', 'start', 'effect', 'index',
                 'octave', 'display', 'status')
