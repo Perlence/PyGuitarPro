@@ -51,7 +51,13 @@ To run one of the examples in your local environment, simply:
 Installation
 ------------
 
-To install PyGuitarPro download the repository and install manually by doing:
+To install PyGuitarPro, use PyPI:
+
+.. code-block:: console
+
+    $ pip install pyguitarpro
+
+Or install PyGuitarPro manually, e.g. for development:
 
 .. code-block:: console
 
@@ -59,12 +65,14 @@ To install PyGuitarPro download the repository and install manually by doing:
     $ cd pyguitarpro
     $ python setup.py install
 
+
 Documentation
 -------------
 
 Package documentation is located at `Read the Docs`_.
 
 .. _Read the Docs: http://pyguitarpro.readthedocs.org/
+
 
 Licensing
 ---------
