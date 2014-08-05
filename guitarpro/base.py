@@ -793,49 +793,28 @@ class Measure(GPObject):
     def header(self):
         return self._header
 
-    @property
-    def number(self):
-        return self.header.number
+    def _readwriteproperty(name):
+        def fget(self):
+            return getattr(self._header, name)
 
-    @property
-    def keySignature(self):
-        return self.header.keySignature
+        def fset(self, value):
+            setattr(self._header, name, value)
 
-    @property
-    def repeatClose(self):
-        return self.header.repeatClose
+        return property(fget, fset)
 
-    @property
-    def start(self):
-        return self.header.start
+    number = _readwriteproperty('number')
+    keySignature = _readwriteproperty('keySignature')
+    repeatClose = _readwriteproperty('repeatClose')
+    start = _readwriteproperty('start')
+    length = _readwriteproperty('length')
+    tempo = _readwriteproperty('tempo')
+    timeSignature = _readwriteproperty('timeSignature')
+    isRepeatOpen = _readwriteproperty('isRepeatOpen')
+    tripletFeel = _readwriteproperty('tripletFeel')
+    hasMarker = _readwriteproperty('hasMarker')
+    marker = _readwriteproperty('marker')
 
-    @property
-    def length(self):
-        return self.header.length
-
-    @property
-    def tempo(self):
-        return self.header.tempo
-
-    @property
-    def timeSignature(self):
-        return self.header.timeSignature
-
-    @property
-    def isRepeatOpen(self):
-        return self.header.isRepeatOpen
-
-    @property
-    def tripletFeel(self):
-        return self.header.tripletFeel
-
-    @property
-    def hasMarker(self):
-        return self.header.hasMarker
-
-    @property
-    def marker(self):
-        return self.header.marker
+    del _readwriteproperty
 
     def addVoice(self, voice):
         voice.measure = self
