@@ -258,7 +258,6 @@ class GP3File(gp.GPFileBase):
 
         """
         marker = gp.Marker()
-        marker.measureHeader = header
         marker.title = self.readIntByteSizeString()
         marker.color = self.readColor()
         return marker

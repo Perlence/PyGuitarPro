@@ -565,7 +565,6 @@ class Marker(GPObject):
     def __init__(self, *args, **kwargs):
         self.title = 'Section'
         self.color = Color.red
-        self.measureHeader = None
         GPObject.__init__(self, *args, **kwargs)
 
 
