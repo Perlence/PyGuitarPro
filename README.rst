@@ -38,7 +38,7 @@ To anyone wanting to create their the best guitar tablature editor in Python thi
 Examples
 --------
 
-Several usage examples are included in the ``/examples`` folder. Please feel free to add your own examples, or improve on some of the existing ones, and then submit them via Bitbucket as a pull-request.
+Several usage examples are included in the ``/examples`` folder. Please feel free to add your own examples, or improve on some of the existing ones, and then submit them via pull request.
 
 To run one of the examples in your local environment, simply:
 
