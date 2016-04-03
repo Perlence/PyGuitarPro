@@ -9,6 +9,7 @@
 dist
 build
 eggs
+.eggs
 parts
 bin
 var
@@ -34,6 +35,13 @@ docs/_build
 
 # Virtual environment
 env
+py27
 
+# Testing output
 tests/output
+
+# Sublime Text files
 *.sublime-*
+
+# ctags
+tags
