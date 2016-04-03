@@ -300,7 +300,8 @@ class Song(GPObject):
         self.notice = []
         self._currentRepeatGroup = RepeatGroup()
         self.hideTempo = False
-        self.tempoName = ''
+        self.tempoName = 'Moderate'
+        self.tempo = 120
         self.key = KeySignature.CMajor
         GPObject.__init__(self, *args, **kwargs)
 
@@ -477,8 +478,8 @@ class MidiChannel(GPObject):
 
     def __init__(self, *args, **kwargs):
         self.channel = 0
-        self.effectChannel = 0
-        self.instrument = 24
+        self.effectChannel = 1
+        self.instrument = 25
         self.volume = 104
         self.balance = 64
         self.chorus = 0
@@ -604,18 +605,19 @@ class Track(GPObject):
 
     def __init__(self, *args, **kwargs):
         self.number = 0
+        self.fretCount = 24
         self.offset = 0
         self.isSolo = False
         self.isMute = False
         self.isVisible = True
-        self.indicateTuning = True
-        self.name = ''
+        self.indicateTuning = False
+        self.name = 'Track 1'
         self.measures = []
         self.strings = []
         self.channel = MidiChannel()
         self.color = Color(255, 0, 0)
         self.settings = TrackSettings()
-        self.port = 0
+        self.port = 1
         self.isPercussionTrack = False
         self.isBanjoTrack = False
         self.is12StringedGuitarTrack = False
@@ -763,8 +765,8 @@ class Measure(GPObject):
 
     maxVoices = 2
 
-    def __init__(self, header, *args, **kwargs):
-        self._header = header
+    def __init__(self, header=None, *args, **kwargs):
+        self._header = header if header is not None else MeasureHeader()
         self.clef = MeasureClef.treble
         self.voices = []
         self.lineBreak = LineBreak.none
@@ -1002,7 +1004,7 @@ class Beat(GPObject):
         self.octave = Octave.none
         self.display = BeatDisplay()
         self.notes = []
-        self.status = True
+        self.status = BeatStatus.empty
         GPObject.__init__(self, *args, **kwargs)
 
     @property
@@ -1664,7 +1666,7 @@ class TimeSignature(GPObject):
     def __init__(self, *args, **kwargs):
         self.numerator = 4
         self.denominator = Duration()
-        self.beams = (0, 0, 0, 0)
+        self.beams = [2, 2, 2, 2]
         GPObject.__init__(self, *args, **kwargs)
 
 
