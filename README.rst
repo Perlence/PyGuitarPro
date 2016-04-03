@@ -65,12 +65,14 @@ To install development version of PyGuitarPro:
     cd pyguitarpro
     python setup.py develop
 
+
 Documentation
 -------------
 
 Package documentation is located at `Read the Docs`_.
 
 .. _Read the Docs: http://pyguitarpro.readthedocs.org/
+
 
 Licensing
 ---------

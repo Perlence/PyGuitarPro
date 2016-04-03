@@ -32,5 +32,8 @@ nosetests.xml
 # Built documentation
 docs/_build
 
+# Virtual environment
+env
+
 tests/output
 *.sublime-*

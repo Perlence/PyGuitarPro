@@ -258,7 +258,6 @@ class GP3File(gp.GPFileBase):
 
         """
         marker = gp.Marker()
-        marker.measureHeader = header
         marker.title = self.readIntByteSizeString()
         marker.color = self.readColor()
         return marker
@@ -1071,10 +1070,8 @@ class GP3File(gp.GPFileBase):
         self.writeInt(song.tempo)
         self.writeInt(song.key.value[0])
         self.writeMidiChannels(song.tracks)
-        measureCount = len(song.tracks[0].measures)
-        trackCount = len(song.tracks)
-        self.writeInt(measureCount)
-        self.writeInt(trackCount)
+        self.writeInt(len(song.tracks[0].measures))
+        self.writeInt(len(song.tracks))
         self.writeMeasureHeaders(song.tracks[0].measures)
         self.writeTracks(song.tracks)
         self.writeMeasures(song.tracks)
@@ -1195,10 +1192,10 @@ class GP3File(gp.GPFileBase):
         self.placeholder(1)
 
     def writeTracks(self, tracks):
-        for track in tracks:
-            self.writeTrack(track)
+        for number, track in enumerate(tracks, 1):
+            self.writeTrack(track, number)
 
-    def writeTrack(self, track):
+    def writeTrack(self, track, number):
         flags = 0x00
         if track.isPercussionTrack:
             flags |= 0x01

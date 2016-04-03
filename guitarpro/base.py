@@ -300,7 +300,8 @@ class Song(GPObject):
         self.notice = []
         self._currentRepeatGroup = RepeatGroup()
         self.hideTempo = False
-        self.tempoName = ''
+        self.tempoName = 'Moderate'
+        self.tempo = 120
         self.key = KeySignature.CMajor
         GPObject.__init__(self, *args, **kwargs)
 
@@ -446,7 +447,8 @@ class PageSetup(GPObject):
         self.music = 'Music by %music%'
         self.wordsAndMusic = 'Words & Music by %WORDSMUSIC%'
         self.copyright = ('Copyright %copyright%\n'
-                          'All Rights Reserved - International Copyright Secured')
+                          'All Rights Reserved - '
+                          'International Copyright Secured')
         self.pageNumber = 'Page %N%/%P%'
         GPObject.__init__(self, *args, **kwargs)
 
@@ -476,8 +478,8 @@ class MidiChannel(GPObject):
 
     def __init__(self, *args, **kwargs):
         self.channel = 0
-        self.effectChannel = 0
-        self.instrument = 24
+        self.effectChannel = 1
+        self.instrument = 25
         self.volume = 104
         self.balance = 64
         self.chorus = 0
@@ -564,7 +566,6 @@ class Marker(GPObject):
     def __init__(self, *args, **kwargs):
         self.title = 'Section'
         self.color = Color.red
-        self.measureHeader = None
         GPObject.__init__(self, *args, **kwargs)
 
 
@@ -604,18 +605,19 @@ class Track(GPObject):
 
     def __init__(self, *args, **kwargs):
         self.number = 0
+        self.fretCount = 24
         self.offset = 0
         self.isSolo = False
         self.isMute = False
         self.isVisible = True
-        self.indicateTuning = True
-        self.name = ''
+        self.indicateTuning = False
+        self.name = 'Track 1'
         self.measures = []
         self.strings = []
         self.channel = MidiChannel()
         self.color = Color(255, 0, 0)
         self.settings = TrackSettings()
-        self.port = 0
+        self.port = 1
         self.isPercussionTrack = False
         self.isBanjoTrack = False
         self.is12StringedGuitarTrack = False
@@ -764,18 +766,17 @@ class Measure(GPObject):
 
     maxVoices = 2
 
-    def __init__(self, header, *args, **kwargs):
-        self.header = header
+    def __init__(self, header=None, *args, **kwargs):
+        self._header = header if header is not None else MeasureHeader()
         self.clef = MeasureClef.treble
         self.voices = []
         self.lineBreak = LineBreak.none
         GPObject.__init__(self, *args, **kwargs)
 
     def __repr__(self):
-        return '<{}.{} object {} isEmpty={}>'.format(self.__module__,
-                                                     self.__class__.__name__,
-                                                     hex(hash(self)),
-                                                     self.isEmpty)
+        return '<{}.{} object {} isEmpty={}>'.format(
+            self.__module__, self.__class__.__name__, hex(hash(self)),
+            self.isEmpty)
 
     def __str__(self):
         measure = self.number
@@ -784,56 +785,38 @@ class Measure(GPObject):
 
     @property
     def isEmpty(self):
-        return (len(self.beats) == 0 or all(voice.isEmpty
-                                            for voice in self.voices))
+        return all(voice.isEmpty for voice in self.voices)
 
     @property
     def end(self):
         return self.start + self.length
 
     @property
-    def number(self):
-        return self.header.number
+    def header(self):
+        return self._header
 
-    @property
-    def keySignature(self):
-        return self.header.keySignature
+    def _readwriteproperty(name):
+        def fget(self):
+            return getattr(self._header, name)
 
-    @property
-    def repeatClose(self):
-        return self.header.repeatClose
+        def fset(self, value):
+            setattr(self._header, name, value)
 
-    @property
-    def start(self):
-        return self.header.start
+        return property(fget, fset)
 
-    @property
-    def length(self):
-        return self.header.length
+    number = _readwriteproperty('number')
+    keySignature = _readwriteproperty('keySignature')
+    repeatClose = _readwriteproperty('repeatClose')
+    start = _readwriteproperty('start')
+    length = _readwriteproperty('length')
+    tempo = _readwriteproperty('tempo')
+    timeSignature = _readwriteproperty('timeSignature')
+    isRepeatOpen = _readwriteproperty('isRepeatOpen')
+    tripletFeel = _readwriteproperty('tripletFeel')
+    hasMarker = _readwriteproperty('hasMarker')
+    marker = _readwriteproperty('marker')
 
-    @property
-    def tempo(self):
-        return self.header.tempo
-
-    @property
-    def timeSignature(self):
-        return self.header.timeSignature
-
-    @property
-    def isRepeatOpen(self):
-        return self.header.isRepeatOpen
-
-    @property
-    def tripletFeel(self):
-        return self.header.tripletFeel
-
-    @property
-    def hasMarker(self):
-        return self.header.hasMarker
-
-    @property
-    def marker(self):
-        return self.header.marker
+    del _readwriteproperty
 
     def addVoice(self, voice):
         voice.measure = self
@@ -897,7 +880,8 @@ class BeatStroke(GPObject):
                     continue
                 currentDuration = voice.duration.time()
                 if duration == 0 or currentDuration < duration:
-                    duration = (currentDuration if currentDuration <= Duration.quarterTime
+                    duration = (currentDuration
+                                if currentDuration <= Duration.quarterTime
                                 else Duration.quarterTime)
             if duration > 0:
                 return round((duration / 8.0) * (4.0 / self.value))
@@ -1009,7 +993,7 @@ class Octave(Enum):
 
 class Beat(GPObject):
 
-    """A beat contains multiple voices."""
+    """A beat contains multiple notes."""
 
     __attr__ = ('notes', 'duration', 'text', 'start', 'effect', 'index',
                 'octave', 'display', 'status')
@@ -1021,7 +1005,7 @@ class Beat(GPObject):
         self.octave = Octave.none
         self.display = BeatDisplay()
         self.notes = []
-        self.status = True
+        self.status = BeatStatus.empty
         GPObject.__init__(self, *args, **kwargs)
 
     @property
@@ -1211,7 +1195,8 @@ class NoteEffect(GPObject):
 
     @property
     def isFingering(self):
-        return self.leftHandFinger.value > -1 or self.rightHandFinger.value > -1
+        return (self.leftHandFinger.value > -1 or
+                self.rightHandFinger.value > -1)
 
     @property
     def isDefault(self):
@@ -1682,7 +1667,7 @@ class TimeSignature(GPObject):
     def __init__(self, *args, **kwargs):
         self.numerator = 4
         self.denominator = Duration()
-        self.beams = (0, 0, 0, 0)
+        self.beams = [2, 2, 2, 2]
         GPObject.__init__(self, *args, **kwargs)
 
 
