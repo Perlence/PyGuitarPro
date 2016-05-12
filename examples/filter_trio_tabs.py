@@ -1,23 +1,27 @@
 import guitarpro
 import os
+import fnmatch
 
 def main(source):
     print "Filtering...\n"
+    supportedExtensions = '*.gp[345]'
+
     for dirpath, dirs, files in os.walk(source):
-    	for file in files:
-            try:
+        try:
+            for file in fnmatch.filter(files, supportedExtensions):
                 guitarProPath = os.path.join(dirpath, file)
                 tab = guitarpro.parse(guitarProPath)
                 if(isABassGuitarDrumsFile(tab)): print guitarProPath
-            except:
-                pass
+        except guitarpro.base.GPException as exception:
+            print "###This is not a supported GuitarPro file:", guitarProPath, ":", exception
     print "\nDone!"
 
 def isABassGuitarDrumsFile(tab):
+    drumsOK = False
+    bassOK = False
+    guitarOK = False
+
     if(len(tab.tracks)) == 3:
-        drumsOK = False
-        bassOK = False
-        guitarOK = False
         for track in tab.tracks:
             if not track.isPercussionTrack:
                 if len(track.strings) <= 5:
