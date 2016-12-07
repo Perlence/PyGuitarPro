@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+Parts of the GPX manipulation are based on code contributed by J.Jørgen
+von Bargen.
+"""
+
 import os
 import struct
 from binascii import unhexlify, hexlify
