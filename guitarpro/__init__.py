@@ -17,6 +17,7 @@ _GPFILES = {
     'FICHIER GUITAR PRO L4.06': GP4File,
     'FICHIER GUITAR PRO v5.00': GP5File,
     'FICHIER GUITAR PRO v5.10': GP5File,
+    'CLIPBOARD GP 5.2': GP5File,
 }
 
 _VERSIONS = {
@@ -25,6 +26,7 @@ _VERSIONS = {
     'gp5':  'FICHIER GUITAR PRO v5.10',
     'gp50': 'FICHIER GUITAR PRO v5.00',
     'gp51': 'FICHIER GUITAR PRO v5.10',
+    'tmp':  'CLIPBOARD GP 5.2',
 }
 
 
@@ -77,7 +79,7 @@ def _open(stream, mode='rb', format=None, encoding=None):
     try:
         GPFile = _GPFILES[version]
     except KeyError:
-        raise GPException("unsupported version '%r'" % gpfilebase.version)
+        raise GPException("unsupported version %r" % gpfilebase.version)
     gpfile = GPFile(fp, encoding=encoding)
     gpfile.version = version
     return gpfile

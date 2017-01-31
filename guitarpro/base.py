@@ -39,13 +39,14 @@ class GPFileBase(object):
 
     def read(self, fmt, count, default=None):
         try:
-            result = struct.unpack(fmt, self.data.read(count))
+            data = self.data.read(count)
+            result = struct.unpack(fmt, data)
             return result[0]
-        except struct.error as e:
+        except struct.error:
             if default is not None:
                 return default
             else:
-                raise e
+                raise
 
     def readByte(self, count=1, default=None):
         """Read 1 byte *count* times."""
@@ -271,6 +272,20 @@ class RepeatGroup(object):
         elif self.isClosed:
             self.isClosed = False
             self.openings.append(h)
+
+
+class Clipboard(GPObject):
+    __attr__ = ('trackNumber', 'measureNumber', 'unknown1', 'unknown2',
+                'unknown3', 'beatNumber', 'unknown4')
+
+    def __init__(self, *args, **kwargs):
+        self.trackNumber = 1
+        self.measureNumber = 1
+        self.unknown1 = 1
+        self.unknown2 = 1
+        self.unknown3 = 1
+        self.beatNumber = 1
+        self.unknown4 = 1
 
 
 class Song(GPObject):

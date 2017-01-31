@@ -10,7 +10,8 @@ class GP5File(gp4.GP4File):
     """A reader for GuitarPro 5 files."""
 
     _supportedVersions = ['FICHIER GUITAR PRO v5.00',
-                          'FICHIER GUITAR PRO v5.10']
+                          'FICHIER GUITAR PRO v5.10',
+                          'CLIPBOARD GP 5.2']
 
     # Reading
     # =======
@@ -59,8 +60,12 @@ class GP5File(gp4.GP4File):
 
         """
         if not self.readVersion():
-            raise gp.GPException("unsupported version '%s'" %
-                                 self.version)
+            raise gp.GPException("unsupported version '%s'" % self.version)
+
+        if self.isClipboard():
+            clipboard = gp.Clipboard()
+            self.readClipboard(clipboard)
+
         song = gp.Song()
         self.readInfo(song)
         song.lyrics = self.readLyrics()
@@ -81,6 +86,18 @@ class GP5File(gp4.GP4File):
         self.readTracks(song, trackCount, channels)
         self.readMeasures(song)
         return song
+
+    def isClipboard(self):
+        return self.version.startswith('CLIPBOARD')
+
+    def readClipboard(self, clipboard):
+        clipboard.trackNumber = self.readInt()
+        clipboard.measureNumber = self.readInt()
+        clipboard.unknown1 = self.readInt()
+        clipboard.unknown2 = self.readInt()
+        clipboard.unknown3 = self.readInt()
+        clipboard.beatNumber = self.readInt()
+        clipboard.unknown4 = self.readInt()
 
     def readInfo(self, song):
         """Read score information.
