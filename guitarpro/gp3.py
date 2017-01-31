@@ -1,5 +1,7 @@
 from __future__ import division
 
+import attr
+
 from . import base as gp
 from .utils import clamp, bit_length
 
@@ -340,9 +342,7 @@ class GP3File(gp.GPFileBase):
         for i in range(7):
             iTuning = self.readInt()
             if stringCount > i:
-                oString = gp.GuitarString()
-                oString.number = i + 1
-                oString.value = iTuning
+                oString = gp.GuitarString(i + 1, iTuning)
                 track.strings.append(oString)
         track.port = self.readInt()
         track.channel = self.readChannel(channels)
@@ -1320,7 +1320,7 @@ class GP3File(gp.GPFileBase):
         barres = chord.barres[:2]
         self.writeInt(len(barres))
         if barres:
-            barreFrets, barreStarts, barreEnds = zip(*barres)
+            barreFrets, barreStarts, barreEnds = zip(*map(attr.astuple, barres))
         else:
             barreFrets, barreStarts, barreEnds = [], [], []
         for fret in clamp(barreFrets, 2, fillvalue=0):

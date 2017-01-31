@@ -426,9 +426,7 @@ class GP5File(gp4.GP4File):
         for i in range(7):
             iTuning = self.readInt()
             if stringCount > i:
-                oString = gp.GuitarString()
-                oString.number = i + 1
-                oString.value = iTuning
+                oString = gp.GuitarString(i + 1, iTuning)
                 track.strings.append(oString)
         track.port = self.readInt()
         track.channel = self.readChannel(channels)

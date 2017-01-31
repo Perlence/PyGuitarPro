@@ -2,8 +2,9 @@ from __future__ import division
 
 import struct
 
-from six import add_metaclass, string_types
+import attr
 from enum import Enum
+from six import string_types
 
 
 class GPException(Exception):
@@ -188,74 +189,16 @@ class GPFileBase(object):
             self.writeByteSizeString(self._supportedVersions[index], 30)
 
 
-class GPObjectMeta(type):
-
-    def __new__(cls, name, bases, dict_):
-        type_ = type.__new__(cls, name, bases, dict_)
-        for name in dict_['__attr__']:
-            try:
-                getattr(type_, name)
-            except AttributeError:
-                setattr(type_, name, None)
-        return type_
-
-
-@add_metaclass(GPObjectMeta)
-class GPObject(object):
-
-    """GPObject is the base of all Guitar Pro objects.
-
-    GPObjects are able to compute hash and be compared one to other.
-    To create new GPObject subclass all attribute names must specified in tuple
-    :attr:`GPObject.__attr__`. The order of attributes is important as it is
-    provides positional arguments for :meth:`GPObject.__init__`.
-
-    """
-    __attr__ = ()
-
-    def __init__(self, *args, **kwargs):
-        for key, value in zip(self.__attr__, args):
-            setattr(self, key, value)
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-    def __hash__(self):
-        attrs = []
-        for name in self.__attr__:
-            attr = getattr(self, name)
-            # convert lists to tuples
-            if isinstance(attr, list):
-                attrs.append(tuple(attr))
-            else:
-                attrs.append(attr)
-        return hash(tuple(attrs))
-
-    def __eq__(self, other):
-        if other is None or not isinstance(other, self.__class__):
-            return False
-        for name in self.__attr__:
-            if getattr(self, name) != getattr(other, name):
-                return False
-        return True
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __iter__(self):
-        for name in self.__attr__:
-            yield getattr(self, name)
-
-
+@attr.s
 class RepeatGroup(object):
 
     """This class can store the information about a group of measures which are
     repeated."""
 
-    def __init__(self):
-        self.measureHeaders = []
-        self.closings = []
-        self.openings = []
-        self.isClosed = False
+    measureHeaders = attr.ib(default=attr.Factory(list))
+    closings = attr.ib(default=attr.Factory(list))
+    openings = attr.ib(default=attr.Factory(list))
+    isClosed = attr.ib(default=False)
 
     def addMeasureHeader(self, h):
         if not len(self.openings):
@@ -274,51 +217,84 @@ class RepeatGroup(object):
             self.openings.append(h)
 
 
-class Clipboard(GPObject):
-    __attr__ = ('trackNumber', 'measureNumber', 'unknown1', 'unknown2',
-                'unknown3', 'beatNumber', 'unknown4')
-
-    def __init__(self, *args, **kwargs):
-        self.trackNumber = 1
-        self.measureNumber = 1
-        self.unknown1 = 1
-        self.unknown2 = 1
-        self.unknown3 = 1
-        self.beatNumber = 1
-        self.unknown4 = 1
+@attr.s
+class Clipboard(object):
+    trackNumber = attr.ib(default=1)
+    measureNumber = attr.ib(default=1)
+    unknown1 = attr.ib(default=1)
+    unknown2 = attr.ib(default=1)
+    unknown3 = attr.ib(default=1)
+    beatNumber = attr.ib(default=1)
+    unknown4 = attr.ib(default=1)
 
 
-class Song(GPObject):
+class KeySignature(Enum):
+    FMajorFlat = (-8, 0)
+    CMajorFlat = (-7, 0)
+    GMajorFlat = (-6, 0)
+    DMajorFlat = (-5, 0)
+    AMajorFlat = (-4, 0)
+    EMajorFlat = (-3, 0)
+    BMajorFlat = (-2, 0)
+    FMajor = (-1, 0)
+    CMajor = (0, 0)
+    GMajor = (1, 0)
+    DMajor = (2, 0)
+    AMajor = (3, 0)
+    EMajor = (4, 0)
+    BMajor = (5, 0)
+    FMajorSharp = (6, 0)
+    CMajorSharp = (7, 0)
+    GMajorSharp = (8, 0)
+
+    DMinorFlat = (-8, 1)
+    AMinorFlat = (-7, 1)
+    EMinorFlat = (-6, 1)
+    BMinorFlat = (-5, 1)
+    FMinor = (-4, 1)
+    CMinor = (-3, 1)
+    GMinor = (-2, 1)
+    DMinor = (-1, 1)
+    AMinor = (0, 1)
+    EMinor = (1, 1)
+    BMinor = (2, 1)
+    FMinorSharp = (3, 1)
+    CMinorSharp = (4, 1)
+    GMinorSharp = (5, 1)
+    DMinorSharp = (6, 1)
+    AMinorSharp = (7, 1)
+    EMinorSharp = (8, 1)
+
+
+@attr.s
+class Song(object):
 
     """This is the top-level node of the song model.
 
     It contains basic information about the stored song.
 
     """
-    __attr__ = ('title', 'subtitle', 'artist', 'album', 'words', 'music',
-                'copyright', 'tab', 'instructions', 'notice', 'lyrics',
-                'pageSetup', 'tempoName', 'tempo', 'hideTempo', 'key',
-                'tracks', 'masterEffect')
+    title = attr.ib(default='')
+    subtitle = attr.ib(default='')
+    artist = attr.ib(default='')
+    album = attr.ib(default='')
+    words = attr.ib(default='')
+    music = attr.ib(default='')
+    copyright = attr.ib(default='')
+    tab = attr.ib(default='')
+    instructions = attr.ib(default='')
+    notice = attr.ib(default=attr.Factory(list))
+    lyrics = attr.ib(default=None)
+    pageSetup = attr.ib(default=None)
+    tempoName = attr.ib(default='Moderate')
+    tempo = attr.ib(default=120)
+    hideTempo = attr.ib(default=False)
+    key = attr.ib(default=KeySignature.CMajor)
+    measureHeaders = attr.ib(default=attr.Factory(list))
+    tracks = attr.ib(default=attr.Factory(list))
+    masterEffect = attr.ib(default=None)
 
-    def __init__(self, *args, **kwargs):
-        self.measureHeaders = []
-        self.tracks = []
-        self.title = ''
-        self.subtitle = ''
-        self.artist = ''
-        self.album = ''
-        self.words = ''
-        self.music = ''
-        self.copyright = ''
-        self.tab = ''
-        self.instructions = ''
-        self.notice = []
-        self._currentRepeatGroup = RepeatGroup()
-        self.hideTempo = False
-        self.tempoName = 'Moderate'
-        self.tempo = 120
-        self.key = KeySignature.CMajor
-        GPObject.__init__(self, *args, **kwargs)
+    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), cmp=False)
 
     def addMeasureHeader(self, header):
         header.song = self
@@ -338,32 +314,29 @@ class Song(GPObject):
         self.tracks.append(track)
 
 
-class LyricLine(GPObject):
+@attr.s
+class LyricLine(object):
 
     """A lyrics line."""
 
-    __attr__ = ('startingMeasure', 'lyrics')
-
-    def __init__(self, *args, **kwargs):
-        self.startingMeasure = 1
-        self.lyrics = ''
-        GPObject.__init__(self, *args, **kwargs)
+    startingMeasure = attr.ib(default=1)
+    lyrics = attr.ib(default='')
 
 
-class Lyrics(GPObject):
+@attr.s
+class Lyrics(object):
 
     """Represents a collection of lyrics lines for a track."""
 
-    __attr__ = ('trackChoice', 'lines')
+    trackChoice = attr.ib(default=-1)
+    lines = attr.ib(default=attr.Factory(list))
 
     maxLineCount = 5
 
-    def __init__(self, *args, **kwargs):
-        self.trackChoice = -1
-        self.lines = []
-        for __ in range(Lyrics.maxLineCount):
-            self.lines.append(LyricLine())
-        GPObject.__init__(self, *args, **kwargs)
+    def __attrs_post_init__(self):
+        if not self.lines:
+            for __ in range(Lyrics.maxLineCount):
+                self.lines.append(LyricLine())
 
     def __str__(self):
         full = ''
@@ -376,36 +349,32 @@ class Lyrics(GPObject):
         return ret
 
 
-class Point(GPObject):
+@attr.s
+class Point(object):
 
     """A point construct using floating point coordinates."""
 
-    __attr__ = ('x', 'y')
-
-    def __repr__(self):
-        return 'Point({x}, {y})'.format(**vars(self))
+    x = attr.ib()
+    y = attr.ib()
 
 
-class Padding(GPObject):
+@attr.s
+class Padding(object):
 
     """A padding construct."""
 
-    __attr__ = ('right', 'top', 'left', 'bottom')
-
-    def __init__(self, *args, **kwargs):
-        GPObject.__init__(self, *args, **kwargs)
-
-    def __repr__(self):
-        return 'Padding({right}, {top}, {left}, {bottom})'.format(**vars(self))
+    right = attr.ib()
+    top = attr.ib()
+    left = attr.ib()
+    bottom = attr.ib()
 
 
-class HeaderFooterElements(object):
+class HeaderFooterElements(Enum):
 
     """A list of the elements which can be shown in the header and footer of a
     rendered song sheet.
 
     All values can be combined using bit-operators as they are flags.
-
     """
     none = 0x000
     title = 0x001
@@ -421,7 +390,8 @@ class HeaderFooterElements(object):
            copyright | pageNumber)
 
 
-class PageSetup(GPObject):
+@attr.s
+class PageSetup(object):
 
     """The page setup describes how the document is rendered.
 
@@ -445,240 +415,81 @@ class PageSetup(GPObject):
         layout)
 
     """
-    __attr__ = ('pageSize', 'pageMargin', 'scoreSizeProportion',
-                'headerAndFooter', 'title', 'subtitle', 'artist', 'album',
-                'words', 'music', 'wordsAndMusic', 'copyright', 'pageNumber')
-
-    def __init__(self, *args, **kwargs):
-        self.pageSize = Point(210, 297)
-        self.pageMargin = Padding(10, 15, 10, 10)
-        self.scoreSizeProportion = 1
-        self.headerAndFooter = HeaderFooterElements.all
-        self.title = '%title%'
-        self.subtitle = '%subtitle%'
-        self.artist = '%artist%'
-        self.album = '%album%'
-        self.words = 'Words by %words%'
-        self.music = 'Music by %music%'
-        self.wordsAndMusic = 'Words & Music by %WORDSMUSIC%'
-        self.copyright = ('Copyright %copyright%\n'
-                          'All Rights Reserved - '
-                          'International Copyright Secured')
-        self.pageNumber = 'Page %N%/%P%'
-        GPObject.__init__(self, *args, **kwargs)
+    pageSize = attr.ib(default=Point(210, 297))
+    pageMargin = attr.ib(default=Padding(10, 15, 10, 10))
+    scoreSizeProportion = attr.ib(default=1)
+    headerAndFooter = attr.ib(default=HeaderFooterElements.all)
+    title = attr.ib(default='%title%')
+    subtitle = attr.ib(default='%subtitle%')
+    artist = attr.ib(default='%artist%')
+    album = attr.ib(default='%album%')
+    words = attr.ib(default='Words by %words%')
+    music = attr.ib(default='Music by %music%')
+    wordsAndMusic = attr.ib(default='Words & Music by %WORDSMUSIC%')
+    copyright = attr.ib(default='Copyright %copyright%\n'
+                                'All Rights Reserved - '
+                                'International Copyright Secured')
+    pageNumber = attr.ib(default='Page %N%/%P%')
 
 
-class Tempo(GPObject):
+@attr.s
+class Tempo(object):
 
     """A song tempo in BPM."""
 
-    __attr__ = ('value',)
-
-    def __init__(self, *args, **kwargs):
-        self.value = 120
-        GPObject.__init__(self, *args, **kwargs)
+    value = attr.ib(default=120)
 
     def __str__(self):
         return '{value}bpm'.format(**vars(self))
 
 
-class MidiChannel(GPObject):
+@attr.s
+class MidiChannel(object):
 
     """A MIDI channel describes playing data for a track."""
 
-    __attr__ = ('channel', 'effectChannel', 'instrument', 'volume', 'balance',
-                'chorus', 'reverb', 'phaser', 'tremolo', 'bank')
+    channel = attr.ib(default=0)
+    effectChannel = attr.ib(default=1)
+    instrument = attr.ib(default=25)
+    volume = attr.ib(default=104)
+    balance = attr.ib(default=64)
+    chorus = attr.ib(default=0)
+    reverb = attr.ib(default=0)
+    phaser = attr.ib(default=0)
+    tremolo = attr.ib(default=0)
+    bank = attr.ib(default=0)
 
     DEFAULT_PERCUSSION_CHANNEL = 9
-
-    def __init__(self, *args, **kwargs):
-        self.channel = 0
-        self.effectChannel = 1
-        self.instrument = 25
-        self.volume = 104
-        self.balance = 64
-        self.chorus = 0
-        self.reverb = 0
-        self.phaser = 0
-        self.tremolo = 0
-        self.bank = 0
-        GPObject.__init__(self, *args, **kwargs)
 
     @property
     def isPercussionChannel(self):
         return self.channel % 16 == self.DEFAULT_PERCUSSION_CHANNEL
 
 
-class DirectionSign(GPObject):
+@attr.s
+class DirectionSign(object):
 
     """A navigation sign like Coda or Segno."""
 
-    __attr__ = ('name',)
-
-    def __init__(self, *args, **kwargs):
-        self.name = ''
-        GPObject.__init__(self, *args, **kwargs)
+    name = attr.ib(default='')
 
 
-class MeasureHeader(GPObject):
-
-    """A measure header contains metadata for measures over multiple tracks."""
-
-    __attr__ = ('hasDoubleBar', 'keySignature', 'timeSignature', 'tempo',
-                'marker', 'isRepeatOpen', 'repeatAlternative', 'repeatClose',
-                'tripletFeel', 'direction', 'fromDirection')
-
-    def __init__(self, *args, **kwargs):
-        self.number = 0
-        self.start = Duration.quarterTime
-        self.timeSignature = TimeSignature()
-        self.keySignature = KeySignature.CMajor
-        self.tempo = Tempo()
-        self.tripletFeel = TripletFeel.none
-        self.isRepeatOpen = False
-        self.repeatClose = -1
-        self.repeatAlternative = 0
-        self.realStart = -1
-        self.hasDoubleBar = False
-        GPObject.__init__(self, *args, **kwargs)
-
-    @property
-    def hasMarker(self):
-        return self.marker is not None
-
-    @property
-    def length(self):
-        return (self.timeSignature.numerator *
-                self.timeSignature.denominator.time)
-
-
-class Color(GPObject):
-
-    """An RGB Color."""
-
-    __attr__ = ('r', 'g', 'b', 'a')
-
-    def __init__(self, *args, **kwargs):
-        self.a = 1
-        GPObject.__init__(self, *args, **kwargs)
-
-    def __repr__(self):
-        if self.a == 1:
-            return 'Color({r}, {g}, {b})'.format(**vars(self))
-        else:
-            return 'Color({r}, {g}, {b}, {a})'.format(**vars(self))
-
-Color.black = Color(0, 0, 0)
-Color.red = Color(255, 0, 0)
-
-
-class Marker(GPObject):
-
-    """A marker annotation for beats."""
-
-    __attr__ = ('title', 'color')
-
-    def __init__(self, *args, **kwargs):
-        self.title = 'Section'
-        self.color = Color.red
-        GPObject.__init__(self, *args, **kwargs)
-
-
-class TrackSettings(GPObject):
-
-    """Settings of the track."""
-
-    __attr__ = ('tablature', 'notation', 'diagramsAreBelow', 'showRhythm',
-                'forceHorizontal', 'forceChannels', 'diagramList',
-                'diagramsInScore', 'autoLetRing', 'autoBrush',
-                'extendRhythmic')
-
-    def __init__(self, *args, **kwargs):
-        self.tablature = True
-        self.notation = True
-        self.diagramsAreBelow = False
-        self.showRhythm = False
-        self.forceHorizontal = False
-        self.forceChannels = False
-        self.diagramList = True
-        self.diagramsInScore = False
-        self.autoLetRing = False
-        self.autoBrush = False
-        self.extendRhythmic = False
-        GPObject.__init__(self, *args, **kwargs)
-
-
-class Track(GPObject):
-
-    """A track contains multiple measures."""
-
-    __attr__ = ('fretCount', 'offset', 'isPercussionTrack',
-                'is12StringedGuitarTrack', 'isBanjoTrack', 'isVisible',
-                'isSolo', 'isMute', 'indicateTuning', 'name', 'measures',
-                'strings', 'port', 'channel', 'color', 'settings', 'useRSE',
-                'rse')
-
-    def __init__(self, *args, **kwargs):
-        self.number = 0
-        self.fretCount = 24
-        self.offset = 0
-        self.isSolo = False
-        self.isMute = False
-        self.isVisible = True
-        self.indicateTuning = False
-        self.name = 'Track 1'
-        self.measures = []
-        self.strings = []
-        self.channel = MidiChannel()
-        self.color = Color(255, 0, 0)
-        self.settings = TrackSettings()
-        self.port = 1
-        self.isPercussionTrack = False
-        self.isBanjoTrack = False
-        self.is12StringedGuitarTrack = False
-        self.useRSE = False
-        GPObject.__init__(self, *args, **kwargs)
-
-    def __str__(self):
-        return '<guitarpro.base.Track {}>'.format(self.number)
-
-    def addMeasure(self, measure):
-        measure.track = self
-        self.measures.append(measure)
-
-
-class GuitarString(GPObject):
-
-    """A guitar string with a special tuning."""
-
-    __attr__ = ('number', 'value')
-
-    def __str__(self):
-        notes = 'C C# D D# E F F# G G# A A# B'.split()
-        octave, semitone = divmod(self.value, 12)
-        return '{note}{octave}'.format(note=notes[semitone], octave=octave)
-
-
-class Tuplet(GPObject):
+@attr.s
+class Tuplet(object):
 
     """Represents a n:m tuplet."""
 
-    __attr__ = ('enters', 'times')
-
-    def __init__(self, *args, **kwargs):
-        self.enters = 1
-        self.times = 1
-        GPObject.__init__(self, *args, **kwargs)
+    enters = attr.ib(default=1)
+    times = attr.ib(default=1)
 
     def convertTime(self, time):
         return int(time * self.times / self.enters)
 
 
-class Duration(GPObject):
+@attr.s
+class Duration(object):
 
     """A duration."""
-
-    __attr__ = ('value', 'isDotted', 'isDoubleDotted', 'tuplet')
 
     quarterTime = 960
 
@@ -694,12 +505,10 @@ class Duration(GPObject):
     # The time resulting with a 64th note and a 3/2 tuplet
     minTime = int(int(quarterTime * (4 / sixtyFourth)) * 2 / 3)
 
-    def __init__(self, *args, **kwargs):
-        self.value = self.quarter
-        self.isDotted = False
-        self.isDoubleDotted = False
-        self.tuplet = Tuplet()
-        GPObject.__init__(self, *args, **kwargs)
+    value = attr.ib(default=quarter)
+    isDotted = attr.ib(default=False)
+    isDoubleDotted = attr.ib(default=False)
+    tuplet = attr.ib(default=attr.Factory(Tuplet))
 
     @property
     def time(self):
@@ -751,6 +560,149 @@ class Duration(GPObject):
         return duration
 
 
+@attr.s
+class TimeSignature(object):
+
+    """A time signature."""
+
+    numerator = attr.ib(default=4)
+    denominator = attr.ib(default=attr.Factory(Duration))
+    beams = attr.ib(default=attr.Factory(list))
+
+    def __attrs_post_init__(self):
+        if not self.beams:
+            self.beams = [2, 2, 2, 2]
+
+
+class TripletFeel(Enum):
+
+    """A list of different triplet feels."""
+
+    #: No triplet feel.
+    none = 0
+
+    #: Eighth triplet feel.
+    eighth = 1
+
+    #: Sixteenth triplet feel.
+    sixteenth = 2
+
+
+@attr.s
+class MeasureHeader(object):
+
+    """A measure header contains metadata for measures over multiple tracks."""
+
+    number = attr.ib(default=0, cmp=False)
+    start = attr.ib(default=Duration.quarterTime)
+    hasDoubleBar = attr.ib(default=False)
+    keySignature = attr.ib(default=KeySignature.CMajor)
+    timeSignature = attr.ib(default=attr.Factory(TimeSignature))
+    tempo = attr.ib(default=attr.Factory(Tempo))
+    marker = attr.ib(default=None)
+    isRepeatOpen = attr.ib(default=False)
+    repeatAlternative = attr.ib(default=0)
+    repeatClose = attr.ib(default=-1)
+    tripletFeel = attr.ib(default=TripletFeel.none)
+    direction = attr.ib(default=None)
+    fromDirection = attr.ib(default=None)
+
+    @property
+    def hasMarker(self):
+        return self.marker is not None
+
+    @property
+    def length(self):
+        return (self.timeSignature.numerator *
+                self.timeSignature.denominator.time)
+
+
+@attr.s
+class Color(object):
+
+    """An RGB Color."""
+
+    r = attr.ib()
+    g = attr.ib()
+    b = attr.ib()
+    a = attr.ib(default=1)
+
+
+Color.black = Color(0, 0, 0)
+Color.red = Color(255, 0, 0)
+
+
+@attr.s
+class Marker(object):
+
+    """A marker annotation for beats."""
+
+    title = attr.ib(default='Section')
+    color = attr.ib(default=Color.red)
+
+
+@attr.s
+class TrackSettings(object):
+
+    """Settings of the track."""
+
+    tablature = attr.ib(default=True)
+    notation = attr.ib(default=True)
+    diagramsAreBelow = attr.ib(default=False)
+    showRhythm = attr.ib(default=False)
+    forceHorizontal = attr.ib(default=False)
+    forceChannels = attr.ib(default=False)
+    diagramList = attr.ib(default=True)
+    diagramsInScore = attr.ib(default=False)
+    autoLetRing = attr.ib(default=False)
+    autoBrush = attr.ib(default=False)
+    extendRhythmic = attr.ib(default=False)
+
+
+@attr.s
+class Track(object):
+
+    """A track contains multiple measures."""
+
+    number = attr.ib(default=0)
+    fretCount = attr.ib(default=24)
+    offset = attr.ib(default=0)
+    isPercussionTrack = attr.ib(default=False)
+    is12StringedGuitarTrack = attr.ib(default=False)
+    isBanjoTrack = attr.ib(default=False)
+    isVisible = attr.ib(default=True)
+    isSolo = attr.ib(default=False)
+    isMute = attr.ib(default=False)
+    indicateTuning = attr.ib(default=False)
+    name = attr.ib(default='Track 1')
+    measures = attr.ib(default=attr.Factory(list))
+    strings = attr.ib(default=attr.Factory(list))
+    port = attr.ib(default=1)
+    channel = attr.ib(default=attr.Factory(MidiChannel))
+    color = attr.ib(default=Color.red)
+    settings = attr.ib(default=attr.Factory(TrackSettings))
+    useRSE = attr.ib(default=False)
+    rse = attr.ib(default=None)
+
+    def addMeasure(self, measure):
+        measure.track = self
+        self.measures.append(measure)
+
+
+@attr.s
+class GuitarString(object):
+
+    """A guitar string with a special tuning."""
+
+    number = attr.ib()
+    value = attr.ib()
+
+    def __str__(self):
+        notes = 'C C# D D# E F F# G G# A A# B'.split()
+        octave, semitone = divmod(self.value, 12)
+        return '{note}{octave}'.format(note=notes[semitone], octave=octave)
+
+
 class MeasureClef(Enum):
 
     """A list of available clefs."""
@@ -773,30 +725,17 @@ class LineBreak(Enum):
     protect = 2
 
 
-class Measure(GPObject):
+@attr.s
+class Measure(object):
 
     """A measure contains multiple voices of beats."""
 
-    __attr__ = ('clef', 'voices', 'header', 'lineBreak')
+    header = attr.ib(default=attr.Factory(MeasureHeader))
+    clef = attr.ib(default=MeasureClef.treble)
+    voices = attr.ib(default=attr.Factory(list))
+    lineBreak = attr.ib(default=LineBreak.none)
 
     maxVoices = 2
-
-    def __init__(self, header=None, *args, **kwargs):
-        self._header = header if header is not None else MeasureHeader()
-        self.clef = MeasureClef.treble
-        self.voices = []
-        self.lineBreak = LineBreak.none
-        GPObject.__init__(self, *args, **kwargs)
-
-    def __repr__(self):
-        return '<{}.{} object {} isEmpty={}>'.format(
-            self.__module__, self.__class__.__name__, hex(hash(self)),
-            self.isEmpty)
-
-    def __str__(self):
-        measure = self.number
-        track = self.track.number
-        return '<guitarpro.base.Measure {} on Track {}>'.format(measure, track)
 
     @property
     def isEmpty(self):
@@ -806,16 +745,12 @@ class Measure(GPObject):
     def end(self):
         return self.start + self.length
 
-    @property
-    def header(self):
-        return self._header
-
     def _readwriteproperty(name):
         def fget(self):
-            return getattr(self._header, name)
+            return getattr(self.header, name)
 
         def fset(self, value):
-            setattr(self._header, name, value)
+            setattr(self.header, name, value)
 
         return property(fget, fset)
 
@@ -847,16 +782,13 @@ class VoiceDirection(Enum):
     down = 2
 
 
-class Voice(GPObject):
+@attr.s
+class Voice(object):
 
     """A voice contains multiple beats."""
 
-    __attr__ = ('beats', 'direction', 'isEmpty')
-
-    def __init__(self, *args, **kwargs):
-        self.beats = []
-        self.direction = VoiceDirection.none
-        GPObject.__init__(self, *args, **kwargs)
+    beats = attr.ib(default=attr.Factory(list))
+    direction = attr.ib(default=VoiceDirection.none)
 
     @property
     def isEmpty(self):
@@ -876,16 +808,13 @@ class BeatStrokeDirection(Enum):
     down = 2
 
 
-class BeatStroke(GPObject):
+@attr.s
+class BeatStroke(object):
 
     """A stroke effect for beats."""
 
-    __attr__ = ('direction', 'value')
-
-    def __init__(self, *args, **kwargs):
-        self.direction = BeatStrokeDirection.none
-        self.value = 0
-        GPObject.__init__(self, *args, **kwargs)
+    direction = attr.ib(default=BeatStrokeDirection.none)
+    value = attr.ib(default=0)
 
     def getIncrementTime(self, beat):
         duration = 0
@@ -927,21 +856,20 @@ class SlapEffect(Enum):
     popping = 3
 
 
-class BeatEffect(GPObject):
+@attr.s
+class BeatEffect(object):
 
     """This class contains all beat effects."""
 
-    __attr__ = ('stroke', 'hasRasgueado', 'pickStroke', 'chord', 'fadeIn',
-                'tremoloBar', 'mixTableChange', 'slapEffect', 'vibrato')
-
-    def __init__(self, *args, **kwargs):
-        self.fadeIn = False
-        self.pickStroke = BeatStrokeDirection.none
-        self.hasRasgueado = False
-        self.stroke = BeatStroke()
-        self.slapEffect = SlapEffect.none
-        self.vibrato = False
-        GPObject.__init__(self, *args, **kwargs)
+    stroke = attr.ib(default=attr.Factory(BeatStroke))
+    hasRasgueado = attr.ib(default=False)
+    pickStroke = attr.ib(default=BeatStrokeDirection.none)
+    chord = attr.ib(default=None)
+    fadeIn = attr.ib(default=False)
+    tremoloBar = attr.ib(default=None)
+    mixTableChange = attr.ib(default=None)
+    slapEffect = attr.ib(default=SlapEffect.none)
+    vibrato = attr.ib(default=None)
 
     @property
     def isChord(self):
@@ -977,22 +905,18 @@ class TupletBracket(Enum):
     end = 2
 
 
-class BeatDisplay(GPObject):
+@attr.s
+class BeatDisplay(object):
 
     """Parameters of beat display."""
 
-    __attr__ = ('breakBeam', 'forceBeam', 'beamDirection', 'tupletBracket',
-                'breakSecondary', 'breakSecondaryTuplet', 'forceBracket')
-
-    def __init__(self, *args, **kwargs):
-        self.breakBeam = False
-        self.forceBeam = False
-        self.beamDirection = VoiceDirection.none
-        self.tupletBracket = TupletBracket.none
-        self.breakSecondary = 0
-        self.breakSecondaryTuplet = False
-        self.forceBracket = False
-        GPObject.__init__(self, *args, **kwargs)
+    breakBeam = attr.ib(default=False)
+    forceBeam = attr.ib(default=False)
+    beamDirection = attr.ib(default=VoiceDirection.none)
+    tupletBracket = attr.ib(default=TupletBracket.none)
+    breakSecondary = attr.ib(default=0)
+    breakSecondaryTuplet = attr.ib(default=False)
+    forceBracket = attr.ib(default=False)
 
 
 class Octave(Enum):
@@ -1006,22 +930,26 @@ class Octave(Enum):
     quindicesimaBassa = 4
 
 
-class Beat(GPObject):
+class BeatStatus(Enum):
+    empty = 0
+    normal = 1
+    rest = 2
+
+
+@attr.s
+class Beat(object):
 
     """A beat contains multiple notes."""
 
-    __attr__ = ('notes', 'duration', 'text', 'start', 'effect', 'index',
-                'octave', 'display', 'status')
-
-    def __init__(self, *args, **kwargs):
-        self.duration = Duration()
-        self.start = Duration.quarterTime
-        self.effect = BeatEffect()
-        self.octave = Octave.none
-        self.display = BeatDisplay()
-        self.notes = []
-        self.status = BeatStatus.empty
-        GPObject.__init__(self, *args, **kwargs)
+    notes = attr.ib(default=attr.Factory(list))
+    duration = attr.ib(default=attr.Factory(Duration))
+    text = attr.ib(default=None)
+    start = attr.ib(default=None)
+    effect = attr.ib(default=attr.Factory(BeatEffect))
+    index = attr.ib(default=None)
+    octave = attr.ib(default=Octave.none)
+    display = attr.ib(default=attr.Factory(BeatDisplay))
+    status = attr.ib(default=BeatStatus.empty)
 
     @property
     def realStart(self):
@@ -1046,47 +974,47 @@ class Beat(GPObject):
         self.notes.append(note)
 
 
-class BeatStatus(Enum):
-    empty = 0
-    normal = 1
-    rest = 2
-
-
-class HarmonicEffect(GPObject):
+@attr.s
+class HarmonicEffect(object):
 
     """A harmonic note effect."""
 
-    __attr__ = ('type',)
+    type = attr.ib(init=False)
 
 
+@attr.s
 class NaturalHarmonic(HarmonicEffect):
-    __attr__ = ('type',)
+    def __attrs_post_init__(self):
+        self.type = 1
 
-    type = 1
 
-
+@attr.s
 class ArtificialHarmonic(HarmonicEffect):
-    __attr__ = ('pitch', 'octave', 'type')
+    pitch = attr.ib(default=None)
+    octave = attr.ib(default=None)
 
-    type = 2
+    def __attrs_post_init__(self):
+        self.type = 2
 
 
+@attr.s
 class TappedHarmonic(HarmonicEffect):
-    __attr__ = ('fret', 'type')
+    fret = attr.ib(default=None)
 
-    type = 3
+    def __attrs_post_init__(self):
+        self.type = 3
 
 
+@attr.s
 class PinchHarmonic(HarmonicEffect):
-    __attr__ = ('type',)
+    def __attrs_post_init__(self):
+        self.type = 4
 
-    type = 4
 
-
+@attr.s
 class SemiHarmonic(HarmonicEffect):
-    __attr__ = ('type',)
-
-    type = 5
+    def __attrs_post_init__(self):
+        self.type = 5
 
 
 class GraceEffectTransition(Enum):
@@ -1106,22 +1034,33 @@ class GraceEffectTransition(Enum):
     hammer = 3
 
 
-class GraceEffect(GPObject):
+class Velocities(object):
+
+    """A list of velocities / dynamics."""
+    minVelocity = 15
+    velocityIncrement = 16
+    pianoPianissimo = minVelocity
+    pianissimo = minVelocity + velocityIncrement
+    piano = minVelocity + velocityIncrement * 2
+    mezzoPiano = minVelocity + velocityIncrement * 3
+    mezzoForte = minVelocity + velocityIncrement * 4
+    forte = minVelocity + velocityIncrement * 5
+    fortissimo = minVelocity + velocityIncrement * 6
+    forteFortissimo = minVelocity + velocityIncrement * 7
+    default = forte
+
+
+@attr.s
+class GraceEffect(object):
 
     """A grace note effect."""
 
-    __attr__ = ('isDead', 'duration', 'velocity', 'fret', 'isOnBeat',
-                'transition')
-
-    def __init__(self, *args, **kwargs):
-        """Initializes a new instance of the GraceEffect class."""
-        self.fret = 0
-        self.duration = 1
-        self.velocity = Velocities.default
-        self.transition = GraceEffectTransition.none
-        self.isOnBeat = False
-        self.isDead = False
-        GPObject.__init__(self, *args, **kwargs)
+    duration = attr.ib(default=1)
+    fret = attr.ib(default=0)
+    isDead = attr.ib(default=False)
+    isOnBeat = attr.ib(default=False)
+    transition = attr.ib(default=GraceEffectTransition.none)
+    velocity = attr.ib(default=Velocities.default)
 
     @property
     def durationTime(self):
@@ -1129,27 +1068,21 @@ class GraceEffect(GPObject):
         return int(Duration.quarterTime / 16 * self.duration)
 
 
-class TrillEffect(GPObject):
+@attr.s
+class TrillEffect(object):
 
     """A trill effect."""
 
-    __attr__ = ('fret', 'duration')
-
-    def __init__(self, *args, **kwargs):
-        self.fret = 0
-        self.duration = Duration()
-        GPObject.__init__(self, *args, **kwargs)
+    fret = attr.ib(default=0)
+    duration = attr.ib(default=attr.Factory(Duration))
 
 
-class TremoloPickingEffect(GPObject):
+@attr.s
+class TremoloPickingEffect(object):
 
     """A tremolo picking effect."""
 
-    __attr__ = ('duration',)
-
-    def __init__(self, *args, **kwargs):
-        self.duration = Duration()
-        GPObject.__init__(self, *args, **kwargs)
+    duration = attr.ib(default=attr.Factory(Duration))
 
 
 class SlideType(Enum):
@@ -1164,29 +1097,47 @@ class SlideType(Enum):
     outUpwards = 4
 
 
-class NoteEffect(GPObject):
+class Fingering(Enum):
+
+    """Left and right hand fingering used in tabs and chord diagram editor."""
+
+    #: Unknown (used only in chord editor).
+    unknown = -2
+    #: Open or muted.
+    open = -1
+    #: Thumb.
+    thumb = 0
+    #: Index finger.
+    index = 1
+    #: Middle finger.
+    middle = 2
+    #: Annular finger.
+    annular = 3
+    #: Little finger.
+    little = 4
+
+
+@attr.s
+class NoteEffect(object):
 
     """Contains all effects which can be applied to one note."""
 
-    __attr__ = ('leftHandFinger', 'rightHandFinger', 'bend', 'harmonic',
-                'grace', 'trill', 'tremoloPicking', 'vibrato', 'slides',
-                'hammer', 'ghostNote', 'accentuatedNote',
-                'heavyAccentuatedNote', 'palmMute', 'staccato', 'letRing')
-
-    def __init__(self, *args, **kwargs):
-        self.vibrato = False
-        self.slides = []
-        self.hammer = False
-        self.ghostNote = False
-        self.accentuatedNote = False
-        self.heavyAccentuatedNote = False
-        self.palmMute = False
-        self.staccato = False
-        self.letRing = False
-        self.leftHandFinger = Fingering.open
-        self.rightHandFinger = Fingering.open
-        self.note = None
-        GPObject.__init__(self, *args, **kwargs)
+    accentuatedNote = attr.ib(default=False)
+    bend = attr.ib(default=None)
+    ghostNote = attr.ib(default=False)
+    grace = attr.ib(default=None)
+    hammer = attr.ib(default=False)
+    harmonic = attr.ib(default=None)
+    heavyAccentuatedNote = attr.ib(default=False)
+    leftHandFinger = attr.ib(default=Fingering.open)
+    letRing = attr.ib(default=False)
+    palmMute = attr.ib(default=False)
+    rightHandFinger = attr.ib(default=Fingering.open)
+    slides = attr.ib(default=attr.Factory(list))
+    staccato = attr.ib(default=False)
+    tremoloPicking = attr.ib(default=None)
+    trill = attr.ib(default=None)
+    vibrato = attr.ib(default=False)
 
     @property
     def isBend(self):
@@ -1238,22 +1189,18 @@ class NoteType(Enum):
     dead = 3
 
 
-class Note(GPObject):
+@attr.s
+class Note(object):
 
     """Describes a single note."""
 
-    __attr__ = ('value', 'velocity', 'string', 'isTiedNote', 'effect',
-                'durationPercent', 'swapAccidentals', 'type')
-
-    def __init__(self, *args, **kwargs):
-        self.value = 0
-        self.velocity = Velocities.default
-        self.string = 0
-        self.swapAccidentals = False
-        self.effect = NoteEffect()
-        self.durationPercent = 1.0
-        self.type = NoteType.rest
-        GPObject.__init__(self, *args, **kwargs)
+    value = attr.ib(default=0)
+    velocity = attr.ib(default=Velocities.default)
+    string = attr.ib(default=0)
+    effect = attr.ib(default=attr.Factory(NoteEffect))
+    durationPercent = attr.ib(default=1.0)
+    swapAccidentals = attr.ib(default=False)
+    type = attr.ib(default=NoteType.rest)
 
     @property
     def realValue(self):
@@ -1261,22 +1208,33 @@ class Note(GPObject):
                 self.beat.voice.measure.track.strings[self.string - 1].value)
 
 
-class Chord(GPObject):
+@attr.s
+class Chord(object):
 
     """A chord annotation for beats."""
 
-    __attr__ = ('sharp', 'root', 'type', 'extension', 'bass', 'tonality',
-                'add', 'name', 'fifth', 'ninth', 'eleventh', 'firstFret',
-                'strings', 'barres', 'omissions', 'fingerings', 'show',
-                'newFormat')
+    length = attr.ib()
+    sharp = attr.ib(default=None)
+    root = attr.ib(default=None)
+    type = attr.ib(default=None)
+    extension = attr.ib(default=None)
+    bass = attr.ib(default=None)
+    tonality = attr.ib(default=None)
+    add = attr.ib(default=None)
+    name = attr.ib(default='')
+    fifth = attr.ib(default=None)
+    ninth = attr.ib(default=None)
+    eleventh = attr.ib(default=None)
+    firstFret = attr.ib(default=None)
+    strings = attr.ib(default=attr.Factory(list))
+    barres = attr.ib(default=attr.Factory(list))
+    omissions = attr.ib(default=attr.Factory(list))
+    fingerings = attr.ib(default=attr.Factory(list))
+    show = attr.ib(default=None)
+    newFormat = attr.ib(default=None)
 
-    def __init__(self, length, *args, **kwargs):
-        self.strings = [-1] * length
-        self.name = ''
-        self.barres = []
-        self.omissions = []
-        self.fingerings = []
-        GPObject.__init__(self, *args, **kwargs)
+    def __attrs_post_init__(self):
+        self.strings = [-1] * self.length
 
     @property
     def notes(self):
@@ -1333,7 +1291,8 @@ class ChordType(Enum):
     power = 14
 
 
-class Barre(GPObject):
+@attr.s
+class Barre(object):
 
     """A single barre.
 
@@ -1341,36 +1300,13 @@ class Barre(GPObject):
     :param end: last string on the top of the barre.
 
     """
-    __attr__ = ('fret', 'start', 'end')
-
-    def __init__(self, *args, **kwargs):
-        self.start = 0
-        self.end = 0
-        GPObject.__init__(self, *args, **kwargs)
+    fret = attr.ib()
+    start = attr.ib(default=0)
+    end = attr.ib(default=0)
 
     @property
     def range(self):
         return self.start, self.end
-
-
-class Fingering(Enum):
-
-    """Left and right hand fingering used in tabs and chord diagram editor."""
-
-    #: Unknown (used only in chord editor).
-    unknown = -2
-    #: Open or muted.
-    open = -1
-    #: Thumb.
-    thumb = 0
-    #: Index finger.
-    index = 1
-    #: Middle finger.
-    middle = 2
-    #: Annular finger.
-    annular = 3
-    #: Little finger.
-    little = 4
 
 
 class ChordAlteration(Enum):
@@ -1404,7 +1340,8 @@ class ChordExtension(Enum):
     thirteenth = 3
 
 
-class PitchClass(GPObject):
+@attr.s
+class PitchClass(object):
 
     """A pitch class.
 
@@ -1447,25 +1384,27 @@ class PitchClass(GPObject):
     D#
 
     """
-    __attr__ = ('just', 'accidental', 'value', 'intonation')
+    just = attr.ib()
+    accidental = attr.ib(default=None)
+    value = attr.ib(default=None)
+    intonation = attr.ib(default=None)
 
     _notes = {
         'sharp': 'C C# D D# E F F# G G# A A# B'.split(),
         'flat': 'C Db D Eb E F Gb G Ab A Bb B'.split(),
     }
 
-    def __init__(self, *args, **kwargs):
-        intonation = kwargs.get('intonation')
-        if len(args) == 1:
-            if isinstance(args[0], string_types):
+    def __attrs_post_init__(self):
+        if self.accidental is None:
+            if isinstance(self.just, string_types):
                 # Assume string input
-                string = args[0]
+                string = self.just
                 try:
                     value = self._notes['sharp'].index(string)
                 except ValueError:
                     value = self._notes['flat'].index(string)
-            elif isinstance(args[0], int):
-                value = args[0] % 12
+            elif isinstance(self.just, int):
+                value = self.just % 12
                 try:
                     string = self._notes['sharp'][value]
                 except KeyError:
@@ -1477,14 +1416,13 @@ class PitchClass(GPObject):
             else:
                 accidental = 0
             pitch = value - accidental
-        elif len(args) == 2:
-            pitch, accidental = args
+        else:
+            pitch, accidental = self.just, self.accidental
+
         self.just = pitch % 12
         self.accidental = accidental
         self.value = self.just + accidental
-        if intonation is not None:
-            self.intonation = intonation
-        else:
+        if self.intonation is None:
             if accidental == -1:
                 self.intonation = 'flat'
             else:
@@ -1494,28 +1432,22 @@ class PitchClass(GPObject):
         return self._notes[self.intonation][self.value]
 
 
-class BeatText(GPObject):
+@attr.s
+class BeatText(object):
 
     """A text annotation for beats."""
 
-    __attr__ = ('value',)
-
-    def __init__(self, *args, **kwargs):
-        self.value = ''
-        GPObject.__init__(self, *args, **kwargs)
+    value = attr.ib(default='')
 
 
-class MixTableItem(GPObject):
+@attr.s
+class MixTableItem(object):
 
     """A mix table change describes several track changes."""
 
-    __attr__ = ('value', 'duration', 'allTracks')
-
-    def __init__(self, *args, **kwargs):
-        self.value = 0
-        self.duration = 0
-        self.allTracks = False
-        GPObject.__init__(self, *args, **kwargs)
+    value = attr.ib(default=0)
+    duration = attr.ib(default=0)
+    allTracks = attr.ib(default=False)
 
 
 class WahState(Enum):
@@ -1535,26 +1467,30 @@ class WahState(Enum):
     closed = 100
 
 
-class WahEffect(GPObject):
-    __attr__ = ('state', 'display')
+@attr.s
+class WahEffect(object):
+    state = attr.ib(default=WahState.none)
+    display = attr.ib(default=False)
 
-    state = WahState.none
-    display = False
 
-
-class MixTableChange(GPObject):
+@attr.s
+class MixTableChange(object):
 
     """A MixTableChange describes several track changes."""
 
-    __attr__ = ('instrument', 'rse', 'volume', 'balance', 'chorus', 'reverb',
-                'phaser', 'tremolo', 'tempoName', 'tempo', 'hideTempo', 'wah',
-                'useRSE')
-
-    def __init__(self, *args, **kwargs):
-        self.tempoName = ''
-        self.hideTempo = True
-        self.useRSE = False
-        GPObject.__init__(self, *args, **kwargs)
+    instrument = attr.ib(default=None)
+    rse = attr.ib(default=None)
+    volume = attr.ib(default=None)
+    balance = attr.ib(default=None)
+    chorus = attr.ib(default=None)
+    reverb = attr.ib(default=None)
+    phaser = attr.ib(default=None)
+    tremolo = attr.ib(default=None)
+    tempoName = attr.ib(default='')
+    tempo = attr.ib(default=None)
+    hideTempo = attr.ib(default=True)
+    wah = attr.ib(default=None)
+    useRSE = attr.ib(default=False)
 
     @property
     def isJustWah(self):
@@ -1616,17 +1552,14 @@ class BendType(Enum):
     releaseDown = 11
 
 
-class BendPoint(GPObject):
+@attr.s
+class BendPoint(object):
 
     """A single point within the BendEffect."""
 
-    __attr__ = ('position', 'value', 'vibrato')
-
-    def __init__(self, *args, **kwargs):
-        """Initializes a new instance of the BendPoint class."""
-        self.position = 0
-        self.vibrato = False
-        GPObject.__init__(self, *args, **kwargs)
+    position = attr.ib(default=0)
+    value = attr.ib(default=None)
+    vibrato = attr.ib(default=False)
 
     def getTime(self, duration):
         """Gets the exact time when the point need to be played (MIDI).
@@ -1637,11 +1570,14 @@ class BendPoint(GPObject):
         return int(duration * self.position / BendEffect.maxPosition)
 
 
-class BendEffect(GPObject):
+@attr.s
+class BendEffect(object):
 
     """This effect is used to describe string bends and tremolo bars."""
 
-    __attr__ = ('type', 'value', 'points')
+    type = attr.ib(default=BendType.none)
+    value = attr.ib(default=0)
+    points = attr.ib(default=attr.Factory(list))
 
     #: The note offset per bend point offset.
     semitoneLength = 1
@@ -1652,64 +1588,19 @@ class BendEffect(GPObject):
     #: The max value of the bend points (y axis)
     maxValue = semitoneLength * 12
 
-    def __init__(self, *args, **kwargs):
-        self.type = BendType.none
-        self.value = 0
-        self.points = []
-        GPObject.__init__(self, *args, **kwargs)
 
-
-class TripletFeel(Enum):
-
-    """A list of different triplet feels."""
-
-    #: No triplet feel.
-    none = 0
-
-    #: Eighth triplet feel.
-    eighth = 1
-
-    #: Sixteenth triplet feel.
-    sixteenth = 2
-
-
-class TimeSignature(GPObject):
-
-    """A time signature."""
-
-    __attr__ = ('numerator', 'denominator', 'beams')
-
-    def __init__(self, *args, **kwargs):
-        self.numerator = 4
-        self.denominator = Duration()
-        self.beams = [2, 2, 2, 2]
-        GPObject.__init__(self, *args, **kwargs)
-
-
-class Velocities(object):
-
-    """A list of velocities / dynamics."""
-    minVelocity = 15
-    velocityIncrement = 16
-    pianoPianissimo = minVelocity
-    pianissimo = minVelocity + velocityIncrement
-    piano = minVelocity + velocityIncrement * 2
-    mezzoPiano = minVelocity + velocityIncrement * 3
-    mezzoForte = minVelocity + velocityIncrement * 4
-    forte = minVelocity + velocityIncrement * 5
-    fortissimo = minVelocity + velocityIncrement * 6
-    forteFortissimo = minVelocity + velocityIncrement * 7
-    default = forte
-
-
-class RSEMasterEffect(GPObject):
+@attr.s
+class RSEMasterEffect(object):
 
     """Master effect as seen on "Score information"."""
 
-    __attr__ = ('volume', 'reverb', 'equalizer')
+    volume = attr.ib(default=0)
+    reverb = attr.ib(default=0)
+    equalizer = attr.ib(default=0)
 
 
-class RSEEqualizer(GPObject):
+@attr.s
+class RSEEqualizer(object):
 
     """Equalizer found in master effect and track effect.
 
@@ -1720,7 +1611,8 @@ class RSEEqualizer(GPObject):
 
     """
 
-    __attr__ = ('knobs', 'gain')
+    knobs = attr.ib(default=attr.Factory(list))
+    gain = attr.ib(default=0.0)
 
 
 class Accentuation(Enum):
@@ -1746,64 +1638,23 @@ class Accentuation(Enum):
     veryStrong = 5
 
 
-class RSEInstrument(GPObject):
-    __attr__ = ('instrument', 'unknown', 'soundBank', 'effectNumber',
-                'effectCategory', 'effect')
-
-    def __init__(self, *args, **kwargs):
-        self.instrument = -1
-        self.unknown = 1
-        self.soundBank = -1
-        self.effectNumber = -1
-        self.effectCategory = ''
-        self.effect = ''
-        GPObject.__init__(self, *args, **kwargs)
+@attr.s
+class RSEInstrument(object):
+    instrument = attr.ib(default=-1)
+    unknown = attr.ib(default=1)
+    soundBank = attr.ib(default=-1)
+    effectNumber = attr.ib(default=-1)
+    effectCategory = attr.ib(default='')
+    effect = attr.ib(default='')
 
 
-class TrackRSE(GPObject):
-    __attr__ = ('instrument', 'equalizer', 'humanize', 'autoAccentuation')
+@attr.s
+class TrackRSE(object):
+    instrument = attr.ib(default=attr.Factory(RSEInstrument))
+    equalizer = attr.ib(default=attr.Factory(RSEEqualizer))
+    humanize = attr.ib(default=0)
+    autoAccentuation = attr.ib(default=Accentuation.none)
 
-    def __init__(self, *args, **kwargs):
-        self.instrument = RSEInstrument()
-        self.equalizer = RSEEqualizer(knobs=[0, 0, 0], gain=0)
-        self.humanize = 0
-        self.autoAccentuation = Accentuation.none
-        GPObject.__init__(self, *args, **kwargs)
-
-
-class KeySignature(Enum):
-    FMajorFlat = (-8, 0)
-    CMajorFlat = (-7, 0)
-    GMajorFlat = (-6, 0)
-    DMajorFlat = (-5, 0)
-    AMajorFlat = (-4, 0)
-    EMajorFlat = (-3, 0)
-    BMajorFlat = (-2, 0)
-    FMajor = (-1, 0)
-    CMajor = (0, 0)
-    GMajor = (1, 0)
-    DMajor = (2, 0)
-    AMajor = (3, 0)
-    EMajor = (4, 0)
-    BMajor = (5, 0)
-    FMajorSharp = (6, 0)
-    CMajorSharp = (7, 0)
-    GMajorSharp = (8, 0)
-
-    DMinorFlat = (-8, 1)
-    AMinorFlat = (-7, 1)
-    EMinorFlat = (-6, 1)
-    BMinorFlat = (-5, 1)
-    FMinor = (-4, 1)
-    CMinor = (-3, 1)
-    GMinor = (-2, 1)
-    DMinor = (-1, 1)
-    AMinor = (0, 1)
-    EMinor = (1, 1)
-    BMinor = (2, 1)
-    FMinorSharp = (3, 1)
-    CMinorSharp = (4, 1)
-    GMinorSharp = (5, 1)
-    DMinorSharp = (6, 1)
-    AMinorSharp = (7, 1)
-    EMinorSharp = (8, 1)
+    def __attrs_post_init__(self):
+        if not self.equalizer.knobs:
+            self.equalizer.knobs = [0] * 3

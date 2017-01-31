@@ -1,5 +1,7 @@
 from __future__ import division
 
+import attr
+
 from . import base as gp
 from . import gp3
 from .utils import clamp
@@ -557,7 +559,7 @@ class GP4File(gp3.GP3File):
 
         self.writeByte(len(chord.barres))
         if chord.barres:
-            barreFrets, barreStarts, barreEnds = zip(*chord.barres)
+            barreFrets, barreStarts, barreEnds = zip(*map(attr.astuple, chord.barres))
         else:
             barreFrets, barreStarts, barreEnds = [], [], []
         for fret in clamp(barreFrets, 5, fillvalue=0):

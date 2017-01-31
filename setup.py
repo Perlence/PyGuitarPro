@@ -2,11 +2,12 @@ from setuptools import setup, find_packages
 
 # http://bugs.python.org/issue15881
 try:
-    import multiprocessing
+    import multiprocessing  # noqa
 except ImportError:
     pass
 
 install_requires = [
+    'attrs',
     'six',
     'enum34',
 ]
@@ -16,7 +17,7 @@ tests_require = [
 ]
 
 try:
-    import argparse
+    import argparse  # noqa
 except ImportError:
     install_requires.append('argparse')
 
