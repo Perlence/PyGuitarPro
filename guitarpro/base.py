@@ -11,6 +11,7 @@ class GPException(Exception):
     pass
 
 
+@attr.s
 class GPFileBase(object):
     bendPosition = 60
     bendSemitone = 25
@@ -19,9 +20,12 @@ class GPFileBase(object):
     _versionTuple = None
     version = None
 
-    def __init__(self, data=None, encoding=None):
-        self.data = data
-        self.encoding = encoding or 'cp1252'
+    data = attr.ib()
+    encoding = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        if self.encoding is None:
+            self.encoding = 'cp1252'
 
     def close(self):
         self.data.close()
