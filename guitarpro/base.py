@@ -186,7 +186,7 @@ class GPFileBase(object):
         self.writeInt(len(data) + 1)
         return self.writeByteSizeString(data)
 
-    def writeVersion(self, index=None):
+    def writeVersion(self):
         self.writeByteSizeString(self.version, 30)
 
 

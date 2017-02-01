@@ -475,7 +475,8 @@ class GP4File(gp3.GP3File):
     # =======
 
     def writeSong(self, song):
-        self.writeVersion(1)
+        self.version = self._supportedVersions[1]
+        self.writeVersion()
         self.writeInfo(song)
 
         self._tripletFeel = song.tracks[0].measures[0].tripletFeel.value

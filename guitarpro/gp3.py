@@ -1063,7 +1063,7 @@ class GP3File(gp.GPFileBase):
     # =======
 
     def writeSong(self, song):
-        self.writeVersion(0)
+        self.writeVersion()
         self.writeInfo(song)
         self._tripletFeel = song.tracks[0].measures[0].tripletFeel.value
         self.writeBool(self._tripletFeel)

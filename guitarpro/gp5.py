@@ -915,8 +915,9 @@ class GP5File(gp4.GP4File):
     # =======
 
     def writeSong(self, song):
+        if not self.isClipboard():
+            self.version = self._supportedVersions[1]
         self.writeVersion()
-
         if self.isClipboard():
             self.writeClipboard(song.clipboard)
 
