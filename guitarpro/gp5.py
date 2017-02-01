@@ -62,11 +62,12 @@ class GP5File(gp4.GP4File):
         if not self.readVersion():
             raise gp.GPException("unsupported version '%s'" % self.version)
 
-        if self.isClipboard():
-            clipboard = gp.Clipboard()
-            self.readClipboard(clipboard)
-
         song = gp.Song()
+
+        if self.isClipboard():
+            song.clipboard = gp.Clipboard()
+            self.readClipboard(song.clipboard)
+
         self.readInfo(song)
         song.lyrics = self.readLyrics()
         song.masterEffect = self.readRSEMasterEffect()
@@ -91,13 +92,13 @@ class GP5File(gp4.GP4File):
         return self.version.startswith('CLIPBOARD')
 
     def readClipboard(self, clipboard):
-        clipboard.trackNumber = self.readInt()
-        clipboard.measureNumber = self.readInt()
-        clipboard.unknown1 = self.readInt()
-        clipboard.unknown2 = self.readInt()
-        clipboard.unknown3 = self.readInt()
-        clipboard.beatNumber = self.readInt()
-        clipboard.unknown4 = self.readInt()
+        clipboard.startMeasure = self.readInt()
+        clipboard.stopMeasure = self.readInt()
+        clipboard.startTrack = self.readInt()
+        clipboard.stopTrack = self.readInt()
+        clipboard.startBeat = self.readInt()
+        clipboard.stopBeat = self.readInt()
+        clipboard.subBarCopy = bool(self.readInt())
 
     def readInfo(self, song):
         """Read score information.
@@ -914,8 +915,10 @@ class GP5File(gp4.GP4File):
     # =======
 
     def writeSong(self, song):
-        self.version = self._supportedVersions[1]
-        self.writeVersion(1)
+        self.writeVersion()
+
+        if self.isClipboard():
+            self.writeClipboard(song.clipboard)
 
         self.writeInfo(song)
         self.writeLyrics(song.lyrics)
@@ -944,6 +947,15 @@ class GP5File(gp4.GP4File):
         self.writeMeasureHeaders(song.tracks[0].measures)
         self.writeTracks(song.tracks)
         self.writeMeasures(song.tracks)
+
+    def writeClipboard(self, clipboard):
+        self.writeInt(clipboard.startMeasure)
+        self.writeInt(clipboard.stopMeasure)
+        self.writeInt(clipboard.startTrack)
+        self.writeInt(clipboard.stopTrack)
+        self.writeInt(clipboard.startBeat)
+        self.writeInt(clipboard.stopBeat)
+        self.writeInt(int(clipboard.subBarCopy))
 
     def writeInfo(self, song):
         self.writeIntByteSizeString(song.title)

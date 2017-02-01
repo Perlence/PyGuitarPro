@@ -187,10 +187,7 @@ class GPFileBase(object):
         return self.writeByteSizeString(data)
 
     def writeVersion(self, index=None):
-        if self.version is not None:
-            self.writeByteSizeString(self.version, 30)
-        else:
-            self.writeByteSizeString(self._supportedVersions[index], 30)
+        self.writeByteSizeString(self.version, 30)
 
 
 @attr.s
@@ -223,13 +220,13 @@ class RepeatGroup(object):
 
 @attr.s
 class Clipboard(object):
-    trackNumber = attr.ib(default=1)
-    measureNumber = attr.ib(default=1)
-    unknown1 = attr.ib(default=1)
-    unknown2 = attr.ib(default=1)
-    unknown3 = attr.ib(default=1)
-    beatNumber = attr.ib(default=1)
-    unknown4 = attr.ib(default=1)
+    startMeasure = attr.ib(default=1)
+    stopMeasure = attr.ib(default=1)
+    startTrack = attr.ib(default=1)
+    stopTrack = attr.ib(default=1)
+    startBeat = attr.ib(default=1)
+    stopBeat = attr.ib(default=1)
+    subBarCopy = attr.ib(default=True)
 
 
 class KeySignature(Enum):
@@ -278,6 +275,7 @@ class Song(object):
     It contains basic information about the stored song.
 
     """
+    clipboard = attr.ib(default=None)
     title = attr.ib(default='')
     subtitle = attr.ib(default='')
     artist = attr.ib(default='')
