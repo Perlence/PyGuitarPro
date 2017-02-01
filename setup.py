@@ -6,6 +6,8 @@ try:
 except ImportError:
     pass
 
+setup_requires = ['pytest-runner']
+
 install_requires = [
     'attrs',
     'six',
@@ -13,7 +15,7 @@ install_requires = [
 ]
 
 tests_require = [
-    'nose',
+    'pytest',
 ]
 
 try:
@@ -33,7 +35,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    test_suite='nose.collector',
+    setup_requires=setup_requires,
     install_requires=install_requires,
     tests_require=tests_require,
     classifiers=[
@@ -54,8 +56,9 @@ setup(
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
-        "Programming Language :: Python :: Implementation :: CPython",
-        "Programming Language :: Python :: Implementation :: PyPy",
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Artistic Software',
         'Topic :: Multimedia :: Sound/Audio',
     ],
