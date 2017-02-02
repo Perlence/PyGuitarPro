@@ -226,7 +226,7 @@ class Clipboard(object):
     stopTrack = attr.ib(default=1)
     startBeat = attr.ib(default=1)
     stopBeat = attr.ib(default=1)
-    subBarCopy = attr.ib(default=True)
+    subBarCopy = attr.ib(default=False)
 
 
 class KeySignature(Enum):

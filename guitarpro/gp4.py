@@ -13,7 +13,8 @@ class GP4File(gp3.GP3File):
     '''
     _supportedVersions = ['FICHIER GUITAR PRO v4.00',
                           'FICHIER GUITAR PRO v4.06',
-                          'FICHIER GUITAR PRO L4.06']
+                          'FICHIER GUITAR PRO L4.06',
+                          'CLIPBOARD GUITAR PRO 4.0 [c6]']
 
     # Reading
     # =======
@@ -57,7 +58,12 @@ class GP4File(gp3.GP3File):
         if not self.readVersion():
             raise gp.GPException("unsupported version '%s'" %
                                  self.version)
+
         song = gp.Song()
+
+        if self.isClipboard():
+            song.clipboard = self.readClipboard()
+
         self.readInfo(song)
         self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
                              else gp.TripletFeel.none)
@@ -72,6 +78,17 @@ class GP4File(gp3.GP3File):
         self.readTracks(song, trackCount, channels)
         self.readMeasures(song)
         return song
+
+    def isClipboard(self):
+        return self.version.startswith('CLIPBOARD')
+
+    def readClipboard(self):
+        clipboard = gp.Clipboard()
+        clipboard.startMeasure = self.readInt()
+        clipboard.stopMeasure = self.readInt()
+        clipboard.startTrack = self.readInt()
+        clipboard.stopTrack = self.readInt()
+        return clipboard
 
     def readLyrics(self):
         """Read lyrics.
@@ -475,7 +492,6 @@ class GP4File(gp3.GP3File):
     # =======
 
     def writeSong(self, song):
-        self.version = self._supportedVersions[1]
         self.writeVersion()
         self.writeInfo(song)
 
@@ -498,6 +514,12 @@ class GP4File(gp3.GP3File):
         self.writeMeasureHeaders(song.tracks[0].measures)
         self.writeTracks(song.tracks)
         self.writeMeasures(song.tracks)
+
+    def writeClipboard(self, clipboard):
+        self.writeInt(clipboard.startMeasure)
+        self.writeInt(clipboard.stopMeasure)
+        self.writeInt(clipboard.startTrack)
+        self.writeInt(clipboard.stopTrack)
 
     def writeLyrics(self, lyrics):
         if lyrics is None:

@@ -12,9 +12,12 @@ __all__ = ('parse', 'write')
 
 _GPFILES = {
     'FICHIER GUITAR PRO v3.00': GP3File,
+
     'FICHIER GUITAR PRO v4.00': GP4File,
     'FICHIER GUITAR PRO v4.06': GP4File,
     'FICHIER GUITAR PRO L4.06': GP4File,
+    'CLIPBOARD GUITAR PRO 4.0 [c6]': GP4File,
+
     'FICHIER GUITAR PRO v5.00': GP5File,
     'FICHIER GUITAR PRO v5.10': GP5File,
     'CLIPBOARD GP 5.2': GP5File,
@@ -27,6 +30,8 @@ _VERSIONS = {
     'gp50': 'FICHIER GUITAR PRO v5.00',
     'gp51': 'FICHIER GUITAR PRO v5.10',
     'tmp':  'CLIPBOARD GP 5.2',
+    'tmp4':  'CLIPBOARD GUITAR PRO 4.0 [c6]',
+    'tmp52':  'CLIPBOARD GP 5.2',
 }
 
 

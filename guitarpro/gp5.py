@@ -65,8 +65,7 @@ class GP5File(gp4.GP4File):
         song = gp.Song()
 
         if self.isClipboard():
-            song.clipboard = gp.Clipboard()
-            self.readClipboard(song.clipboard)
+            song.clipboard = self.readClipboard()
 
         self.readInfo(song)
         song.lyrics = self.readLyrics()
@@ -88,17 +87,12 @@ class GP5File(gp4.GP4File):
         self.readMeasures(song)
         return song
 
-    def isClipboard(self):
-        return self.version.startswith('CLIPBOARD')
-
-    def readClipboard(self, clipboard):
-        clipboard.startMeasure = self.readInt()
-        clipboard.stopMeasure = self.readInt()
-        clipboard.startTrack = self.readInt()
-        clipboard.stopTrack = self.readInt()
+    def readClipboard(self):
+        clipboard = super(GP5File, self).readClipboard()
         clipboard.startBeat = self.readInt()
         clipboard.stopBeat = self.readInt()
         clipboard.subBarCopy = bool(self.readInt())
+        return clipboard
 
     def readInfo(self, song):
         """Read score information.
@@ -950,10 +944,7 @@ class GP5File(gp4.GP4File):
         self.writeMeasures(song.tracks)
 
     def writeClipboard(self, clipboard):
-        self.writeInt(clipboard.startMeasure)
-        self.writeInt(clipboard.stopMeasure)
-        self.writeInt(clipboard.startTrack)
-        self.writeInt(clipboard.stopTrack)
+        super(GP5File, self).writeClipboard(clipboard)
         self.writeInt(clipboard.startBeat)
         self.writeInt(clipboard.stopBeat)
         self.writeInt(int(clipboard.subBarCopy))
