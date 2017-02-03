@@ -275,6 +275,7 @@ class Song(object):
     It contains basic information about the stored song.
 
     """
+    # TODO: Store file format version here
     clipboard = attr.ib(default=None)
     title = attr.ib(default='')
     subtitle = attr.ib(default='')
@@ -946,7 +947,7 @@ class Beat(object):
     notes = attr.ib(default=attr.Factory(list))
     duration = attr.ib(default=attr.Factory(Duration))
     text = attr.ib(default=None)
-    start = attr.ib(default=None)
+    start = attr.ib(default=None, cmp=False)
     effect = attr.ib(default=attr.Factory(BeatEffect))
     index = attr.ib(default=None)
     octave = attr.ib(default=Octave.none)
