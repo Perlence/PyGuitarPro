@@ -493,6 +493,8 @@ class GP4File(gp3.GP3File):
 
     def writeSong(self, song):
         self.writeVersion()
+        if self.isClipboard() and song.clipboard is not None:
+            self.writeClipboard(song.clipboard)
         self.writeInfo(song)
 
         self._tripletFeel = song.tracks[0].measures[0].tripletFeel.value
