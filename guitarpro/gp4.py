@@ -17,9 +17,9 @@ class GP4File(gp3.GP3File):
     def readSong(self):
         """Read the song.
 
-        A song consists of score information, triplet feel, lyrics, tempo, song
-        key, MIDI channels, measure and track count, measure headers,
-        tracks, measures.
+        A song consists of score information, triplet feel, lyrics,
+        tempo, song key, MIDI channels, measure and track count, measure
+        headers, tracks, measures.
 
         -   Version: :ref:`byte-size-string` of size 30.
 
@@ -86,9 +86,9 @@ class GP4File(gp3.GP3File):
     def readLyrics(self):
         """Read lyrics.
 
-        First, read an :ref:`int` that points to the track lyrics are bound to.
-        Then it is followed by 5 lyric lines.
-        Each one constists of number of starting measure encoded in :ref:`int`
+        First, read an :ref:`int` that points to the track lyrics are
+        bound to. Then it is followed by 5 lyric lines. Each one
+        constists of number of starting measure encoded in :ref:`int`
         and :ref:`int-size-string` holding text of the lyric line.
 
         """
@@ -119,8 +119,8 @@ class GP4File(gp3.GP3File):
 
         New-style chord diagram is read as follows:
 
-        -   Sharp: :ref:`bool`. If true, display all semitones as sharps,
-            otherwise display as flats.
+        -   Sharp: :ref:`bool`. If true, display all semitones as
+            sharps, otherwise display as flats.
 
         -   Blank space, 3 :ref:`Bytes <byte>`.
 
@@ -131,19 +131,19 @@ class GP4File(gp3.GP3File):
             *    1: C#
             *   ...
 
-        -   Type: :ref:`byte`. Determines the chord type as followed. See
-            :class:`guitarpro.models.ChordType` for mapping.
+        -   Type: :ref:`byte`. Determines the chord type as followed.
+            See :class:`guitarpro.models.ChordType` for mapping.
 
         -   Chord extension: :ref:`byte`. See
             :class:`guitarpro.models.ChordExtension` for mapping.
 
         -   Bass note: :ref:`int`. Lowest note of chord as in *C/A*.
 
-        -   Tonality: :ref:`int`. See :class:`guitarpro.models.ChordAlteration`
-            for mapping.
+        -   Tonality: :ref:`int`. See
+            :class:`guitarpro.models.ChordAlteration` for mapping.
 
-        -   Add: :ref:`bool`. Determines if an "add" (added note) is present in
-            the chord.
+        -   Add: :ref:`bool`. Determines if an "add" (added note) is
+            present in the chord.
 
         -   Name: :ref:`byte-size-string`. Max length is 22.
 
@@ -156,8 +156,8 @@ class GP4File(gp3.GP3File):
         -   Eleventh tonality: :ref:`byte`. Maps to
             :class:`guitarpro.models.ChordExtension`.
 
-        -   List of frets: 6 :ref:`Ints <int>`. Fret values are saved as in
-            default format.
+        -   List of frets: 6 :ref:`Ints <int>`. Fret values are saved as
+            in default format.
 
         -   Count of barres: :ref:`byte`. Maximum count is 5.
 
@@ -167,13 +167,13 @@ class GP4File(gp3.GP3File):
 
         -   Barre end string: 5 :ref:`Bytes <byte>`.
 
-        -   Omissions: 7 :ref:`Bools <bool>`. If the value is true then note
-            is played in chord.
+        -   Omissions: 7 :ref:`Bools <bool>`. If the value is true then
+            note is played in chord.
 
         -   Blank space, 1 :ref:`byte`.
 
-        -   Fingering: 7 :ref:`SignedBytes <signed-byte>`. For value mapping,
-            see :class:`guitarpro.models.Fingering`.
+        -   Fingering: 7 :ref:`SignedBytes <signed-byte>`. For value
+            mapping, see :class:`guitarpro.models.Fingering`.
 
         """
         chord.sharp = self.readBool()
@@ -272,11 +272,12 @@ class GP4File(gp3.GP3File):
     def readMixTableChange(self, measure):
         """Read mix table change.
 
-        Mix table change in Guitar Pro 4 format extends Guitar Pro 3 format.
-        It constists of
-        :meth:`values <guitarpro.gp3.GP3File.readMixTableChangeValues>`,
-        :meth:`durations <guitarpro.gp3.GP3File.readMixTableChangeDurations>`,
-        and, new to GP3, :meth:`flags <readMixTableChangeFlags>`.
+        Mix table change in Guitar Pro 4 format extends Guitar Pro 3
+        format. It constists of :meth:`values
+        <guitarpro.gp3.GP3File.readMixTableChangeValues>`,
+        :meth:`durations
+        <guitarpro.gp3.GP3File.readMixTableChangeDurations>`, and, new
+        to GP3, :meth:`flags <readMixTableChangeFlags>`.
 
         """
         tableChange = super(GP4File, self).readMixTableChange(measure)
@@ -314,8 +315,8 @@ class GP4File(gp3.GP3File):
     def readNoteEffects(self, note):
         """Read note effects.
 
-        The effects presence for the current note is set by the 2 bytes of
-        flags.
+        The effects presence for the current note is set by the 2 bytes
+        of flags.
 
         First set of flags:
 
@@ -379,8 +380,9 @@ class GP4File(gp3.GP3File):
     def readTremoloPicking(self):
         """Read tremolo picking.
 
-        Tremolo constists of picking speed encoded in :ref:`signed-byte`. For
-        value mapping refer to :meth:`fromTremoloValue`.
+        Tremolo constists of picking speed encoded in
+        :ref:`signed-byte`. For value mapping refer to
+        :meth:`fromTremoloValue`.
 
         """
         value = self.readSignedByte()

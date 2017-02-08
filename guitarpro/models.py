@@ -30,8 +30,8 @@ class GPException(Exception):
 @attr.s
 class RepeatGroup(object):
 
-    """This class can store the information about a group of measures which are
-    repeated."""
+    """This class can store the information about a group of measures
+    which are repeated."""
 
     measureHeaders = attr.ib(default=attr.Factory(list))
     closings = attr.ib(default=attr.Factory(list))
@@ -212,8 +212,8 @@ class Padding(object):
 
 class HeaderFooterElements(Enum):
 
-    """A list of the elements which can be shown in the header and footer of a
-    rendered song sheet.
+    """A list of the elements which can be shown in the header and
+    footer of a rendered song sheet.
 
     All values can be combined using bit-operators as they are flags.
     """
@@ -247,13 +247,13 @@ class PageSetup(object):
     -   ``%album%``: will be replaced with Song.album
     -   ``%words%``: will be replaced with Song.words
     -   ``%music%``: will be replaced with Song.music
-    -   ``%WORDSANDMUSIC%``: will be replaced with the according word and
-        music values
+    -   ``%WORDSANDMUSIC%``: will be replaced with the according word
+        and music values
     -   ``%copyright%``: will be replaced with Song.copyright
-    -   ``%N%``: will be replaced with the current page number (if supported
+    -   ``%N%``: will be replaced with the current page number (if
+        supported by layout)
+    -   ``%P%``: will be replaced with the number of pages (if supported
         by layout)
-    -   ``%P%``: will be replaced with the number of pages (if supported by
-        layout)
 
     """
     pageSize = attr.ib(default=Point(210, 297))
@@ -432,7 +432,8 @@ class TripletFeel(Enum):
 @attr.s
 class MeasureHeader(object):
 
-    """A measure header contains metadata for measures over multiple tracks."""
+    """A measure header contains metadata for measures over multiple
+    tracks."""
 
     number = attr.ib(default=0, cmp=False)
     start = attr.ib(default=Duration.quarterTime)
@@ -940,7 +941,8 @@ class SlideType(Enum):
 
 class Fingering(Enum):
 
-    """Left and right hand fingering used in tabs and chord diagram editor."""
+    """Left and right hand fingering used in tabs and chord diagram
+    editor."""
 
     #: Unknown (used only in chord editor).
     unknown = -2
@@ -1186,8 +1188,8 @@ class PitchClass(object):
 
     """A pitch class.
 
-    Constructor provides several overloads. Each overload provides keyword
-    argument *intonation* that may be either "sharp" or "flat".
+    Constructor provides several overloads. Each overload provides
+    keyword argument *intonation* that may be either "sharp" or "flat".
 
     First of overloads is (tone, accidental):
 
@@ -1445,10 +1447,11 @@ class RSEEqualizer(object):
 
     """Equalizer found in master effect and track effect.
 
-    Attribute :attr:`RSEEqualizer.knobs` is a list of values in range from -6.0
-    to 5.9. Master effect has 10 knobs, track effect has 3 knobs. Gain is a
-    value in range from -6.0 to 5.9 which can be found in both master and track
-    effects and is named as "PRE" in Guitar Pro 5.
+    Attribute :attr:`RSEEqualizer.knobs` is a list of values in range
+    from -6.0 to 5.9. Master effect has 10 knobs, track effect has 3
+    knobs. Gain is a value in range from -6.0 to 5.9 which can be found
+    in both master and track effects and is named as "PRE" in Guitar Pro
+    5.
 
     """
 
@@ -1458,7 +1461,8 @@ class RSEEqualizer(object):
 
 class Accentuation(Enum):
 
-    """Values of auto-accentuation on the beat found in track RSE settings."""
+    """Values of auto-accentuation on the beat found in track RSE
+    settings."""
 
     #: No auto-accentuation.
     none = 0

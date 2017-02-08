@@ -44,8 +44,8 @@ def parse(stream, encoding=None):
     """Open a GP file and read its contents.
 
     :param stream: path to a GP file or file-like object.
-    :param encoding: decode strings in tablature using this charset. Given
-        encoding must be an 8-bit charset.
+    :param encoding: decode strings in tablature using this charset.
+        Given encoding must be an 8-bit charset.
 
     """
     gpfile = _open(None, stream, 'rb', encoding=encoding)
@@ -72,16 +72,7 @@ def write(song, stream, version=None, encoding=None):
 
 
 def _open(song, stream, mode='rb', version=None, encoding=None):
-    """Open a GP file path for reading or writing.
-
-    :param stream: filename or file-like object.
-    :param mode: should be either "rb" or "wb".
-    :param version: should be version of Guitar Pro, e.g. ``(5, 1, 0)``.
-        If no explicit version given, attempt guess what it might be.
-    :param encoding: treat strings found in tablature as encoded in given 8-bit
-        encoding.
-
-    """
+    """Open a GP file path for reading or writing."""
     if mode not in ('rb', 'wb'):
         raise ValueError(
             "cannot read or write unless in binary mode, not '%s'" % mode)

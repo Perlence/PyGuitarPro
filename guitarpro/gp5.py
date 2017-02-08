@@ -15,9 +15,9 @@ class GP5File(gp4.GP4File):
     def readSong(self):
         """Read the song.
 
-        A song consists of score information, triplet feel, lyrics, tempo, song
-        key, MIDI channels, measure and track count, measure headers,
-        tracks, measures.
+        A song consists of score information, triplet feel, lyrics,
+        tempo, song key, MIDI channels, measure and track count, measure
+        headers, tracks, measures.
 
         -   Version: :ref:`byte-size-string` of size 30.
 
@@ -32,7 +32,8 @@ class GP5File(gp4.GP4File):
 
         -   Tempo: :ref:`int`.
 
-        -   Hide tempo: :ref:`bool`. Don't display tempo on the sheet if set.
+        -   Hide tempo: :ref:`bool`. Don't display tempo on the sheet if
+            set.
 
         -   Key: :ref:`int`. Key signature of the song.
 
@@ -94,8 +95,8 @@ class GP5File(gp4.GP4File):
     def readInfo(self, song):
         """Read score information.
 
-        Score information consists of sequence of :ref:`IntByteSizeStrings
-        <int-byte-size-string>`:
+        Score information consists of sequence of
+        :ref:`IntByteSizeStrings <int-byte-size-string>`:
 
         -   title
         -   subtitle
@@ -107,9 +108,9 @@ class GP5File(gp4.GP4File):
         -   tabbed by
         -   instructions
 
-        The sequence if followed by notice. Notice starts with the number of
-        notice lines stored in :ref:`int`. Each line is encoded in
-        :ref:`int-byte-size-string`.
+        The sequence if followed by notice. Notice starts with the
+        number of notice lines stored in :ref:`int`. Each line is
+        encoded in :ref:`int-byte-size-string`.
 
         """
         song.title = self.readIntByteSizeString()
@@ -129,10 +130,11 @@ class GP5File(gp4.GP4File):
     def readRSEMasterEffect(self):
         """Read RSE master effect.
 
-        Persistence of RSE master effect was introduced in Guitar Pro 5.1.
-        It is read as:
+        Persistence of RSE master effect was introduced in Guitar Pro
+        5.1. It is read as:
 
-        -   Master volume: :ref:`int`. Values are in range from 0 to 200.
+        -   Master volume: :ref:`int`. Values are in range from 0 to
+            200.
 
         -   10-band equalizer. See :meth:`readEqualizer`.
 
@@ -147,9 +149,9 @@ class GP5File(gp4.GP4File):
     def readEqualizer(self, knobsNumber):
         """Read equalizer values.
 
-        Equalizers are used in RSE master effect and Track RSE. They consist of
-        *n* :ref:`SignedBytes <signed-byte>` for each *n* bands and one
-        :ref:`signed-byte` for gain (PRE) fader.
+        Equalizers are used in RSE master effect and Track RSE. They
+        consist of *n* :ref:`SignedBytes <signed-byte>` for each *n*
+        bands and one :ref:`signed-byte` for gain (PRE) fader.
 
         Volume values are stored as opposite to actual value. See
         :meth:`unpackVolumeValue`.
@@ -173,7 +175,8 @@ class GP5File(gp4.GP4File):
 
         Page setup is read as follows:
 
-        -   Page size: 2 :ref:`Ints <int>`. Width and height of the page.
+        -   Page size: 2 :ref:`Ints <int>`. Width and height of the
+            page.
 
         -   Page padding: 4 :ref:`Ints <int>`. Left, right, top, bottom
             padding of the page.
@@ -181,7 +184,8 @@ class GP5File(gp4.GP4File):
         -   Score size proportion: :ref:`int`.
 
         -   Header and footer elements: :ref:`short`. See
-            :class:`guitarpro.models.HeaderFooterElements` for value mapping.
+            :class:`guitarpro.models.HeaderFooterElements` for value
+            mapping.
 
         -   List of placeholders:
 
@@ -193,8 +197,8 @@ class GP5File(gp4.GP4File):
             *   music
             *   wordsAndMusic
             *   copyright1, e.g. *"Copyright %copyright%"*
-            *   copyright2, e.g. *"All Rights Reserved - International Copyright"*
-                Secured
+            *   copyright2, e.g. *"All Rights Reserved - International
+                Copyright"* Secured
             *   pageNumber
 
         """
@@ -222,8 +226,8 @@ class GP5File(gp4.GP4File):
     def readDirections(self):
         """Read directions.
 
-        Directions is a list of 19 :ref:`ShortInts <short>` each pointing
-        at the number of measure.
+        Directions is a list of 19 :ref:`ShortInts <short>` each
+        pointing at the number of measure.
 
         Directions are read in the following order.
 
@@ -286,14 +290,17 @@ class GP5File(gp4.GP4File):
     def readMeasureHeader(self, number, song, previous=None):
         """Read measure header.
 
-        Measure header format in Guitar Pro 5 differs from one if Guitar Pro 3.
+        Measure header format in Guitar Pro 5 differs from one if Guitar
+        Pro 3.
 
-        First, there is a blank byte if measure is not first. Then measure
-        header is read as in GP3's :meth:`guitarpro.gp3.readMeasureHeader`.
-        Then measure header is read as follows:
+        First, there is a blank byte if measure is not first. Then
+        measure header is read as in GP3's
+        :meth:`guitarpro.gp3.readMeasureHeader`. Then measure header is
+        read as follows:
 
         -   Time signature beams: 4 :ref:`Bytes <byte>`. Appears If time
-            signature was set, i.e. flags *0x01* and *0x02* are both set.
+            signature was set, i.e. flags *0x01* and *0x02* are both
+            set.
 
         -   Blank :ref:`byte` if flag at *0x10* is set.
 
@@ -323,10 +330,10 @@ class GP5File(gp4.GP4File):
     def readTracks(self, song, trackCount, channels):
         """Read tracks.
 
-        Tracks in Guitar Pro 5 have almost the same format as in Guitar Pro 3.
-        If it's Guitar Pro 5.0 then 2 blank bytes are read after
-        :meth:`guitarpro.gp3.readTracks`. If format version is higher than 5.0,
-        1 blank byte is read.
+        Tracks in Guitar Pro 5 have almost the same format as in Guitar
+        Pro 3. If it's Guitar Pro 5.0 then 2 blank bytes are read after
+        :meth:`guitarpro.gp3.readTracks`. If format version is higher
+        than 5.0, 1 blank byte is read.
 
         """
         super(GP5File, self).readTracks(song, trackCount, channels)
@@ -335,8 +342,8 @@ class GP5File(gp4.GP4File):
     def readTrack(self, number, channels):
         """Read track.
 
-        If it's Guitar Pro 5.0 format and track is first then one blank byte is
-        read.
+        If it's Guitar Pro 5.0 format and track is first then one blank
+        byte is read.
 
         Then go track's flags. It presides the track's attributes:
 
@@ -351,16 +358,16 @@ class GP5File(gp4.GP4File):
 
         Flags are followed by:
 
-        -   Name: `String`. A 40 characters long string containing the track's
-            name.
+        -   Name: `String`. A 40 characters long string containing the
+            track's name.
 
-        -   Number of strings: :ref:`int`. An integer equal to the number of
-            strings of the track.
+        -   Number of strings: :ref:`int`. An integer equal to the
+            number of strings of the track.
 
-        -   Tuning of the strings: `Table of integers`. The tuning of the
-            strings is stored as a 7-integers table, the "Number of strings"
-            first integers being really used. The strings are stored from the
-            highest to the lowest.
+        -   Tuning of the strings: `Table of integers`. The tuning of
+            the strings is stored as a 7-integers table, the "Number of
+            strings" first integers being really used. The strings are
+            stored from the highest to the lowest.
 
         -   Port: :ref:`int`. The number of the MIDI port used.
 
@@ -369,8 +376,8 @@ class GP5File(gp4.GP4File):
         -   Number of frets: :ref:`int`. The number of frets of the
             instrument.
 
-        -   Height of the capo: :ref:`int`. The number of the fret on which a
-            capo is set. If no capo is used, the value is 0.
+        -   Height of the capo: :ref:`int`. The number of the fret on
+            which a capo is set. If no capo is used, the value is 0.
 
         -   Track's color. The track's displayed color in Guitar Pro.
 
@@ -518,11 +525,12 @@ class GP5File(gp4.GP4File):
     def readMeasure(self, measure):
         """Read measure.
 
-        Guitar Pro 5 stores twice more measures compared to Guitar Pro 3.
-        One measure consists of two sub-measures for each of two voices.
+        Guitar Pro 5 stores twice more measures compared to Guitar Pro
+        3. One measure consists of two sub-measures for each of two
+        voices.
 
-        Sub-measures are followed by a :class:`~guitarpro.models.LineBreak`
-        stored in :ref:`byte`.
+        Sub-measures are followed by a
+        :class:`~guitarpro.models.LineBreak` stored in :ref:`byte`.
 
         """
         for voiceIndex in range(gp.Measure.maxVoices):
@@ -532,8 +540,9 @@ class GP5File(gp4.GP4File):
     def readBeat(self, start, voice):
         """Read beat.
 
-        First, beat is read is in Guitar Pro 3 :meth:`guitarpro.gp3.readBeat`.
-        Then it is followed by set of flags stored in :ref:`short`.
+        First, beat is read is in Guitar Pro 3
+        :meth:`guitarpro.gp3.readBeat`. Then it is followed by set of
+        flags stored in :ref:`short`.
 
         -   *0x0001*: break beams
         -   *0x0002*: direct beams down
@@ -549,8 +558,8 @@ class GP5File(gp4.GP4File):
         -   *0x1000*: break secondary tuplet
         -   *0x2000*: force tuplet bracket
 
-        -   Break secondary beams: :ref:`byte`. Appears if flag at *0x0800* is
-            set. Signifies how much beams should be broken.
+        -   Break secondary beams: :ref:`byte`. Appears if flag at
+            *0x0800* is set. Signifies how much beams should be broken.
 
         """
         duration = super(GP5File, self).readBeat(start, voice)
@@ -585,9 +594,9 @@ class GP5File(gp4.GP4File):
     def readBeatStroke(self):
         """Read beat stroke.
 
-        Beat stroke consists of two :ref:`Bytes <byte>` which correspond to
-        stroke down and stroke up speed. See :class:`guitarpro.models.BeatStroke`
-        for value mapping.
+        Beat stroke consists of two :ref:`Bytes <byte>` which correspond
+        to stroke down and stroke up speed. See
+        :class:`guitarpro.models.BeatStroke` for value mapping.
 
         """
         stroke = super(GP5File, self).readBeatStroke()
@@ -596,8 +605,8 @@ class GP5File(gp4.GP4File):
     def readMixTableChange(self, measure):
         """Read mix table change.
 
-        Mix table change was modified to support RSE instruments.
-        It is read as in Guitar Pro 3 and is followed by:
+        Mix table change was modified to support RSE instruments. It is
+        read as in Guitar Pro 3 and is followed by:
 
         -   Wah effect. See :meth:`readWahEffect`.
 
@@ -674,11 +683,11 @@ class GP5File(gp4.GP4File):
         """Read mix table change durations.
 
         Durations are read for each non-null
-        :class:`~guitarpro.models.MixTableItem`. Durations are encoded in
-        :ref:`signed-byte`.
+        :class:`~guitarpro.models.MixTableItem`. Durations are encoded
+        in :ref:`signed-byte`.
 
-        If tempo did change, then one :ref:`bool` is read. If it's true, then
-        tempo change won't be displayed on the score.
+        If tempo did change, then one :ref:`bool` is read. If it's true,
+        then tempo change won't be displayed on the score.
 
         """
         if tableChange.volume is not None:
@@ -702,8 +711,8 @@ class GP5File(gp4.GP4File):
         """Read mix table change flags.
 
         Mix table change flags are read as in Guitar Pro 4
-        :meth:`guitarpro.gp4.readMixTableChangeFlags`, with one additional
-        flag:
+        :meth:`guitarpro.gp4.readMixTableChangeFlags`, with one
+        additional flag:
 
         -   *0x40*: use RSE
         -   *0x80*: show wah-wah
@@ -716,8 +725,8 @@ class GP5File(gp4.GP4File):
     def readWahEffect(self, flags):
         """Read wah-wah.
 
-        -   Wah state: :ref:`signed-byte`. See :class:`guitarpro.models.WahState`
-            for value mapping.
+        -   Wah state: :ref:`signed-byte`. See
+            :class:`guitarpro.models.WahState` for value mapping.
 
         """
         wah = gp.WahEffect()
@@ -741,13 +750,14 @@ class GP5File(gp4.GP4File):
 
         Flags are followed by:
 
-        -   Note type: :ref:`byte`. Note is normal if values is 1, tied if
-            value is 2, dead if value is 3.
+        -   Note type: :ref:`byte`. Note is normal if values is 1, tied
+            if value is 2, dead if value is 3.
 
-        -   Note dynamics: :ref:`signed-byte`. See :meth:`unpackVelocity`.
+        -   Note dynamics: :ref:`signed-byte`. See
+            :meth:`unpackVelocity`.
 
-        -   Fret number: :ref:`signed-byte`. If flag at *0x20* is set then
-            read fret number.
+        -   Fret number: :ref:`signed-byte`. If flag at *0x20* is set
+            then read fret number.
 
         -   Fingering: 2 :ref:`SignedBytes <signed-byte>`. See
             :class:`guitarpro.models.Fingering`.
