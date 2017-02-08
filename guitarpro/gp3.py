@@ -746,8 +746,8 @@ class GP3File(GPFileBase):
         :class:`guitarpro.models.BeatStrokeDirection` for value mapping.
 
         """
-        strokeUp = self.readSignedByte()
         strokeDown = self.readSignedByte()
+        strokeUp = self.readSignedByte()
         if strokeUp > 0:
             return gp.BeatStroke(gp.BeatStrokeDirection.up,
                                  self.toStrokeValue(strokeUp))
@@ -1382,8 +1382,8 @@ class GP3File(GPFileBase):
         elif stroke.direction == gp.BeatStrokeDirection.down:
             strokeUp = 0
             strokeDown = self.fromStrokeValue(stroke.value)
-        self.writeSignedByte(strokeUp)
         self.writeSignedByte(strokeDown)
+        self.writeSignedByte(strokeUp)
 
     def fromStrokeValue(self, value):
         if value == gp.Duration.hundredTwentyEighth:

@@ -15,6 +15,8 @@ Version 0.3
   ``guitarpro.models``.
 - Exported all models alongside with functions ``parse`` and ``write`` from ``guitarpro`` module.
   Now they can be accessed as ``guitarpro.Song``, for example.
+- Swapped beat stroke directions. Downstroke is represented as ``BeatStrokeDirection.down`` and upstroke is represented
+  as ``BeatStrokeDirection.up``.
 
 Minor changes:
 

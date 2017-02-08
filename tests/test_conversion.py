@@ -22,6 +22,7 @@ TESTS = [
     'Harmonics.gp4',
     'Key.gp4',
     'Repeat.gp4',
+    'Strokes.gp4',
 
     # 'Mastodon - Curl of the Burl.gp5',
     # 'Mastodon - Ghost of Karelia.gp5',
@@ -34,6 +35,7 @@ TESTS = [
     'Slides.gp5',
     'RSE.gp5',
     'Repeat.gp5',
+    'Strokes.gp5',
     'Demo v5.gp5',
 ]
 CLIPBOARD_TESTS = [
