@@ -241,19 +241,19 @@ class PageSetup(object):
 
     Following template vars are available for defining the page texts:
 
-    -   ``%title%``: will be replaced with Song.title
-    -   ``%subtitle%``: will be replaced with Song.subtitle
-    -   ``%artist%``: will be replaced with Song.artist
-    -   ``%album%``: will be replaced with Song.album
-    -   ``%words%``: will be replaced with Song.words
-    -   ``%music%``: will be replaced with Song.music
-    -   ``%WORDSANDMUSIC%``: will be replaced with the according word
-        and music values
-    -   ``%copyright%``: will be replaced with Song.copyright
-    -   ``%N%``: will be replaced with the current page number (if
-        supported by layout)
-    -   ``%P%``: will be replaced with the number of pages (if supported
-        by layout)
+    - ``%title%``: will be replaced with Song.title
+    - ``%subtitle%``: will be replaced with Song.subtitle
+    - ``%artist%``: will be replaced with Song.artist
+    - ``%album%``: will be replaced with Song.album
+    - ``%words%``: will be replaced with Song.words
+    - ``%music%``: will be replaced with Song.music
+    - ``%WORDSANDMUSIC%``: will be replaced with the according word
+      and music values
+    - ``%copyright%``: will be replaced with Song.copyright
+    - ``%N%``: will be replaced with the current page number (if
+      supported by layout)
+    - ``%P%``: will be replaced with the number of pages (if supported
+      by layout)
 
     """
     pageSize = attr.ib(default=Point(210, 297))

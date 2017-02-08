@@ -82,10 +82,10 @@ def bisect(test, song, dest_version=3):
 
     Resulting tabs have following measures:
 
-    -   ``*-001.gp?``: *1st* measure
-    -   ``*-002.gp?``: *1st* and *2nd* measure
-    -   ...
-    -   ``*-nnn.gp?``: *1st*, *2nd*, ..., *nth* measure
+    - ``*-001.gp?``: *1st* measure
+    - ``*-002.gp?``: *1st* and *2nd* measure
+    - ...
+    - ``*-nnn.gp?``: *1st*, *2nd*, ..., *nth* measure
 
     This function helps to find the measure where erroneous data was written
     using bisection method.
@@ -110,10 +110,10 @@ def track_bisect(test, song, dest_version=3):
 
     Resulting tabs have following tracks:
 
-    -   ``*-T01.gp?``: *1st* track
-    -   ``*-T02.gp?``: *1st* and *2nd* track
-    -   ...
-    -   ``*-Tnn.gp?``: *1st*, *2nd*, ..., *nth* track
+    - ``*-T01.gp?``: *1st* track
+    - ``*-T02.gp?``: *1st* and *2nd* track
+    - ...
+    - ``*-Tnn.gp?``: *1st*, *2nd*, ..., *nth* track
 
     This function helps to find the track where erroneous data was written
     using bisection method.

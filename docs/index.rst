@@ -25,6 +25,6 @@ Python this package will be the good thing to start with.
 Indices and tables
 ==================
 
--   :ref:`genindex`
--   :ref:`modindex`
--   :ref:`search`
+- :ref:`genindex`
+- :ref:`modindex`
+- :ref:`search`

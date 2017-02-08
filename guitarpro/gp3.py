@@ -23,28 +23,28 @@ class GP3File(GPFileBase):
         key, MIDI channels, measure and track count, measure headers,
         tracks, measures.
 
-        -   Version: :ref:`byte-size-string` of size 30.
+        - Version: :ref:`byte-size-string` of size 30.
 
-        -   Score information. See :meth:`readInfo`.
+        - Score information. See :meth:`readInfo`.
 
-        -   Triplet feel: :ref:`bool`. If value is true, then triplet
-            feel is set to eigth.
+        - Triplet feel: :ref:`bool`. If value is true, then triplet feel
+          is set to eigth.
 
-        -   Tempo: :ref:`int`.
+        - Tempo: :ref:`int`.
 
-        -   Key: :ref:`int`. Key signature of the song.
+        - Key: :ref:`int`. Key signature of the song.
 
-        -   MIDI channels. See :meth:`readMidiChannels`.
+        - MIDI channels. See :meth:`readMidiChannels`.
 
-        -   Number of measures: :ref:`int`.
+        - Number of measures: :ref:`int`.
 
-        -   Number of tracks: :ref:`int`.
+        - Number of tracks: :ref:`int`.
 
-        -   Measure headers. See :meth:`readMeasureHeaders`.
+        - Measure headers. See :meth:`readMeasureHeaders`.
 
-        -   Tracks. See :meth:`readTracks`.
+        - Tracks. See :meth:`readTracks`.
 
-        -   Measures. See :meth:`readMeasures`.
+        - Measures. See :meth:`readMeasures`.
 
         """
         song = gp.Song()
@@ -69,14 +69,14 @@ class GP3File(GPFileBase):
         Score information consists of sequence of
         :ref:`IntByteSizeStrings <int-byte-size-string>`:
 
-        -   title
-        -   subtitle
-        -   artist
-        -   album
-        -   words
-        -   copyright
-        -   tabbed by
-        -   instructions
+        - title
+        - subtitle
+        - artist
+        - album
+        - words
+        - copyright
+        - tabbed by
+        - instructions
 
         The sequence if followed by notice. Notice starts with the
         number of notice lines stored in :ref:`int`. Each line is
@@ -103,33 +103,33 @@ class GP3File(GPFileBase):
         Guitar Pro format provides 64 channels (4 MIDI ports by 16
         channels), the channels are stored in this order:
 
-        -   port1/channel1
-        -   port1/channel2
-        -   ...
-        -   port1/channel16
-        -   port2/channel1
-        -   ...
-        -   port4/channel16
+        - port1/channel1
+        - port1/channel2
+        - ...
+        - port1/channel16
+        - port2/channel1
+        - ...
+        - port4/channel16
 
         Each channel has the following form:
 
-        -   Instrument: :ref:`int`.
+        - Instrument: :ref:`int`.
 
-        -   Volume: :ref:`byte`.
+        - Volume: :ref:`byte`.
 
-        -   Balance: :ref:`byte`.
+        - Balance: :ref:`byte`.
 
-        -   Chorus: :ref:`byte`.
+        - Chorus: :ref:`byte`.
 
-        -   Reverb: :ref:`byte`.
+        - Reverb: :ref:`byte`.
 
-        -   Phaser: :ref:`byte`.
+        - Phaser: :ref:`byte`.
 
-        -   Tremolo: :ref:`byte`.
+        - Tremolo: :ref:`byte`.
 
-        -   blank1: :ref:`byte`.
+        - blank1: :ref:`byte`.
 
-        -   blank2: :ref:`byte`.
+        - blank2: :ref:`byte`.
 
         """
         channels = []
@@ -177,37 +177,39 @@ class GP3File(GPFileBase):
         The first byte is the measure's flags. It lists the data given in the
         current measure.
 
-        -   *0x01*: numerator of the key signature
-        -   *0x02*: denominator of the key signature
-        -   *0x04*: beginning of repeat
-        -   *0x08*: end of repeat
-        -   *0x10*: number of alternate ending
-        -   *0x20*: presence of a marker
-        -   *0x40*: tonality of the measure
-        -   *0x80*: presence of a double bar
+        - *0x01*: numerator of the key signature
+        - *0x02*: denominator of the key signature
+        - *0x04*: beginning of repeat
+        - *0x08*: end of repeat
+        - *0x10*: number of alternate ending
+        - *0x20*: presence of a marker
+        - *0x40*: tonality of the measure
+        - *0x80*: presence of a double bar
 
-        Each of these elements is present only if the corresponding bit is a 1.
+        Each of these elements is present only if the corresponding bit
+        is a 1.
 
-        The different elements are written (if they are present) from lowest to
-        highest bit.
+        The different elements are written (if they are present) from
+        lowest to highest bit.
 
-        Exceptions are made for the double bar and the beginning of repeat
-        whose sole presence is enough, complementary data is not necessary.
+        Exceptions are made for the double bar and the beginning of
+        repeat whose sole presence is enough, complementary data is not
+        necessary.
 
-        -   Numerator of the key signature: :ref:`byte`.
+        - Numerator of the key signature: :ref:`byte`.
 
-        -   Denominator of the key signature: :ref:`byte`.
+        - Denominator of the key signature: :ref:`byte`.
 
-        -   End of repeat: :ref:`byte`.
-            Number of repeats until the previous beginning of repeat.
+        - End of repeat: :ref:`byte`.
+          Number of repeats until the previous beginning of repeat.
 
-        -   Number of alternate ending: :ref:`byte`.
+        - Number of alternate ending: :ref:`byte`.
 
-        -   Marker: see :meth:`GP3File.readMarker`.
+        - Marker: see :meth:`GP3File.readMarker`.
 
-        -   Tonality of the measure: 2 :ref:`Bytes <byte>`. These values
-            encode a key signature change on the current piece. First byte is
-            key signature root, second is key signature type.
+        - Tonality of the measure: 2 :ref:`Bytes <byte>`. These values
+          encode a key signature change on the current piece. First byte
+          is key signature root, second is key signature type.
 
         """
         flags = self.readByte()
@@ -296,39 +298,39 @@ class GP3File(GPFileBase):
         The first byte is the track's flags. It presides the track's
         attributes:
 
-        -   *0x01*: drums track
-        -   *0x02*: 12 stringed guitar track
-        -   *0x04*: banjo track
-        -   *0x08*: *blank*
-        -   *0x10*: *blank*
-        -   *0x20*: *blank*
-        -   *0x40*: *blank*
-        -   *0x80*: *blank*
+        - *0x01*: drums track
+        - *0x02*: 12 stringed guitar track
+        - *0x04*: banjo track
+        - *0x08*: *blank*
+        - *0x10*: *blank*
+        - *0x20*: *blank*
+        - *0x40*: *blank*
+        - *0x80*: *blank*
 
         Flags are followed by:
 
-        -   Name: :ref:`byte-size-string`. A 40 characters long string
-            containing the track's name.
+        - Name: :ref:`byte-size-string`. A 40 characters long string
+          containing the track's name.
 
-        -   Number of strings: :ref:`int`. An integer equal to the
-            number of strings of the track.
+        - Number of strings: :ref:`int`. An integer equal to the number
+            of strings of the track.
 
-        -   Tuning of the strings: List of 7 :ref:`Ints <int>`. The
-            tuning of the strings is stored as a 7-integers table, the
-            "Number of strings" first integers being really used. The
-            strings are stored from the highest to the lowest.
+        - Tuning of the strings: List of 7 :ref:`Ints <int>`. The tuning
+          of the strings is stored as a 7-integers table, the "Number of
+          strings" first integers being really used. The strings are
+          stored from the highest to the lowest.
 
-        -   Port: :ref:`int`. The number of the MIDI port used.
+        - Port: :ref:`int`. The number of the MIDI port used.
 
-        -   Channel. See :meth:`GP3File.readChannel`.
+        - Channel. See :meth:`GP3File.readChannel`.
 
-        -   Number of frets: :ref:`int`. The number of frets of the
-            instrument.
+        - Number of frets: :ref:`int`. The number of frets of the
+          instrument.
 
-        -   Height of the capo: :ref:`int`. The number of the fret on
-            which a capo is set. If no capo is used, the value is 0.
+        - Height of the capo: :ref:`int`. The number of the fret on
+          which a capo is set. If no capo is used, the value is 0.
 
-        -   Track's color. The track's displayed color in Guitar Pro.
+        - Track's color. The track's displayed color in Guitar Pro.
 
         """
         flags = self.readByte()
@@ -376,19 +378,19 @@ class GP3File(GPFileBase):
 
         Measures are written in the following order:
 
-        -   measure 1/track 1
-        -   measure 1/track 2
-        -   ...
-        -   measure 1/track m
-        -   measure 2/track 1
-        -   measure 2/track 2
-        -   ...
-        -   measure 2/track m
-        -   ...
-        -   measure n/track 1
-        -   measure n/track 2
-        -   ...
-        -   measure n/track m
+        - measure 1/track 1
+        - measure 1/track 2
+        - ...
+        - measure 1/track m
+        - measure 2/track 1
+        - measure 2/track 2
+        - ...
+        - measure 2/track m
+        - ...
+        - measure n/track 1
+        - measure n/track 2
+        - ...
+        - measure n/track m
 
         """
         tempo = gp.Tempo(song.tempo)
@@ -423,30 +425,30 @@ class GP3File(GPFileBase):
         The first byte is the beat flags. It lists the data present in
         the current beat:
 
-        -   *0x01*: dotted notes
-        -   *0x02*: presence of a chord diagram
-        -   *0x04*: presence of a text
-        -   *0x08*: presence of effects
-        -   *0x10*: presence of a mix table change event
-        -   *0x20*: the beat is a n-tuplet
-        -   *0x40*: status: True if the beat is empty of if it is a rest
-        -   *0x80*: *blank*
+        - *0x01*: dotted notes
+        - *0x02*: presence of a chord diagram
+        - *0x04*: presence of a text
+        - *0x08*: presence of effects
+        - *0x10*: presence of a mix table change event
+        - *0x20*: the beat is a n-tuplet
+        - *0x40*: status: True if the beat is empty of if it is a rest
+        - *0x80*: *blank*
 
         Flags are followed by:
 
-        -   Status: :ref:`byte`. If flag at *0x40* is true, read one
-            byte. If value of the byte is *0x00* then beat is empty, if
-            value is *0x02* then the beat is rest.
+        - Status: :ref:`byte`. If flag at *0x40* is true, read one byte.
+          If value of the byte is *0x00* then beat is empty, if value is
+          *0x02* then the beat is rest.
 
-        -   Beat duration: :ref:`byte`. See :meth:`readDuration`.
+        - Beat duration: :ref:`byte`. See :meth:`readDuration`.
 
-        -   Chord diagram. See :meth:`readChord`.
+        - Chord diagram. See :meth:`readChord`.
 
-        -   Text. See :meth:`readText`.
+        - Text. See :meth:`readText`.
 
-        -   Beat effects. See :meth:`readBeatEffects`.
+        - Beat effects. See :meth:`readBeatEffects`.
 
-        -   Mix table change effect. See :meth:`readMixTableChange`.
+        - Mix table change effect. See :meth:`readMixTableChange`.
 
         """
         flags = self.readByte()
@@ -488,12 +490,12 @@ class GP3File(GPFileBase):
 
         The byte maps to following values:
 
-        -   *-2*: whole note
-        -   *-1*: half note
-        -    *0*: quarter note
-        -    *1*: eighth note
-        -    *2*: sixteenth note
-        -    *3*: thirty-second note
+        - *-2*: whole note
+        - *-1*: half note
+        -  *0*: quarter note
+        -  *1*: eighth note
+        -  *2*: sixteenth note
+        -  *3*: thirty-second note
 
         If flag at *0x20* is true, the tuplet is read.
 
@@ -552,16 +554,16 @@ class GP3File(GPFileBase):
 
         Chord diagram is read as follows:
 
-        -   Name: :ref:`int-byte-size-string`. Name of the chord, e.g.
-            *Em*.
+        - Name: :ref:`int-byte-size-string`. Name of the chord, e.g.
+          *Em*.
 
-        -   First fret: :ref:`int`. The fret from which the chord is
-            displayed in chord editor.
+        - First fret: :ref:`int`. The fret from which the chord is
+          displayed in chord editor.
 
-        -   List of frets: 6 :ref:`Ints <int>`. Frets are listed in
-            order: fret on the string 1, fret on the string 2, ..., fret
-            on the string 6. If string is untouched then the values of
-            fret is *-1*.
+        - List of frets: 6 :ref:`Ints <int>`. Frets are listed in order:
+          fret on the string 1, fret on the string 2, ..., fret on the
+          string 6. If string is untouched then the values of fret is
+          *-1*.
 
         """
         chord.name = self.readIntByteSizeString()
@@ -577,58 +579,58 @@ class GP3File(GPFileBase):
 
         New-style chord diagram is read as follows:
 
-        -   Sharp: :ref:`bool`. If true, display all semitones as
-            sharps, otherwise display as flats.
+        - Sharp: :ref:`bool`. If true, display all semitones as sharps,
+          otherwise display as flats.
 
-        -   Blank space, 3 :ref:`Bytes <byte>`.
+        - Blank space, 3 :ref:`Bytes <byte>`.
 
-        -   Root: :ref:`int`. Values are:
+        - Root: :ref:`int`. Values are:
 
-            *   -1 for customized chords
-            *    0: C
-            *    1: C#
-            *   ...
+          * -1 for customized chords
+          *  0: C
+          *  1: C#
+          * ...
 
-        -   Type: :ref:`int`. Determines the chord type as followed. See
-            :class:`guitarpro.models.ChordType` for mapping.
+        - Type: :ref:`int`. Determines the chord type as followed. See
+          :class:`guitarpro.models.ChordType` for mapping.
 
-        -   Chord extension: :ref:`int`. See
-            :class:`guitarpro.models.ChordExtension` for mapping.
+        - Chord extension: :ref:`int`. See
+          :class:`guitarpro.models.ChordExtension` for mapping.
 
-        -   Bass note: :ref:`int`. Lowest note of chord as in *C/A*.
+        - Bass note: :ref:`int`. Lowest note of chord as in *C/Am*.
 
-        -   Tonality: :ref:`int`. See
-            :class:`guitarpro.models.ChordAlteration` for mapping.
+        - Tonality: :ref:`int`. See
+          :class:`guitarpro.models.ChordAlteration` for mapping.
 
-        -   Add: :ref:`bool`. Determines if an "add" (added note) is
-            present in the chord.
+        - Add: :ref:`bool`. Determines if an "add" (added note) is
+          present in the chord.
 
-        -   Name: :ref:`byte-size-string`. Max length is 22.
+        - Name: :ref:`byte-size-string`. Max length is 22.
 
-        -   Fifth alteration: :ref:`int`. Maps to
-            :class:`guitarpro.models.ChordAlteration`.
+        - Fifth alteration: :ref:`int`. Maps to
+          :class:`guitarpro.models.ChordAlteration`.
 
-        -   Ninth alteration: :ref:`int`. Maps to
-            :class:`guitarpro.models.ChordAlteration`.
+        - Ninth alteration: :ref:`int`. Maps to
+          :class:`guitarpro.models.ChordAlteration`.
 
-        -   Eleventh alteration: :ref:`int`. Maps to
-            :class:`guitarpro.models.ChordAlteration`.
+        - Eleventh alteration: :ref:`int`. Maps to
+          :class:`guitarpro.models.ChordAlteration`.
 
-        -   List of frets: 6 :ref:`Ints <int>`. Fret values are saved as
-            in default format.
+        - List of frets: 6 :ref:`Ints <int>`. Fret values are saved as
+          in default format.
 
-        -   Count of barres: :ref:`int`. Maximum count is 2.
+        - Count of barres: :ref:`int`. Maximum count is 2.
 
-        -   Barre frets: 2 :ref:`Ints <int>`.
+        - Barre frets: 2 :ref:`Ints <int>`.
 
-        -   Barre start strings: 2 :ref:`Ints <int>`.
+        - Barre start strings: 2 :ref:`Ints <int>`.
 
-        -   Barre end string: 2 :ref:`Ints <int>`.
+        - Barre end string: 2 :ref:`Ints <int>`.
 
-        -   Omissions: 7 :ref:`Bools <bool>`. If the value is true then
-            note is played in chord.
+        - Omissions: 7 :ref:`Bools <bool>`. If the value is true then
+          note is played in chord.
 
-        -   Blank space, 1 :ref:`byte`.
+        - Blank space, 1 :ref:`byte`.
 
         """
         chord.sharp = self.readBool()
@@ -676,24 +678,24 @@ class GP3File(GPFileBase):
 
         The first byte is effects flags:
 
-        -   *0x01*: vibrato
-        -   *0x02*: wide vibrato
-        -   *0x04*: natural harmonic
-        -   *0x08*: artificial harmonic
-        -   *0x10*: fade in
-        -   *0x20*: tremolo bar or slap effect
-        -   *0x40*: beat stroke direction
-        -   *0x80*: *blank*
+        - *0x01*: vibrato
+        - *0x02*: wide vibrato
+        - *0x04*: natural harmonic
+        - *0x08*: artificial harmonic
+        - *0x10*: fade in
+        - *0x20*: tremolo bar or slap effect
+        - *0x40*: beat stroke direction
+        - *0x80*: *blank*
 
-        -   Tremolo bar or slap effect: :ref:`byte`. If it's 0 then
-            tremolo bar should be read (see :meth:`readTremoloBar`).
-            Else it's tapping and values of the byte map to:
+        - Tremolo bar or slap effect: :ref:`byte`. If it's 0 then
+          tremolo bar should be read (see :meth:`readTremoloBar`). Else
+          it's tapping and values of the byte map to:
 
-            -   *1*: tap
-            -   *2*: slap
-            -   *3*: pop
+          - *1*: tap
+          - *2*: slap
+          - *3*: pop
 
-        -   Beat stroke direction. See :meth:`readBeatStroke`.
+        - Beat stroke direction. See :meth:`readBeatStroke`.
 
         """
         beatEffects = gp.BeatEffect()
@@ -758,12 +760,12 @@ class GP3File(GPFileBase):
 
         Stroke value maps to:
 
-        -   *1*: hundred twenty-eighth
-        -   *2*: sixty-fourth
-        -   *3*: thirty-second
-        -   *4*: sixteenth
-        -   *5*: eighth
-        -   *6*: quarter
+        - *1*: hundred twenty-eighth
+        - *2*: sixty-fourth
+        - *3*: thirty-second
+        - *4*: sixteenth
+        - *5*: eighth
+        - *6*: quarter
 
         """
         if value == 1:
@@ -803,14 +805,14 @@ class GP3File(GPFileBase):
         Mix table change values consist of 7 :ref:`SignedBytes
         <signed-byte>` and an :ref:`int`, which correspond to:
 
-        -   instrument
-        -   volume
-        -   balance
-        -   chorus
-        -   reverb
-        -   phaser
-        -   tremolo
-        -   tempo
+        - instrument
+        - volume
+        - balance
+        - chorus
+        - reverb
+        - phaser
+        - tremolo
+        - tempo
 
         If signed byte is *-1* then corresponding parameter hasn't
         changed.
@@ -871,14 +873,14 @@ class GP3File(GPFileBase):
 
         First byte lists played strings:
 
-        -   *0x01*: 7th string
-        -   *0x02*: 6th string
-        -   *0x04*: 5th string
-        -   *0x08*: 4th string
-        -   *0x10*: 3th string
-        -   *0x20*: 2th string
-        -   *0x40*: 1th string
-        -   *0x80*: *blank*
+        - *0x01*: 7th string
+        - *0x02*: 6th string
+        - *0x04*: 5th string
+        - *0x08*: 4th string
+        - *0x10*: 3th string
+        - *0x20*: 2th string
+        - *0x40*: 1th string
+        - *0x80*: *blank*
 
         """
         stringFlags = self.readByte()
@@ -896,34 +898,33 @@ class GP3File(GPFileBase):
 
         The first byte is note flags:
 
-        -   *0x01*: time-independent duration
-        -   *0x02*: heavy accentuated note
-        -   *0x04*: ghost note
-        -   *0x08*: presence of note effects
-        -   *0x10*: dynamics
-        -   *0x20*: fret
-        -   *0x40*: accentuated note
-        -   *0x80*: right hand or left hand fingering
+        - *0x01*: time-independent duration
+        - *0x02*: heavy accentuated note
+        - *0x04*: ghost note
+        - *0x08*: presence of note effects
+        - *0x10*: dynamics
+        - *0x20*: fret
+        - *0x40*: accentuated note
+        - *0x80*: right hand or left hand fingering
 
         Flags are followed by:
 
-        -   Note type: :ref:`byte`. Note is normal if values is 1, tied
-            if value is 2, dead if value is 3.
+        - Note type: :ref:`byte`. Note is normal if values is 1, tied if
+          value is 2, dead if value is 3.
 
-        -   Time-independent duration: 2 :ref:`SignedBytes
-            <signed-byte>`.  Correspond to duration and tuplet. See
-            :meth:`readDuration` for reference.
+        - Time-independent duration: 2 :ref:`SignedBytes <signed-byte>`.
+          Correspond to duration and tuplet. See :meth:`readDuration`
+          for reference.
 
-        -   Note dynamics: :ref:`signed-byte`. See
-            :meth:`unpackVelocity`.
+        - Note dynamics: :ref:`signed-byte`. See :meth:`unpackVelocity`.
 
-        -   Fret number: :ref:`signed-byte`. If flag at *0x20* is set
-            then read fret number.
+        - Fret number: :ref:`signed-byte`. If flag at *0x20* is set then
+          read fret number.
 
-        -   Fingering: 2 :ref:`SignedBytes <signed-byte>`. See
-            :class:`guitarpro.models.Fingering`.
+        - Fingering: 2 :ref:`SignedBytes <signed-byte>`. See
+          :class:`guitarpro.models.Fingering`.
 
-        -   Note effects. See :meth:`readNoteEffects`.
+        - Note effects. See :meth:`readNoteEffects`.
 
         """
         flags = self.readByte()
@@ -977,17 +978,17 @@ class GP3File(GPFileBase):
 
         First byte is note effects flags:
 
-        -   *0x01*: bend presence
-        -   *0x02*: hammer-on/pull-off
-        -   *0x04*: slide
-        -   *0x08*: let-ring
-        -   *0x10*: grace note presence
+        - *0x01*: bend presence
+        - *0x02*: hammer-on/pull-off
+        - *0x04*: slide
+        - *0x08*: let-ring
+        - *0x10*: grace note presence
 
         Flags are followed by:
 
-        -   Bend. See :meth:`readBend`.
+        - Bend. See :meth:`readBend`.
 
-        -   Grace note. See :meth:`readGrace`.
+        - Grace note. See :meth:`readGrace`.
 
         """
         noteEffect = note.effect or gp.NoteEffect()
@@ -1007,22 +1008,21 @@ class GP3File(GPFileBase):
 
         Encoded as:
 
-        -   Bend type: :ref:`signed-byte`. See
-            :class:`guitarpro.models.BendType`.
+        - Bend type: :ref:`signed-byte`. See
+          :class:`guitarpro.models.BendType`.
 
-        -   Bend value: :ref:`int`.
+        - Bend value: :ref:`int`.
 
-        -   Number of bend points: :ref:`int`.
+        - Number of bend points: :ref:`int`.
 
-        -   List of points. Each point consists of:
+        - List of points. Each point consists of:
 
-            *   Position: :ref:`int`. Shows where point is set along
-                *x*-axis.
+          * Position: :ref:`int`. Shows where point is set along
+            *x*-axis.
 
-            *   Value: :ref:`int`. Shows where point is set along
-                *y*-axis.
+          * Value: :ref:`int`. Shows where point is set along *y*-axis.
 
-            *   Vibrato: :ref:`bool`.
+          * Vibrato: :ref:`bool`.
 
         """
         bendEffect = gp.BendEffect()
@@ -1042,19 +1042,19 @@ class GP3File(GPFileBase):
     def readGrace(self):
         """Read grace note effect.
 
-        -   Fret: :ref:`signed-byte`. Number of fret.
+        - Fret: :ref:`signed-byte`. Number of fret.
 
-        -   Dynamic: :ref:`byte`. Dynamic of a grace note, as in
-            :attr:`guitarpro.models.Note.velocity`.
+        - Dynamic: :ref:`byte`. Dynamic of a grace note, as in
+          :attr:`guitarpro.models.Note.velocity`.
 
-        -   Transition: :ref:`byte`. See
-            :class:`guitarpro.models.GraceEffectTransition`.
+        - Transition: :ref:`byte`. See
+          :class:`guitarpro.models.GraceEffectTransition`.
 
-        -   Duration: :ref:`byte`. Values are:
+        - Duration: :ref:`byte`. Values are:
 
-            -   *1*: Thirty-second note.
-            -   *2*: Twenty-fourth note.
-            -   *3*: Sixteenth note.
+          - *1*: Thirty-second note.
+          - *2*: Twenty-fourth note.
+          - *3*: Sixteenth note.
 
         """
         grace = gp.GraceEffect()
