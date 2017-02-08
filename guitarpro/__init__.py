@@ -1,5 +1,3 @@
-import os
-
 from six import string_types
 
 from .base import GPFileBase, GPException
@@ -11,47 +9,74 @@ __version__ = '0.2.2'
 __all__ = ('parse', 'write')
 
 _GPFILES = {
-    'FICHIER GUITAR PRO v3.00': GP3File,
+    'FICHIER GUITAR PRO v3.00': ((3, 0, 0), GP3File),
 
-    'FICHIER GUITAR PRO v4.00': GP4File,
-    'FICHIER GUITAR PRO v4.06': GP4File,
-    'FICHIER GUITAR PRO L4.06': GP4File,
-    'CLIPBOARD GUITAR PRO 4.0 [c6]': GP4File,
+    'FICHIER GUITAR PRO v4.00': ((4, 0, 0), GP4File),
+    'FICHIER GUITAR PRO v4.06': ((4, 0, 6), GP4File),
+    'FICHIER GUITAR PRO L4.06': ((4, 0, 6), GP4File),
+    'CLIPBOARD GUITAR PRO 4.0 [c6]': ((4, 0, 6), GP4File),
 
-    'FICHIER GUITAR PRO v5.00': GP5File,
-    'FICHIER GUITAR PRO v5.10': GP5File,
-    'CLIPBOARD GP 5.2': GP5File,
+    'FICHIER GUITAR PRO v5.00': ((5, 0, 0), GP5File),
+    'FICHIER GUITAR PRO v5.10': ((5, 1, 0), GP5File),
+    'CLIPBOARD GP 5.0': ((5, 0, 0), GP5File),
+    'CLIPBOARD GP 5.1': ((5, 1, 0), GP5File),
+    'CLIPBOARD GP 5.2': ((5, 2, 0), GP5File),
 }
 
 _VERSIONS = {
-    'gp3':  'FICHIER GUITAR PRO v3.00',
-    'gp4':  'FICHIER GUITAR PRO v4.06',
-    'gp5':  'FICHIER GUITAR PRO v5.10',
-    'gp50': 'FICHIER GUITAR PRO v5.00',
-    'gp51': 'FICHIER GUITAR PRO v5.10',
-    'tmp':  'CLIPBOARD GP 5.2',
-    'tmp4':  'CLIPBOARD GUITAR PRO 4.0 [c6]',
-    'tmp52':  'CLIPBOARD GP 5.2',
+    # (versionTuple, isClipboard): versionString,
+    ((3, 0, 0), False): 'FICHIER GUITAR PRO v3.00',
+
+    ((4, 0, 0), False): 'FICHIER GUITAR PRO v4.00',
+    ((4, 0, 6), False): 'FICHIER GUITAR PRO v4.06',
+    ((4, 0, 6), True): 'CLIPBOARD GUITAR PRO 4.0 [c6]',
+
+    ((5, 0, 0), False): 'FICHIER GUITAR PRO v5.00',
+    ((5, 1, 0), False): 'FICHIER GUITAR PRO v5.10',
+    ((5, 2, 0), False): 'FICHIER GUITAR PRO v5.10',  # sic
+    ((5, 0, 0), True): 'CLIPBOARD GP 5.0',
+    ((5, 1, 0), True): 'CLIPBOARD GP 5.1',
+    ((5, 2, 0), True): 'CLIPBOARD GP 5.2',
 }
 
 
-def findFormatExtFile(path):
-    """Guess format from filepath."""
-    __, ext = os.path.splitext(path)
-    ext = ext.lstrip('.')
-    if ext in ('gp3', 'gp4', 'gp5'):
-        return ext
-    else:
-        return 'gp5'
+def parse(stream, encoding=None):
+    """Open a GP file and read its contents.
+
+    :param stream: path to a GP file or file-like object.
+    :param encoding: decode strings in tablature using this charset. Given
+        encoding must be an 8-bit charset.
+
+    """
+    gpfile = _open(None, stream, 'rb', encoding=encoding)
+    song = gpfile.readSong()
+    gpfile.close()
+    return song
 
 
-def _open(stream, mode='rb', format=None, encoding=None):
+def write(song, stream, version=None, encoding=None):
+    """Write a song into GP file.
+
+    :param song: a :class:`guitarpro.base.GPFileBase` instance.
+    :param stream: path to save GP file or file-like object.
+    :param version: explicitly set version of saved GP file, e.g.
+        ``(5, 1, 0)``.
+    :type version: tuple
+    :param encoding: encode strings into given 8-bit charset.
+
+    """
+    gpfile = _open(song, stream, 'wb', version=version, encoding=encoding)
+    gpfile.writeSong(song)
+    gpfile.close()
+
+
+def _open(song, stream, mode='rb', version=None, encoding=None):
     """Open a GP file path for reading or writing.
 
     :param stream: filename or file-like object.
     :param mode: should be either "rb" or "wb".
-    :param format: may be one of the supported formats, e.g. "gp5". If no
-        explicit format given, guess what it might be.
+    :param version: should be version of Guitar Pro, e.g. ``(5, 1, 0)``.
+        If no explicit version given, attempt guess what it might be.
     :param encoding: treat strings found in tablature as encoded in given 8-bit
         encoding.
 
@@ -62,58 +87,26 @@ def _open(stream, mode='rb', format=None, encoding=None):
 
     if isinstance(stream, string_types):
         fp = open(stream, mode)
-        filename = stream
     else:
         fp = stream
-        filename = getattr(fp, 'name', '<file>')
 
     if mode == 'rb':
         gpfilebase = GPFileBase(fp, encoding=encoding)
-        if format is None:
-            gpfilebase.readVersion()
-            version = gpfilebase.version
-        else:
-            version = _VERSIONS[format]
+        versionString = gpfilebase.readVersion()
     elif mode == 'wb':
-        if format is None:
-            format = findFormatExtFile(filename)
-            version = _VERSIONS[format]
-        else:
-            version = _VERSIONS[format]
+        isClipboard = song.clipboard is not None
+        if version is None:
+            version = song.versionTuple
+        versionString = _VERSIONS[(version, isClipboard)]
 
-    try:
-        GPFile = _GPFILES[version]
-    except KeyError:
-        raise GPException("unsupported version %r" % gpfilebase.version)
-    gpfile = GPFile(fp, encoding=encoding)
-    gpfile.version = version
+    version, GPFile = getVersionAndGPFile(versionString)
+    gpfile = GPFile(fp, version=versionString, versionTuple=version,
+                    encoding=encoding)
     return gpfile
 
 
-def parse(stream, format=None, encoding=None):
-    """Open a GP file and read its contents.
-
-    :param stream: path to a GP file or file-like object.
-    :param format: explicitly set format of GP file.
-    :param encoding: decode strings in tablature using this charset. Given
-        encoding must be an 8-bit charset.
-
-    """
-    gpfile = _open(stream, 'rb', format=format, encoding=encoding)
-    song = gpfile.readSong()
-    gpfile.close()
-    return song
-
-
-def write(song, stream, format=None, encoding=None):
-    """Write a song into GP file.
-
-    :param song: a :class:`guitarpro.base.GPFileBase` instance.
-    :param stream: path to save GP file or file-like object.
-    :param format: explicitly set format of saved GP file.
-    :param encoding: encode strings into given 8-bit charset.
-
-    """
-    gpfile = _open(stream, 'wb', format=format, encoding=encoding)
-    song = gpfile.writeSong(song)
-    gpfile.close()
+def getVersionAndGPFile(versionString):
+    try:
+        return _GPFILES[versionString]
+    except KeyError:
+        raise GPException("unsupported version '%s'" % versionString)

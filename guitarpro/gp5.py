@@ -9,10 +9,6 @@ class GP5File(gp4.GP4File):
 
     """A reader for GuitarPro 5 files."""
 
-    _supportedVersions = ['FICHIER GUITAR PRO v5.00',
-                          'FICHIER GUITAR PRO v5.10',
-                          'CLIPBOARD GP 5.2']
-
     # Reading
     # =======
 
@@ -59,10 +55,9 @@ class GP5File(gp4.GP4File):
         -   Measures. See :meth:`readMeasures`.
 
         """
-        if not self.readVersion():
-            raise gp.GPException("unsupported version '%s'" % self.version)
-
         song = gp.Song()
+        song.version = self.readVersion()
+        song.versionTuple = self.versionTuple
 
         if self.isClipboard():
             song.clipboard = self.readClipboard()
@@ -73,8 +68,8 @@ class GP5File(gp4.GP4File):
         song.pageSetup = self.readPageSetup()
         song.tempoName = self.readIntByteSizeString()
         song.tempo = self.readInt()
-        song.hideTempo = (self.readBool() if self.versionTuple > (5, 0)
-                          else False)
+        song.hideTempo = (self.readBool()
+                          if self.versionTuple > (5, 0, 0) else False)
         song.key = gp.KeySignature((self.readSignedByte(), 0))
         self.readInt()  # octave
         channels = self.readMidiChannels()
@@ -89,6 +84,8 @@ class GP5File(gp4.GP4File):
 
     def readClipboard(self):
         clipboard = super(GP5File, self).readClipboard()
+        if clipboard is None:
+            return
         clipboard.startBeat = self.readInt()
         clipboard.stopBeat = self.readInt()
         clipboard.subBarCopy = bool(self.readInt())
@@ -141,7 +138,7 @@ class GP5File(gp4.GP4File):
 
         """
         masterEffect = gp.RSEMasterEffect()
-        if self.versionTuple > (5, 0):
+        if self.versionTuple > (5, 0, 0):
             masterEffect.volume = self.readInt()
             self.readInt()  # ???
             masterEffect.equalizer = self.readEqualizer(11)
@@ -333,7 +330,7 @@ class GP5File(gp4.GP4File):
 
         """
         super(GP5File, self).readTracks(song, trackCount, channels)
-        self.skip(2 if self.versionTuple == (5, 0) else 1)  # Always 0
+        self.skip(2 if self.versionTuple == (5, 0, 0) else 1)  # Always 0
 
     def readTrack(self, number, channels):
         """Read track.
@@ -402,7 +399,7 @@ class GP5File(gp4.GP4File):
         -   Track RSE. See :meth:`readTrackRSE`.
 
         """
-        if number == 1 or self.versionTuple == (5, 0):
+        if number == 1 or self.versionTuple == (5, 0, 0):
             # Always 0
             self.skip(1)
         flags1 = self.readByte()
@@ -468,16 +465,11 @@ class GP5File(gp4.GP4File):
         -   RSE instrument effect. See :meth:`readRSEInstrumentEffect`.
 
         """
-        if self.versionTuple == (5, 0):
-            trackRSE.humanize = self.readByte()
-            self.readInt(3)  # ???
-            self.skip(12)  # ???
-            trackRSE.instrument = self.readRSEInstrument()
-        else:
-            trackRSE.humanize = self.readByte()
-            self.readInt(3)  # ???
-            self.skip(12)  # ???
-            trackRSE.instrument = self.readRSEInstrument()
+        trackRSE.humanize = self.readByte()
+        self.readInt(3)  # ???
+        self.skip(12)  # ???
+        trackRSE.instrument = self.readRSEInstrument()
+        if self.versionTuple > (5, 0, 0):
             trackRSE.equalizer = self.readEqualizer(4)
             self.readRSEInstrumentEffect(trackRSE.instrument)
         return trackRSE
@@ -495,16 +487,13 @@ class GP5File(gp4.GP4File):
 
         """
         instrument = gp.RSEInstrument()
-        if self.versionTuple == (5, 0):
-            instrument.instrument = self.readInt()
-            instrument.unknown = self.readInt()  # ??? mostly 1
-            instrument.soundBank = self.readInt()
+        instrument.instrument = self.readInt()
+        instrument.unknown = self.readInt()  # ??? mostly 1
+        instrument.soundBank = self.readInt()
+        if self.versionTuple == (5, 0, 0):
             instrument.effectNumber = self.readShort()
             self.skip(1)
         else:
-            instrument.instrument = self.readInt()
-            instrument.unknown = self.readInt()  # ??? mostly 1
-            instrument.soundBank = self.readInt()
             instrument.effectNumber = self.readInt()
         return instrument
 
@@ -518,7 +507,7 @@ class GP5File(gp4.GP4File):
         -   Effect category: :ref:`int-byte-size-string`.
 
         """
-        if self.versionTuple > (5, 0):
+        if self.versionTuple > (5, 0, 0):
             effect = self.readIntByteSizeString()
             effectCategory = self.readIntByteSizeString()
             if rseInstrument is not None:
@@ -651,7 +640,7 @@ class GP5File(gp4.GP4File):
         """
         instrument = self.readSignedByte()
         rse = self.readRSEInstrument()
-        if self.versionTuple == (5, 0):
+        if self.versionTuple == (5, 0, 0):
             self.skip(1)
         volume = self.readSignedByte()
         balance = self.readSignedByte()
@@ -706,7 +695,7 @@ class GP5File(gp4.GP4File):
             tableChange.tremolo.duration = self.readSignedByte()
         if tableChange.tempo is not None:
             tableChange.tempo.duration = self.readSignedByte()
-            tableChange.hideTempo = (self.versionTuple > (5, 0) and
+            tableChange.hideTempo = (self.versionTuple > (5, 0, 0) and
                                      self.readBool())
 
     def readMixTableChangeFlags(self, tableChange):
@@ -910,8 +899,7 @@ class GP5File(gp4.GP4File):
 
     def writeSong(self, song):
         self.writeVersion()
-        if self.isClipboard() and song.clipboard is not None:
-            self.writeClipboard(song.clipboard)
+        self.writeClipboard(song.clipboard)
 
         self.writeInfo(song)
         self.writeLyrics(song.lyrics)
@@ -921,7 +909,7 @@ class GP5File(gp4.GP4File):
         self.writeIntByteSizeString(song.tempoName)
         self.writeInt(song.tempo)
 
-        if self.versionTuple > (5, 0):
+        if self.versionTuple > (5, 0, 0):
             self.writeBool(song.hideTempo)
 
         self.writeSignedByte(song.key.value[0])
@@ -942,6 +930,8 @@ class GP5File(gp4.GP4File):
         self.writeMeasures(song.tracks)
 
     def writeClipboard(self, clipboard):
+        if clipboard is None:
+            return
         super(GP5File, self).writeClipboard(clipboard)
         self.writeInt(clipboard.startBeat)
         self.writeInt(clipboard.stopBeat)
@@ -963,7 +953,7 @@ class GP5File(gp4.GP4File):
             self.writeIntByteSizeString(line)
 
     def writeRSEMasterEffect(self, masterEffect):
-        if self.versionTuple > (5, 0):
+        if self.versionTuple > (5, 0, 0):
             if masterEffect is None:
                 masterEffect = gp.RSEMasterEffect()
             masterEffect.volume = masterEffect.volume or 100
@@ -1080,10 +1070,10 @@ class GP5File(gp4.GP4File):
 
     def writeTracks(self, tracks):
         super(GP5File, self).writeTracks(tracks)
-        self.placeholder(2 if self.versionTuple == (5, 0) else 1)
+        self.placeholder(2 if self.versionTuple == (5, 0, 0) else 1)
 
     def writeTrack(self, track, number):
-        if number == 1 or self.versionTuple == (5, 0):
+        if number == 1 or self.versionTuple == (5, 0, 0):
             self.placeholder(1)
 
         flags1 = 0x00
@@ -1156,39 +1146,30 @@ class GP5File(gp4.GP4File):
     def writeTrackRSE(self, trackRSE):
         if trackRSE is None:
             trackRSE = gp.TrackRSE()
-        if self.versionTuple == (5, 0):
-            self.writeByte(trackRSE.humanize)
-            self.writeInt(0)
-            self.writeInt(0)
-            self.writeInt(100)
-            self.placeholder(12)
-            self.writeRSEInstrument(trackRSE.instrument)
-        else:
-            self.writeByte(trackRSE.humanize)
-            self.writeInt(0)
-            self.writeInt(0)
-            self.writeInt(100)
-            self.placeholder(12)
-            self.writeRSEInstrument(trackRSE.instrument)
+        self.writeByte(trackRSE.humanize)
+        self.writeInt(0)
+        self.writeInt(0)
+        self.writeInt(100)
+        self.placeholder(12)
+        self.writeRSEInstrument(trackRSE.instrument)
+        if self.versionTuple > (5, 0, 0):
             self.writeEqualizer(trackRSE.equalizer)
-        self.writeRSEInstrumentEffect(trackRSE.instrument)
+            self.writeRSEInstrumentEffect(trackRSE.instrument)
 
     def writeRSEInstrument(self, instrument):
         if instrument is None:
             instrument = gp.RSEInstrument()
-        if self.versionTuple == (5, 0):
-            self.writeInt(instrument.instrument)
-            self.writeInt(instrument.unknown)
-            self.writeInt(instrument.soundBank)
+        self.writeInt(instrument.instrument)
+        self.writeInt(instrument.unknown)
+        self.writeInt(instrument.soundBank)
+        if self.versionTuple == (5, 0, 0):
             self.writeShort(instrument.effectNumber)
+            self.placeholder(1)
         else:
-            self.writeInt(instrument.instrument)
-            self.writeInt(instrument.unknown)
-            self.writeInt(instrument.soundBank)
             self.writeInt(instrument.effectNumber)
 
     def writeRSEInstrumentEffect(self, rseInstrument):
-        if self.versionTuple > (5, 0):
+        if self.versionTuple > (5, 0, 0):
             if rseInstrument is None:
                 rseInstrument = gp.RSEInstrument()
             self.writeIntByteSizeString(rseInstrument.effect)
@@ -1247,7 +1228,7 @@ class GP5File(gp4.GP4File):
         self.writeSignedByte(tableChange.instrument.value
                              if tableChange.instrument is not None else -1)
         self.writeRSEInstrument(tableChange.rse)
-        if self.versionTuple == (5, 0):
+        if self.versionTuple == (5, 0, 0):
             self.placeholder(1)
         self.writeSignedByte(tableChange.volume.value
                              if tableChange.volume is not None else -1)
@@ -1280,7 +1261,7 @@ class GP5File(gp4.GP4File):
             self.writeSignedByte(tableChange.tremolo.duration)
         if tableChange.tempo is not None:
             self.writeSignedByte(tableChange.tempo.duration)
-            if self.versionTuple > (5, 0):
+            if self.versionTuple > (5, 0, 0):
                 self.writeBool(tableChange.hideTempo)
 
     def writeMixTableChangeFlags(self, tableChange):

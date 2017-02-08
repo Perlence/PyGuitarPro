@@ -10,7 +10,6 @@ class GP3File(gp.GPFileBase):
 
     """A reader for GuitarPro 3 files."""
 
-    _supportedVersions = ['FICHIER GUITAR PRO v3.00']
     _tripletFeel = gp.TripletFeel.none
 
     # Reading
@@ -47,10 +46,9 @@ class GP3File(gp.GPFileBase):
         -   Measures. See :meth:`readMeasures`.
 
         """
-        if not self.readVersion():
-            raise gp.GPException("unsupported version '%s'" %
-                                 self.version)
         song = gp.Song()
+        song.version = self.readVersion()
+        song.versionTuple = self.versionTuple
         self.readInfo(song)
         self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
                              else gp.TripletFeel.none)

@@ -9,22 +9,22 @@ LOCATION = path.dirname(__file__)
 OUTPUT = path.join(LOCATION, 'output')
 TESTS = [
     'Effects.gp3',
-    'Ephemera - Dust for Tears.gp3',
-    'CarpeDiem - I Ching.gp3',
+    # 'Ephemera - Dust for Tears.gp3',
+    # 'CarpeDiem - I Ching.gp3',
     'Chords.gp3',
     'Harmonics.gp3',
 
     'Effects.gp4',
     'Vibrato.gp4',
-    'CarpeDiem - Ink.gp4',
+    # 'CarpeDiem - Ink.gp4',
     'Chords.gp4',
     'Slides.gp4',
     'Harmonics.gp4',
     'Key.gp4',
     'Repeat.gp4',
 
-    'Mastodon - Curl of the Burl.gp5',
-    'Mastodon - Ghost of Karelia.gp5',
+    # 'Mastodon - Curl of the Burl.gp5',
+    # 'Mastodon - Ghost of Karelia.gp5',
     'Effects.gp5',
     'Voices.gp5',
     'Unknown-m.gp5',
@@ -36,11 +36,38 @@ TESTS = [
     'Repeat.gp5',
     'Demo v5.gp5',
 ]
+CLIPBOARD_TESTS = [
+    '2 whole bars.tmp',
+]
 
-try:
-    os.mkdir(OUTPUT)
-except OSError:
-    pass
+
+@pytest.mark.parametrize('filename', TESTS)
+def test_conversion(output_folder, filename):
+    __, ext = path.splitext(filename)
+    filepath = path.join(LOCATION, filename)
+    song_a = guitarpro.parse(filepath)
+    destpath = path.join(OUTPUT, filename + ext)
+    guitarpro.write(song_a, destpath)
+    song_b = guitarpro.parse(destpath)
+    assert song_a == song_b
+
+
+def test_clipboard(output_folder):
+    filepath = path.join(LOCATION, '2 whole bars.tmp')
+    song_a = guitarpro.parse(filepath)
+    song_a.clipboard = None
+    destpath = path.join(OUTPUT, '2 whole bars.tmp.gp5')
+    guitarpro.write(song_a, destpath)
+    song_b = guitarpro.parse(destpath)
+    assert song_a == song_b
+
+
+@pytest.fixture
+def output_folder():
+    try:
+        os.mkdir(OUTPUT)
+    except OSError:
+        pass
 
 
 def product(test, song, versions=(3, 4, 5)):
@@ -103,14 +130,3 @@ def track_bisect(test, song, dest_version=3):
                               (number, dest_version))
         song.tracks = tracks[:number]
         guitarpro.write(song, dest_path)
-
-
-@pytest.mark.parametrize('filename', TESTS)
-def test_conversion(filename):
-    __, ext = path.splitext(filename)
-    filepath = path.join(LOCATION, filename)
-    song_a = guitarpro.parse(filepath)
-    destpath = path.join(OUTPUT, filename + ext)
-    guitarpro.write(song_a, destpath)
-    song_b = guitarpro.parse(destpath)
-    assert song_a == song_b

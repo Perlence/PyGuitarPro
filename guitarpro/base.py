@@ -17,10 +17,10 @@ class GPFileBase(object):
     bendSemitone = 25
 
     _supportedVersions = []
-    _versionTuple = None
-    version = None
 
     data = attr.ib()
+    version = attr.ib(default=None)
+    versionTuple = attr.ib(default=None)
     encoding = attr.ib(default=None)
 
     def __attrs_post_init__(self):
@@ -124,13 +124,7 @@ class GPFileBase(object):
     def readVersion(self):
         if self.version is None:
             self.version = self.readByteSizeString(30)
-        return self.version in self._supportedVersions
-
-    @property
-    def versionTuple(self):
-        if self._versionTuple is None:
-            self._versionTuple = tuple(map(int, self.version[-4:].split('.')))
-        return self._versionTuple
+        return self.version
 
     # Writing
     # =======
@@ -186,8 +180,10 @@ class GPFileBase(object):
         self.writeInt(len(data) + 1)
         return self.writeByteSizeString(data)
 
-    def writeVersion(self):
-        self.writeByteSizeString(self.version, 30)
+    def writeVersion(self, version=None):
+        if version is None:
+            version = self.version
+        self.writeByteSizeString(version, 30)
 
 
 @attr.s
@@ -276,6 +272,7 @@ class Song(object):
 
     """
     # TODO: Store file format version here
+    versionTuple = attr.ib(default=None, cmp=False)
     clipboard = attr.ib(default=None)
     title = attr.ib(default='')
     subtitle = attr.ib(default='')

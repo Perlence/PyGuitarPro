@@ -9,12 +9,7 @@ from .utils import clamp
 
 class GP4File(gp3.GP3File):
 
-    '''A reader for GuitarPro 4 files.
-    '''
-    _supportedVersions = ['FICHIER GUITAR PRO v4.00',
-                          'FICHIER GUITAR PRO v4.06',
-                          'FICHIER GUITAR PRO L4.06',
-                          'CLIPBOARD GUITAR PRO 4.0 [c6]']
+    """A reader for GuitarPro 4 files."""
 
     # Reading
     # =======
@@ -55,14 +50,10 @@ class GP4File(gp3.GP3File):
         -   Measures. See :meth:`readMeasures`.
 
         """
-        if not self.readVersion():
-            raise gp.GPException("unsupported version '%s'" %
-                                 self.version)
-
         song = gp.Song()
-
-        if self.isClipboard():
-            song.clipboard = self.readClipboard()
+        song.version = self.readVersion()
+        song.versionTuple = self.versionTuple
+        song.clipboard = self.readClipboard()
 
         self.readInfo(song)
         self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
@@ -79,16 +70,18 @@ class GP4File(gp3.GP3File):
         self.readMeasures(song)
         return song
 
-    def isClipboard(self):
-        return self.version.startswith('CLIPBOARD')
-
     def readClipboard(self):
+        if not self.isClipboard():
+            return
         clipboard = gp.Clipboard()
         clipboard.startMeasure = self.readInt()
         clipboard.stopMeasure = self.readInt()
         clipboard.startTrack = self.readInt()
         clipboard.stopTrack = self.readInt()
         return clipboard
+
+    def isClipboard(self):
+        return self.version.startswith('CLIPBOARD')
 
     def readLyrics(self):
         """Read lyrics.
@@ -493,13 +486,11 @@ class GP4File(gp3.GP3File):
 
     def writeSong(self, song):
         self.writeVersion()
-        if self.isClipboard() and song.clipboard is not None:
-            self.writeClipboard(song.clipboard)
-        self.writeInfo(song)
+        self.writeClipboard(song.clipboard)
 
+        self.writeInfo(song)
         self._tripletFeel = song.tracks[0].measures[0].tripletFeel.value
         self.writeBool(self._tripletFeel)
-
         self.writeLyrics(song.lyrics)
 
         self.writeInt(song.tempo)
@@ -518,6 +509,8 @@ class GP4File(gp3.GP3File):
         self.writeMeasures(song.tracks)
 
     def writeClipboard(self, clipboard):
+        if clipboard is None:
+            return
         self.writeInt(clipboard.startMeasure)
         self.writeInt(clipboard.stopMeasure)
         self.writeInt(clipboard.startTrack)
