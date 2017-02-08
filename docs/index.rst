@@ -19,6 +19,7 @@ Python this package will be the good thing to start with.
    pyguitarpro/install
    pyguitarpro/quickstart
    pyguitarpro/api
+   pyguitarpro/format
 
 
 Indices and tables
