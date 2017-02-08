@@ -733,7 +733,7 @@ class Measure(object):
 
     """A measure contains multiple voices of beats."""
 
-    header = attr.ib(default=attr.Factory(MeasureHeader))
+    header = attr.ib()
     clef = attr.ib(default=MeasureClef.treble)
     voices = attr.ib(default=attr.Factory(list))
     lineBreak = attr.ib(default=LineBreak.none)
