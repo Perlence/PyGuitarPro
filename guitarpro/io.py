@@ -40,7 +40,7 @@ _VERSIONS = {
 }
 
 
-def parse(stream, encoding=None):
+def parse(stream, encoding='cp1252'):
     """Open a GP file and read its contents.
 
     :param stream: path to a GP file or file-like object.
@@ -54,7 +54,7 @@ def parse(stream, encoding=None):
     return song
 
 
-def write(song, stream, version=None, encoding=None):
+def write(song, stream, version=None, encoding='cp1252'):
     """Write a song into GP file.
 
     :param song: a song to write.
@@ -83,7 +83,7 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
         fp = stream
 
     if mode == 'rb':
-        gpfilebase = GPFileBase(fp, encoding=encoding)
+        gpfilebase = GPFileBase(fp, encoding)
         versionString = gpfilebase.readVersion()
     elif mode == 'wb':
         isClipboard = song.clipboard is not None
@@ -92,8 +92,7 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
         versionString = _VERSIONS[(version, isClipboard)]
 
     version, GPFile = getVersionAndGPFile(versionString)
-    gpfile = GPFile(fp, version=versionString, versionTuple=version,
-                    encoding=encoding)
+    gpfile = GPFile(fp, encoding, version=versionString, versionTuple=version)
     return gpfile
 
 

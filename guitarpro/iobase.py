@@ -11,13 +11,9 @@ class GPFileBase(object):
     _supportedVersions = []
 
     data = attr.ib()
+    encoding = attr.ib()
     version = attr.ib(default=None)
     versionTuple = attr.ib(default=None)
-    encoding = attr.ib(default=None)
-
-    def __attrs_post_init__(self):
-        if self.encoding is None:
-            self.encoding = 'cp1252'
 
     def close(self):
         self.data.close()
