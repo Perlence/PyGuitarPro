@@ -2,7 +2,7 @@ from __future__ import division
 
 import attr
 
-from . import base as gp
+from . import models as gp
 from . import gp3
 from .utils import clamp
 
@@ -132,14 +132,14 @@ class GP4File(gp3.GP3File):
             *   ...
 
         -   Type: :ref:`byte`. Determines the chord type as followed. See
-            :class:`guitarpro.base.ChordType` for mapping.
+            :class:`guitarpro.models.ChordType` for mapping.
 
         -   Chord extension: :ref:`byte`. See
-            :class:`guitarpro.base.ChordExtension` for mapping.
+            :class:`guitarpro.models.ChordExtension` for mapping.
 
         -   Bass note: :ref:`int`. Lowest note of chord as in *C/A*.
 
-        -   Tonality: :ref:`int`. See :class:`guitarpro.base.ChordAlteration`
+        -   Tonality: :ref:`int`. See :class:`guitarpro.models.ChordAlteration`
             for mapping.
 
         -   Add: :ref:`bool`. Determines if an "add" (added note) is present in
@@ -148,13 +148,13 @@ class GP4File(gp3.GP3File):
         -   Name: :ref:`byte-size-string`. Max length is 22.
 
         -   Fifth tonality: :ref:`byte`. Maps to
-            :class:`guitarpro.base.ChordExtension`.
+            :class:`guitarpro.models.ChordExtension`.
 
         -   Ninth tonality: :ref:`byte`. Maps to
-            :class:`guitarpro.base.ChordExtension`.
+            :class:`guitarpro.models.ChordExtension`.
 
         -   Eleventh tonality: :ref:`byte`. Maps to
-            :class:`guitarpro.base.ChordExtension`.
+            :class:`guitarpro.models.ChordExtension`.
 
         -   List of frets: 6 :ref:`Ints <int>`. Fret values are saved as in
             default format.
@@ -173,7 +173,7 @@ class GP4File(gp3.GP3File):
         -   Blank space, 1 :ref:`byte`.
 
         -   Fingering: 7 :ref:`SignedBytes <signed-byte>`. For value mapping,
-            see :class:`guitarpro.base.Fingering`.
+            see :class:`guitarpro.models.Fingering`.
 
         """
         chord.sharp = self.readBool()
@@ -238,14 +238,14 @@ class GP4File(gp3.GP3File):
         Flags are followed by:
 
         -   Slap effect: :ref:`signed-byte`. For value mapping see
-            :class:`guitarpro.base.SlapEffect`.
+            :class:`guitarpro.models.SlapEffect`.
 
         -   Tremolo bar. See :meth:`readTremoloBar`.
 
         -   Beat stroke. See :meth:`readBeatStroke`.
 
         -   Pick stroke: :ref:`signed-byte`. For value mapping see
-            :class:`guitarpro.base.BeatStrokeDirection`.
+            :class:`guitarpro.models.BeatStrokeDirection`.
 
         """
         beatEffect = gp.BeatEffect()
@@ -409,7 +409,7 @@ class GP4File(gp3.GP3File):
         """Read slides.
 
         Slide is encoded in :ref:`signed-byte`. See
-        :class:`guitarpro.base.SlideType` for value mapping.
+        :class:`guitarpro.models.SlideType` for value mapping.
 
         """
         return [gp.SlideType(self.readSignedByte())]

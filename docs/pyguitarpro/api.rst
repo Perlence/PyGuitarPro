@@ -4,14 +4,15 @@ API Reference
 General functions
 -----------------
 
-.. automodule:: guitarpro
-   :members:
+.. autofunction:: guitarpro.parse
+
+.. autofunction:: guitarpro.write
 
 
 Models
 ------
 
-.. automodule:: guitarpro.base
+.. automodule:: guitarpro.models
    :members:
 
 

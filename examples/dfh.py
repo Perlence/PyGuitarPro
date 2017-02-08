@@ -51,7 +51,7 @@ def main(source, dest=None, tracks=None):
                         last = beat
                         newbeats.append(beat)
                     elif last is not None:
-                        last.duration = guitarpro.base.Duration.fromTime(
+                        last.duration = guitarpro.Duration.fromTime(
                             last.duration.time + beat.duration.time)
                     else:
                         newbeats.append(beat)

@@ -1,9 +1,10 @@
 from six import string_types
 
-from .base import GPFileBase, GPException
+from .iobase import GPFileBase
 from .gp3 import GP3File
 from .gp4 import GP4File
 from .gp5 import GP5File
+from .models import GPException
 
 __all__ = ('parse', 'write')
 
@@ -56,7 +57,8 @@ def parse(stream, encoding=None):
 def write(song, stream, version=None, encoding=None):
     """Write a song into GP file.
 
-    :param song: a :class:`guitarpro.base.GPFileBase` instance.
+    :param song: a song to write.
+    :type song: guitarpro.models.Song
     :param stream: path to save GP file or file-like object.
     :param version: explicitly set version of saved GP file, e.g.
         ``(5, 1, 0)``.

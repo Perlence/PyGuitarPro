@@ -15,7 +15,7 @@ def main(source):
             guitarProPath = os.path.join(dirpath, file)
             try:
                 tab = guitarpro.parse(guitarProPath)
-            except guitarpro.base.GPException as exc:
+            except guitarpro.GPException as exc:
                 print("###This is not a supported Guitar Pro file:",
                       guitarProPath, ":", exc)
             else:

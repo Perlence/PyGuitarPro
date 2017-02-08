@@ -2,11 +2,12 @@ from __future__ import division
 
 import attr
 
-from . import base as gp
+from . import models as gp
+from .iobase import GPFileBase
 from .utils import clamp, bit_length
 
 
-class GP3File(gp.GPFileBase):
+class GP3File(GPFileBase):
 
     """A reader for GuitarPro 3 files."""
 
@@ -265,8 +266,8 @@ class GP3File(gp.GPFileBase):
     def readColor(self):
         """Read color.
 
-        Colors are used by :class:`guitarpro.base.Marker` and
-        :class:`guitarpro.base.Track`. They consist of 3 consecutive bytes and
+        Colors are used by :class:`guitarpro.models.Marker` and
+        :class:`guitarpro.models.Track`. They consist of 3 consecutive bytes and
         one blank byte.
 
         """
@@ -482,7 +483,7 @@ class GP3File(gp.GPFileBase):
         """Read beat duration.
 
         Duration is composed of byte signifying duration and an integer that
-        maps to :class:`guitarpro.base.Tuplet`.
+        maps to :class:`guitarpro.models.Tuplet`.
 
         The byte maps to following values:
 
@@ -585,14 +586,14 @@ class GP3File(gp.GPFileBase):
             *   ...
 
         -   Type: :ref:`int`. Determines the chord type as followed. See
-            :class:`guitarpro.base.ChordType` for mapping.
+            :class:`guitarpro.models.ChordType` for mapping.
 
         -   Chord extension: :ref:`int`. See
-            :class:`guitarpro.base.ChordExtension` for mapping.
+            :class:`guitarpro.models.ChordExtension` for mapping.
 
         -   Bass note: :ref:`int`. Lowest note of chord as in *C/A*.
 
-        -   Tonality: :ref:`int`. See :class:`guitarpro.base.ChordAlteration`
+        -   Tonality: :ref:`int`. See :class:`guitarpro.models.ChordAlteration`
             for mapping.
 
         -   Add: :ref:`bool`. Determines if an "add" (added note) is present in
@@ -601,13 +602,13 @@ class GP3File(gp.GPFileBase):
         -   Name: :ref:`byte-size-string`. Max length is 22.
 
         -   Fifth alteration: :ref:`int`. Maps to
-            :class:`guitarpro.base.ChordAlteration`.
+            :class:`guitarpro.models.ChordAlteration`.
 
         -   Ninth alteration: :ref:`int`. Maps to
-            :class:`guitarpro.base.ChordAlteration`.
+            :class:`guitarpro.models.ChordAlteration`.
 
         -   Eleventh alteration: :ref:`int`. Maps to
-            :class:`guitarpro.base.ChordAlteration`.
+            :class:`guitarpro.models.ChordAlteration`.
 
         -   List of frets: 6 :ref:`Ints <int>`. Fret values are saved as in
             default format.
@@ -715,7 +716,7 @@ class GP3File(gp.GPFileBase):
         """Read tremolo bar beat effect.
 
         The only type of tremolo bar effect Guitar Pro 3 supports is :attr:`dip
-        <guitarpro.base.BendType.dip>`. The value of the effect is encoded in
+        <guitarpro.models.BendType.dip>`. The value of the effect is encoded in
         :ref:`Int` and shows how deep tremolo bar is pressed.
 
         """
@@ -735,7 +736,7 @@ class GP3File(gp.GPFileBase):
 
         Beat stroke consists of two :ref:`Bytes <byte>` which correspond to
         stroke up and stroke down speed. See
-        :class:`guitarpro.base.BeatStrokeDirection` for value mapping.
+        :class:`guitarpro.models.BeatStrokeDirection` for value mapping.
 
         """
         strokeUp = self.readSignedByte()
@@ -837,7 +838,7 @@ class GP3File(gp.GPFileBase):
         """Read mix table change durations.
 
         Durations are read for each non-null
-        :class:`~guitarpro.base.MixTableItem`. Durations are encoded in
+        :class:`~guitarpro.models.MixTableItem`. Durations are encoded in
         :ref:`signed-byte`.
 
         """
@@ -911,7 +912,7 @@ class GP3File(gp.GPFileBase):
             read fret number.
 
         -   Fingering: 2 :ref:`SignedBytes <signed-byte>`. See
-            :class:`guitarpro.base.Fingering`.
+            :class:`guitarpro.models.Fingering`.
 
         -   Note effects. See :meth:`readNoteEffects`.
 
@@ -998,7 +999,7 @@ class GP3File(gp.GPFileBase):
         Encoded as:
 
         -   Bend type: :ref:`signed-byte`. See
-            :class:`guitarpro.base.BendType`.
+            :class:`guitarpro.models.BendType`.
 
         -   Bend value: :ref:`int`.
 
@@ -1019,9 +1020,9 @@ class GP3File(gp.GPFileBase):
         pointCount = self.readInt()
         for __ in range(pointCount):
             position = round(self.readInt() * gp.BendEffect.maxPosition /
-                             gp.GPFileBase.bendPosition)
+                             GPFileBase.bendPosition)
             value = round(self.readInt() * gp.BendEffect.semitoneLength /
-                          gp.GPFileBase.bendSemitone)
+                          GPFileBase.bendSemitone)
             vibrato = self.readBool()
             bendEffect.points.append(gp.BendPoint(position, value, vibrato))
         if pointCount > 0:
@@ -1033,10 +1034,10 @@ class GP3File(gp.GPFileBase):
         -   Fret: :ref:`signed-byte`. Number of fret.
 
         -   Dynamic: :ref:`byte`. Dynamic of a grace note, as in
-            :attr:`guitarpro.base.Note.velocity`.
+            :attr:`guitarpro.models.Note.velocity`.
 
         -   Transition: :ref:`byte`. See
-            :class:`guitarpro.base.GraceEffectTransition`.
+            :class:`guitarpro.models.GraceEffectTransition`.
 
         -   Duration: :ref:`byte`. Values are:
 

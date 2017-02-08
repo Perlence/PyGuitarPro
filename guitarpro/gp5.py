@@ -1,6 +1,6 @@
 from __future__ import division
 
-from . import base as gp
+from . import models as gp
 from . import gp4
 from .utils import bit_length
 
@@ -181,7 +181,7 @@ class GP5File(gp4.GP4File):
         -   Score size proportion: :ref:`int`.
 
         -   Header and footer elements: :ref:`short`. See
-            :class:`guitarpro.base.HeaderFooterElements` for value mapping.
+            :class:`guitarpro.models.HeaderFooterElements` for value mapping.
 
         -   List of placeholders:
 
@@ -298,7 +298,7 @@ class GP5File(gp4.GP4File):
         -   Blank :ref:`byte` if flag at *0x10* is set.
 
         -   Triplet feel: :ref:`byte`. See
-            :class:`guitarpro.base.TripletFeel`.
+            :class:`guitarpro.models.TripletFeel`.
 
         """
         if previous is not None:
@@ -392,7 +392,7 @@ class GP5File(gp4.GP4File):
         Then follow:
 
         -   Auto accentuation: :ref:`byte`. See
-            :class:`guitarpro.base.Accentuation`.
+            :class:`guitarpro.models.Accentuation`.
 
         -   MIDI bank: :ref:`byte`.
 
@@ -521,7 +521,7 @@ class GP5File(gp4.GP4File):
         Guitar Pro 5 stores twice more measures compared to Guitar Pro 3.
         One measure consists of two sub-measures for each of two voices.
 
-        Sub-measures are followed by a :class:`~guitarpro.base.LineBreak`
+        Sub-measures are followed by a :class:`~guitarpro.models.LineBreak`
         stored in :ref:`byte`.
 
         """
@@ -586,7 +586,7 @@ class GP5File(gp4.GP4File):
         """Read beat stroke.
 
         Beat stroke consists of two :ref:`Bytes <byte>` which correspond to
-        stroke down and stroke up speed. See :class:`guitarpro.base.BeatStroke`
+        stroke down and stroke up speed. See :class:`guitarpro.models.BeatStroke`
         for value mapping.
 
         """
@@ -674,7 +674,7 @@ class GP5File(gp4.GP4File):
         """Read mix table change durations.
 
         Durations are read for each non-null
-        :class:`~guitarpro.base.MixTableItem`. Durations are encoded in
+        :class:`~guitarpro.models.MixTableItem`. Durations are encoded in
         :ref:`signed-byte`.
 
         If tempo did change, then one :ref:`bool` is read. If it's true, then
@@ -716,7 +716,7 @@ class GP5File(gp4.GP4File):
     def readWahEffect(self, flags):
         """Read wah-wah.
 
-        -   Wah state: :ref:`signed-byte`. See :class:`guitarpro.base.WahState`
+        -   Wah state: :ref:`signed-byte`. See :class:`guitarpro.models.WahState`
             for value mapping.
 
         """
@@ -750,7 +750,7 @@ class GP5File(gp4.GP4File):
             read fret number.
 
         -   Fingering: 2 :ref:`SignedBytes <signed-byte>`. See
-            :class:`guitarpro.base.Fingering`.
+            :class:`guitarpro.models.Fingering`.
 
         -   Duration percent: :ref:`double`.
 
@@ -795,10 +795,10 @@ class GP5File(gp4.GP4File):
         -   Fret: :ref:`signed-byte`. Number of fret.
 
         -   Dynamic: :ref:`byte`. Dynamic of a grace note, as in
-            :attr:`guitarpro.base.Note.velocity`.
+            :attr:`guitarpro.models.Note.velocity`.
 
         -   Transition: :ref:`byte`. See
-            :class:`guitarpro.base.GraceEffectTransition`.
+            :class:`guitarpro.models.GraceEffectTransition`.
 
         -   Duration: :ref:`byte`. Values are:
 
