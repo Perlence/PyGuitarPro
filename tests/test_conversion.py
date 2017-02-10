@@ -4,7 +4,6 @@ from os import path
 import pytest
 
 import guitarpro
-import guitarpro.io
 
 
 LOCATION = path.dirname(__file__)
