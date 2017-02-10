@@ -1,5 +1,7 @@
 from __future__ import division
 
+import attr
+
 from . import models as gp
 from . import gp4
 from .utils import bit_length
@@ -56,7 +58,7 @@ class GP5File(gp4.GP4File):
         - Measures. See :meth:`readMeasures`.
 
         """
-        song = gp.Song()
+        song = gp.Song(tracks=[])
         song.version = self.readVersion()
         song.versionTuple = self.versionTuple
 
@@ -310,7 +312,8 @@ class GP5File(gp4.GP4File):
             self.skip(1)
         header, flags = super(GP5File, self).readMeasureHeader(number, song,
                                                                previous)
-        header.repeatClose -= 1
+        if header.repeatClose > -1:
+            header.repeatClose -= 1
         if flags & 0x03:
             header.timeSignature.beams = self.readByte(4)
         else:
@@ -729,7 +732,7 @@ class GP5File(gp4.GP4File):
         wah.state = gp.WahState(self.readSignedByte())
         return wah
 
-    def readNote(self, note, guitarString, track, effect):
+    def readNote(self, note, guitarString, track):
         """Read note.
 
         The first byte is note flags:
@@ -959,8 +962,6 @@ class GP5File(gp4.GP4File):
 
     def writeRSEMasterEffect(self, masterEffect):
         if self.versionTuple > (5, 0, 0):
-            if masterEffect is None:
-                masterEffect = gp.RSEMasterEffect()
             masterEffect.volume = masterEffect.volume or 100
             masterEffect.reverb = masterEffect.reverb or 0
             masterEffect.equalizer = (masterEffect.equalizer or
@@ -978,9 +979,6 @@ class GP5File(gp4.GP4File):
         return int(-round(value, 1) * 10)
 
     def writePageSetup(self, setup):
-        if setup is None:
-            setup = gp.PageSetup()
-
         self.writeInt(setup.pageSize.x)
         self.writeInt(setup.pageSize.y)
 
@@ -1060,9 +1058,8 @@ class GP5File(gp4.GP4File):
         return flags
 
     def writeMeasureHeaderValues(self, header, flags):
-        header.repeatClose += 1
+        header = attr.assoc(header, repeatClose=header.repeatClose+1)
         super(GP5File, self).writeMeasureHeaderValues(header, flags)
-        header.repeatClose -= 1
         if flags & 0x03:
             for beam in header.timeSignature.beams:
                 self.writeByte(beam)
@@ -1149,21 +1146,19 @@ class GP5File(gp4.GP4File):
         self.writeTrackRSE(track.rse)
 
     def writeTrackRSE(self, trackRSE):
-        if trackRSE is None:
-            trackRSE = gp.TrackRSE()
         self.writeByte(trackRSE.humanize)
         self.writeInt(0)
         self.writeInt(0)
         self.writeInt(100)
         self.placeholder(12)
+        print(trackRSE)
+        print(trackRSE.instrument)
         self.writeRSEInstrument(trackRSE.instrument)
         if self.versionTuple > (5, 0, 0):
             self.writeEqualizer(trackRSE.equalizer)
             self.writeRSEInstrumentEffect(trackRSE.instrument)
 
     def writeRSEInstrument(self, instrument):
-        if instrument is None:
-            instrument = gp.RSEInstrument()
         self.writeInt(instrument.instrument)
         self.writeInt(instrument.unknown)
         self.writeInt(instrument.soundBank)
@@ -1173,12 +1168,10 @@ class GP5File(gp4.GP4File):
         else:
             self.writeInt(instrument.effectNumber)
 
-    def writeRSEInstrumentEffect(self, rseInstrument):
+    def writeRSEInstrumentEffect(self, instrument):
         if self.versionTuple > (5, 0, 0):
-            if rseInstrument is None:
-                rseInstrument = gp.RSEInstrument()
-            self.writeIntByteSizeString(rseInstrument.effect)
-            self.writeIntByteSizeString(rseInstrument.effectCategory)
+            self.writeIntByteSizeString(instrument.effect)
+            self.writeIntByteSizeString(instrument.effectCategory)
 
     def writeMeasure(self, measure):
         for voice in measure.voices[:gp.Measure.maxVoices]:

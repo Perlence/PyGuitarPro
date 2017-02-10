@@ -1,7 +1,7 @@
 from __future__ import division
 
 import attr
-from enum import Enum
+from enum import Enum, IntEnum
 from six import string_types
 
 __all__ = (
@@ -131,15 +131,22 @@ class Song(object):
     tempo = attr.ib(default=120)
     hideTempo = attr.ib(default=False)
     key = attr.ib(default=KeySignature.CMajor)
-    measureHeaders = attr.ib(default=attr.Factory(list))
+    measureHeaders = attr.ib(default=attr.Factory(list), cmp=False)
     tracks = attr.ib(default=None)
     masterEffect = attr.ib(default=None)
 
-    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), cmp=False)
+    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), cmp=False,
+                                  repr=False)
 
     def __attrs_post_init__(self):
+        if self.lyrics is None:
+            self.lyrics = Lyrics()
+        if self.pageSetup is None:
+            self.pageSetup = PageSetup()
         if self.tracks is None:
-            self.tracks = []
+            self.tracks = [Track(self)]
+        if self.masterEffect is None:
+            self.masterEffect = RSEMasterEffect()
 
     def addMeasureHeader(self, header):
         header.song = self
@@ -174,7 +181,7 @@ class Lyrics(object):
 
     """Represents a collection of lyrics lines for a track."""
 
-    trackChoice = attr.ib(default=-1)
+    trackChoice = attr.ib(default=0)
     lines = attr.ib(default=None)
 
     maxLineCount = 5
@@ -216,7 +223,7 @@ class Padding(object):
     bottom = attr.ib()
 
 
-class HeaderFooterElements(Enum):
+class HeaderFooterElements(IntEnum):
 
     """A list of the elements which can be shown in the header and
     footer of a rendered song sheet.
@@ -264,7 +271,7 @@ class PageSetup(object):
     """
     pageSize = attr.ib(default=Point(210, 297))
     pageMargin = attr.ib(default=Padding(10, 15, 10, 10))
-    scoreSizeProportion = attr.ib(default=1)
+    scoreSizeProportion = attr.ib(default=1.0)
     headerAndFooter = attr.ib(default=HeaderFooterElements.all)
     title = attr.ib(default='%title%')
     subtitle = attr.ib(default='%subtitle%')
@@ -512,7 +519,7 @@ class Track(object):
 
     """A track contains multiple measures."""
 
-    song = attr.ib(cmp=False)
+    song = attr.ib(cmp=False, repr=False)
     number = attr.ib(default=1)
     fretCount = attr.ib(default=24)
     offset = attr.ib(default=0)
@@ -535,9 +542,13 @@ class Track(object):
 
     def __attrs_post_init__(self):
         if self.strings is None:
-            self.strings = []
+            self.strings = [GuitarString(n, v)
+                            for n, v in [(1, 64), (2, 59), (3, 55),
+                                         (4, 50), (5, 45), (6, 40)]]
         if self.measures is None:
-            self.measures = []
+            self.measures = [Measure(self)]
+        if self.rse is None:
+            self.rse = TrackRSE()
 
 
 @attr.s
@@ -581,7 +592,7 @@ class Measure(object):
 
     """A measure contains multiple voices of beats."""
 
-    track = attr.ib(cmp=False)
+    track = attr.ib(cmp=False, repr=False)
     header = attr.ib(default=attr.Factory(MeasureHeader))
     clef = attr.ib(default=MeasureClef.treble)
     voices = attr.ib(default=None)
@@ -642,7 +653,7 @@ class Voice(object):
 
     """A voice contains multiple beats."""
 
-    measure = attr.ib(cmp=False)
+    measure = attr.ib(cmp=False, repr=False)
     beats = attr.ib(default=attr.Factory(list))
     direction = attr.ib(default=VoiceDirection.none)
 
@@ -793,7 +804,7 @@ class Beat(object):
 
     """A beat contains multiple notes."""
 
-    voice = attr.ib(cmp=False)
+    voice = attr.ib(cmp=False, repr=False)
     notes = attr.ib(default=attr.Factory(list))
     duration = attr.ib(default=attr.Factory(Duration))
     text = attr.ib(default=None)
@@ -1044,7 +1055,7 @@ class Note(object):
 
     """Describes a single note."""
 
-    beat = attr.ib(cmp=False)
+    beat = attr.ib(cmp=False, repr=False)
     value = attr.ib(default=0)
     velocity = attr.ib(default=Velocities.default)
     string = attr.ib(default=0)
@@ -1342,6 +1353,11 @@ class MixTableChange(object):
     hideTempo = attr.ib(default=True)
     wah = attr.ib(default=None)
     useRSE = attr.ib(default=False)
+    rse = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        if self.rse is None:
+            self.rse = RSEInstrument()
 
     @property
     def isJustWah(self):
@@ -1441,16 +1457,6 @@ class BendEffect(object):
 
 
 @attr.s
-class RSEMasterEffect(object):
-
-    """Master effect as seen on "Score information"."""
-
-    volume = attr.ib(default=0)
-    reverb = attr.ib(default=0)
-    equalizer = attr.ib(default=0)
-
-
-@attr.s
 class RSEEqualizer(object):
 
     """Equalizer found in master effect and track effect.
@@ -1465,6 +1471,20 @@ class RSEEqualizer(object):
 
     knobs = attr.ib(default=attr.Factory(list))
     gain = attr.ib(default=0.0)
+
+
+@attr.s
+class RSEMasterEffect(object):
+
+    """Master effect as seen on "Score information"."""
+
+    volume = attr.ib(default=0)
+    reverb = attr.ib(default=0)
+    equalizer = attr.ib(default=attr.Factory(RSEEqualizer))
+
+    def __attrs_post_init__(self):
+        if not self.equalizer.knobs:
+            self.equalizer.knobs = [0.0] * 10
 
 
 class Accentuation(Enum):
@@ -1510,4 +1530,4 @@ class TrackRSE(object):
 
     def __attrs_post_init__(self):
         if not self.equalizer.knobs:
-            self.equalizer.knobs = [0] * 3
+            self.equalizer.knobs = [0.0] * 3

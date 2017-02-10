@@ -48,7 +48,7 @@ def test_conversion(output_folder, filename):
     __, ext = path.splitext(filename)
     filepath = path.join(LOCATION, filename)
     song_a = guitarpro.parse(filepath)
-    destpath = path.join(OUTPUT, filename + ext)
+    destpath = path.join(output_folder, filename + ext)
     guitarpro.write(song_a, destpath)
     song_b = guitarpro.parse(destpath)
     assert song_a == song_b
@@ -58,10 +58,19 @@ def test_clipboard(output_folder):
     filepath = path.join(LOCATION, '2 whole bars.tmp')
     song_a = guitarpro.parse(filepath)
     song_a.clipboard = None
-    destpath = path.join(OUTPUT, '2 whole bars.tmp.gp5')
+    destpath = path.join(output_folder, '2 whole bars.tmp.gp5')
     guitarpro.write(song_a, destpath)
     song_b = guitarpro.parse(destpath)
     assert song_a == song_b
+
+
+def test_empty(output_folder):
+    empty_a = guitarpro.Song()
+    destpath = path.join(output_folder, 'Empty.gp5')
+    guitarpro.write(empty_a, destpath, version=(5, 2, 0))
+
+    empty_b = guitarpro.parse(destpath)
+    assert empty_a == empty_b
 
 
 @pytest.fixture
@@ -70,6 +79,7 @@ def output_folder():
         os.mkdir(OUTPUT)
     except OSError:
         pass
+    return OUTPUT
 
 
 def product(test, song, versions=(3, 4, 5)):

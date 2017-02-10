@@ -47,7 +47,7 @@ class GP3File(GPFileBase):
         - Measures. See :meth:`readMeasures`.
 
         """
-        song = gp.Song()
+        song = gp.Song(tracks=[])
         song.version = self.readVersion()
         song.versionTuple = self.versionTuple
         self.readInfo(song)
@@ -290,7 +290,7 @@ class GP3File(GPFileBase):
 
         """
         for i in range(trackCount):
-            track = gp.Track(song, i + 1)
+            track = gp.Track(song, i + 1, strings=[], measures=[])
             self.readTrack(track, channels)
             song.tracks.append(track)
 
@@ -889,12 +889,10 @@ class GP3File(GPFileBase):
             if stringFlags & 1 << (7 - string.number):
                 note = gp.Note(beat)
                 beat.notes.append(note)
-                if effect is None:
-                    effect = gp.NoteEffect()
-                self.readNote(note, string, track, effect)
+                self.readNote(note, string, track)
             beat.duration = duration
 
-    def readNote(self, note, guitarString, track, effect):
+    def readNote(self, note, guitarString, track):
         """Read note.
 
         The first byte is note flags:
@@ -930,7 +928,6 @@ class GP3File(GPFileBase):
         """
         flags = self.readByte()
         note.string = guitarString.number
-        note.effect = effect
         note.effect.ghostNote = bool(flags & 0x04)
         if flags & 0x20:
             note.type = gp.NoteType(self.readByte())
