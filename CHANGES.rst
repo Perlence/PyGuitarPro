@@ -4,6 +4,8 @@ Changelog
 Version 0.3
 -----------
 
+*2017-02-10*
+
 - Removed ``Note.deadNote`` attribute.
 - Fixed track order changes.
 - Removed attribute ``Marker.measureHeader``.
@@ -17,7 +19,7 @@ Version 0.3
   Now they can be accessed as ``guitarpro.Song``, for example.
 - Swapped beat stroke directions. Downstroke is represented by ``BeatStrokeDirection.down`` and upstroke is represented
   by ``BeatStrokeDirection.up``.
-- Resolved #1. Now it's easier to create a tab from scratch.
+- Resolved issue `#1 <https://github.com/Perlence/PyGuitarPro/issues/1>`_. Now it's easier to create a tab from scratch.
 
 Minor changes:
 
@@ -27,7 +29,9 @@ Minor changes:
 Version 0.2.2
 -------------
 
-- Fixed `NoteType` enumeration.
+*2014-04-01*
+
+- Fixed ``NoteType`` enumeration.
 - Included examples into sdist.
 - Create ``tests.OUTPUT`` directory before running tests.
 - Type coercion before writing data (fixes py3k compatibility).
@@ -36,12 +40,16 @@ Version 0.2.2
 Version 0.2.1
 -------------
 
+*2014-03-30*
+
 - Converted Markdown docs to reST docs.
 - Added ``MANIFEST.in``.
 
 
 Version 0.2
 -----------
+
+*2014-03-30*
 
 - Added Python 3 compatibility.
 - Added documentation.
@@ -56,6 +64,8 @@ Version 0.2
 
 Version 0.1
 -----------
+
+*2014-03-11*
 
 First public release.
 
