@@ -94,7 +94,7 @@ class GP3File(GPFileBase):
         song.instructions = self.readIntByteSizeString()
         notesCount = self.readInt()
         song.notice = []
-        for __ in range(notesCount):
+        for _ in range(notesCount):
             song.notice.append(self.readIntByteSizeString())
 
     def readMidiChannels(self):
@@ -167,7 +167,7 @@ class GP3File(GPFileBase):
         """
         previous = None
         for number in range(1, measureCount + 1):
-            header, __ = self.readMeasureHeader(number, song, previous)
+            header, _ = self.readMeasureHeader(number, song, previous)
             song.addMeasureHeader(header)
             previous = header
 
@@ -225,7 +225,7 @@ class GP3File(GPFileBase):
         if flags & 0x02:
             header.timeSignature.denominator.value = self.readSignedByte()
         else:
-            header.timeSignature.denominator.value = previous.timeSignature.denominator.value
+            header.timeSignature.denominator.value = previous.timeSignature.denominator.value  # noqa
         header.isRepeatOpen = bool(flags & 0x04)
         if flags & 0x08:
             header.repeatClose = self.readSignedByte()
@@ -657,8 +657,8 @@ class GP3File(GPFileBase):
         barreFrets = self.readInt(2)
         barreStarts = self.readInt(2)
         barreEnds = self.readInt(2)
-        for fret, start, end, __ in zip(barreFrets, barreStarts, barreEnds,
-                                        range(barresCount)):
+        for fret, start, end, _ in zip(barreFrets, barreStarts, barreEnds,
+                                       range(barresCount)):
             barre = gp.Barre(fret, start, end)
             chord.barres.append(barre)
         chord.omissions = self.readBool(7)
@@ -1027,7 +1027,7 @@ class GP3File(GPFileBase):
         bendEffect.type = gp.BendType(self.readSignedByte())
         bendEffect.value = self.readInt()
         pointCount = self.readInt()
-        for __ in range(pointCount):
+        for _ in range(pointCount):
             position = round(self.readInt() * gp.BendEffect.maxPosition /
                              GPFileBase.bendPosition)
             value = round(self.readInt() * gp.BendEffect.semitoneLength /

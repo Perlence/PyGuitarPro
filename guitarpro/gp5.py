@@ -126,7 +126,7 @@ class GP5File(gp4.GP4File):
         song.instructions = self.readIntByteSizeString()
         notesCount = self.readInt()
         song.notice = []
-        for __ in range(notesCount):
+        for _ in range(notesCount):
             song.notice.append(self.readIntByteSizeString())
 
     def readRSEMasterEffect(self):

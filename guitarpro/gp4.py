@@ -199,8 +199,8 @@ class GP4File(gp3.GP3File):
         barreFrets = self.readByte(5)
         barreStarts = self.readByte(5)
         barreEnds = self.readByte(5)
-        for fret, start, end, __ in zip(barreFrets, barreStarts, barreEnds,
-                                        range(barresCount)):
+        for fret, start, end, _ in zip(barreFrets, barreStarts, barreEnds,
+                                       range(barresCount)):
             barre = gp.Barre(fret, start, end)
             chord.barres.append(barre)
         chord.omissions = self.readBool(7)

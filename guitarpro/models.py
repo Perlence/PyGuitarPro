@@ -126,7 +126,7 @@ class Lyrics(object):
     def __attrs_post_init__(self):
         if self.lines is None:
             self.lines = []
-            for __ in range(Lyrics.maxLineCount):
+            for _ in range(Lyrics.maxLineCount):
                 self.lines.append(LyricLine())
 
     def __str__(self):
