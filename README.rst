@@ -67,7 +67,7 @@ To install development version of PyGuitarPro:
 
     git clone https://github.com/Perlence/PyGuitarPro.git
     cd pyguitarpro
-    python setup.py develop
+    pip install -e .
 
 
 Documentation
