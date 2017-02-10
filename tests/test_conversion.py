@@ -4,6 +4,8 @@ from os import path
 import pytest
 
 import guitarpro
+import guitarpro.io
+
 
 LOCATION = path.dirname(__file__)
 OUTPUT = path.join(LOCATION, 'output')
@@ -73,6 +75,21 @@ def test_empty(output_folder):
     assert empty_a == empty_b
 
 
+def test_guess_version(output_folder):
+    filename = 'Effects.gp5'
+    filepath = path.join(LOCATION, filename)
+    song_a = guitarpro.parse(filepath)
+    song_a.version = song_a.versionTuple = None
+
+    for ext, versionTuple in guitarpro.io._EXT_VERSIONS.items():
+        if ext == 'tmp':
+            continue
+        destpath = path.join(output_folder, filename + '.' + ext)
+        guitarpro.write(song_a, destpath)
+        song_b = guitarpro.parse(destpath)
+        assert song_b.versionTuple == versionTuple
+
+
 @pytest.fixture
 def output_folder():
     try:
@@ -99,8 +116,8 @@ def bisect(test, song, dest_version=3):
     - ...
     - ``*-nnn.gp?``: *1st*, *2nd*, ..., *nth* measure
 
-    This function helps to find the measure where erroneous data was written
-    using bisection method.
+    This function helps to find the measure where erroneous data was
+    written using bisection method.
 
     """
     folder, _ = path.splitext(test)
@@ -127,8 +144,8 @@ def track_bisect(test, song, dest_version=3):
     - ...
     - ``*-Tnn.gp?``: *1st*, *2nd*, ..., *nth* track
 
-    This function helps to find the track where erroneous data was written
-    using bisection method.
+    This function helps to find the track where erroneous data was
+    written using bisection method.
 
     """
     folder, _ = path.splitext(test)

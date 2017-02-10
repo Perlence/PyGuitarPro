@@ -1151,8 +1151,6 @@ class GP5File(gp4.GP4File):
         self.writeInt(0)
         self.writeInt(100)
         self.placeholder(12)
-        print(trackRSE)
-        print(trackRSE.instrument)
         self.writeRSEInstrument(trackRSE.instrument)
         if self.versionTuple > (5, 0, 0):
             self.writeEqualizer(trackRSE.equalizer)

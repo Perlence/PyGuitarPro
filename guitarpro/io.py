@@ -1,3 +1,5 @@
+import os
+
 from six import string_types
 
 from .iobase import GPFileBase
@@ -37,6 +39,13 @@ _VERSIONS = {
     ((5, 0, 0), True): 'CLIPBOARD GP 5.0',
     ((5, 1, 0), True): 'CLIPBOARD GP 5.1',
     ((5, 2, 0), True): 'CLIPBOARD GP 5.2',
+}
+
+_EXT_VERSIONS = {
+    'gp3': (3, 0, 0),
+    'gp4': (4, 0, 6),
+    'gp5': (5, 1, 0),
+    'tmp': (5, 2, 0),
 }
 
 
@@ -79,8 +88,10 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
 
     if isinstance(stream, string_types):
         fp = open(stream, mode)
+        filename = stream
     else:
         fp = stream
+        filename = getattr(fp, 'name', '<file>')
 
     if mode == 'rb':
         gpfilebase = GPFileBase(fp, encoding)
@@ -89,6 +100,8 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
         isClipboard = song.clipboard is not None
         if version is None:
             version = song.versionTuple
+        if version is None:
+            version = guessVersionByExtension(filename)
         versionString = _VERSIONS[(version, isClipboard)]
 
     version, GPFile = getVersionAndGPFile(versionString)
@@ -101,3 +114,12 @@ def getVersionAndGPFile(versionString):
         return _GPFILES[versionString]
     except KeyError:
         raise GPException("unsupported version '%s'" % versionString)
+
+
+def guessVersionByExtension(filename):
+    __, ext = os.path.splitext(filename)
+    ext = ext.lstrip('.')
+    version = _EXT_VERSIONS.get(ext)
+    if version is None:
+        version = _EXT_VERSIONS['gp5']
+    return version
