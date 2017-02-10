@@ -1,7 +1,7 @@
 from __future__ import division
 
 import attr
-from enum import Enum
+from enum import Enum, IntEnum
 from six import string_types
 
 __all__ = (
@@ -105,57 +105,6 @@ class KeySignature(Enum):
 
 
 @attr.s
-class Song(object):
-
-    """This is the top-level node of the song model.
-
-    It contains basic information about the stored song.
-
-    """
-    # TODO: Store file format version here
-    versionTuple = attr.ib(default=None, cmp=False)
-    clipboard = attr.ib(default=None)
-    title = attr.ib(default='')
-    subtitle = attr.ib(default='')
-    artist = attr.ib(default='')
-    album = attr.ib(default='')
-    words = attr.ib(default='')
-    music = attr.ib(default='')
-    copyright = attr.ib(default='')
-    tab = attr.ib(default='')
-    instructions = attr.ib(default='')
-    notice = attr.ib(default=attr.Factory(list))
-    lyrics = attr.ib(default=None)
-    pageSetup = attr.ib(default=None)
-    tempoName = attr.ib(default='Moderate')
-    tempo = attr.ib(default=120)
-    hideTempo = attr.ib(default=False)
-    key = attr.ib(default=KeySignature.CMajor)
-    measureHeaders = attr.ib(default=attr.Factory(list))
-    tracks = attr.ib(default=attr.Factory(list))
-    masterEffect = attr.ib(default=None)
-
-    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), cmp=False)
-
-    def addMeasureHeader(self, header):
-        header.song = self
-        self.measureHeaders.append(header)
-
-        # if the group is closed only the next upcoming header can
-        # reopen the group in case of a repeat alternative, so we
-        # remove the current group
-        if header.isRepeatOpen or (self._currentRepeatGroup.isClosed and
-                                   header.repeatAlternative <= 0):
-            self._currentRepeatGroup = RepeatGroup()
-
-        self._currentRepeatGroup.addMeasureHeader(header)
-
-    def addTrack(self, track):
-        track.song = self
-        self.tracks.append(track)
-
-
-@attr.s
 class LyricLine(object):
 
     """A lyrics line."""
@@ -169,13 +118,14 @@ class Lyrics(object):
 
     """Represents a collection of lyrics lines for a track."""
 
-    trackChoice = attr.ib(default=-1)
-    lines = attr.ib(default=attr.Factory(list))
+    trackChoice = attr.ib(default=0)
+    lines = attr.ib(default=None)
 
     maxLineCount = 5
 
     def __attrs_post_init__(self):
-        if not self.lines:
+        if self.lines is None:
+            self.lines = []
             for __ in range(Lyrics.maxLineCount):
                 self.lines.append(LyricLine())
 
@@ -210,7 +160,7 @@ class Padding(object):
     bottom = attr.ib()
 
 
-class HeaderFooterElements(Enum):
+class HeaderFooterElements(IntEnum):
 
     """A list of the elements which can be shown in the header and
     footer of a rendered song sheet.
@@ -258,7 +208,7 @@ class PageSetup(object):
     """
     pageSize = attr.ib(default=Point(210, 297))
     pageMargin = attr.ib(default=Padding(10, 15, 10, 10))
-    scoreSizeProportion = attr.ib(default=1)
+    scoreSizeProportion = attr.ib(default=1.0)
     headerAndFooter = attr.ib(default=HeaderFooterElements.all)
     title = attr.ib(default='%title%')
     subtitle = attr.ib(default='%subtitle%')
@@ -271,6 +221,94 @@ class PageSetup(object):
                                 'All Rights Reserved - '
                                 'International Copyright Secured')
     pageNumber = attr.ib(default='Page %N%/%P%')
+
+
+@attr.s
+class RSEEqualizer(object):
+
+    """Equalizer found in master effect and track effect.
+
+    Attribute :attr:`RSEEqualizer.knobs` is a list of values in range
+    from -6.0 to 5.9. Master effect has 10 knobs, track effect has 3
+    knobs. Gain is a value in range from -6.0 to 5.9 which can be found
+    in both master and track effects and is named as "PRE" in Guitar Pro
+    5.
+
+    """
+
+    knobs = attr.ib(default=attr.Factory(list))
+    gain = attr.ib(default=0.0)
+
+
+@attr.s
+class RSEMasterEffect(object):
+
+    """Master effect as seen on "Score information"."""
+
+    volume = attr.ib(default=0)
+    reverb = attr.ib(default=0)
+    equalizer = attr.ib(default=attr.Factory(RSEEqualizer))
+
+    def __attrs_post_init__(self):
+        if not self.equalizer.knobs:
+            self.equalizer.knobs = [0.0] * 10
+
+
+@attr.s
+class Song(object):
+
+    """This is the top-level node of the song model.
+
+    It contains basic information about the stored song.
+
+    """
+    # TODO: Store file format version here
+    versionTuple = attr.ib(default=None, cmp=False)
+    clipboard = attr.ib(default=None)
+    title = attr.ib(default='')
+    subtitle = attr.ib(default='')
+    artist = attr.ib(default='')
+    album = attr.ib(default='')
+    words = attr.ib(default='')
+    music = attr.ib(default='')
+    copyright = attr.ib(default='')
+    tab = attr.ib(default='')
+    instructions = attr.ib(default='')
+    notice = attr.ib(default=attr.Factory(list))
+    lyrics = attr.ib(default=attr.Factory(Lyrics))
+    pageSetup = attr.ib(default=attr.Factory(PageSetup))
+    tempoName = attr.ib(default='Moderate')
+    tempo = attr.ib(default=120)
+    hideTempo = attr.ib(default=False)
+    key = attr.ib(default=KeySignature.CMajor)
+    measureHeaders = attr.ib(default=attr.Factory(list), cmp=False)
+    tracks = attr.ib(default=None)
+    masterEffect = attr.ib(default=attr.Factory(RSEMasterEffect))
+
+    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), cmp=False,
+                                  repr=False)
+
+    def __attrs_post_init__(self):
+        if self.tracks is None:
+            self.tracks = [Track(self)]
+
+    def addMeasureHeader(self, header):
+        header.song = self
+        self.measureHeaders.append(header)
+
+        # if the group is closed only the next upcoming header can
+        # reopen the group in case of a repeat alternative, so we remove
+        # the current group
+        if header.isRepeatOpen or (self._currentRepeatGroup.isClosed and
+                                   header.repeatAlternative <= 0):
+            self._currentRepeatGroup = RepeatGroup()
+
+        self._currentRepeatGroup.addMeasureHeader(header)
+
+    def newMeasure(self):
+        for track in self.tracks:
+            measure = Measure(track)
+            track.measures.append(measure)
 
 
 @attr.s
@@ -435,7 +473,7 @@ class MeasureHeader(object):
     """A measure header contains metadata for measures over multiple
     tracks."""
 
-    number = attr.ib(default=0, cmp=False)
+    number = attr.ib(default=1, cmp=False)
     start = attr.ib(default=Duration.quarterTime)
     hasDoubleBar = attr.ib(default=False)
     keySignature = attr.ib(default=KeySignature.CMajor)
@@ -501,12 +539,59 @@ class TrackSettings(object):
     extendRhythmic = attr.ib(default=False)
 
 
+class Accentuation(Enum):
+
+    """Values of auto-accentuation on the beat found in track RSE
+    settings."""
+
+    #: No auto-accentuation.
+    none = 0
+
+    #: Very soft accentuation.
+    verySoft = 1
+
+    #: Soft accentuation.
+    soft = 2
+
+    #: Medium accentuation.
+    medium = 3
+
+    #: Strong accentuation.
+    strong = 4
+
+    #: Very strong accentuation.
+    veryStrong = 5
+
+
+@attr.s
+class RSEInstrument(object):
+    instrument = attr.ib(default=-1)
+    unknown = attr.ib(default=1)
+    soundBank = attr.ib(default=-1)
+    effectNumber = attr.ib(default=-1)
+    effectCategory = attr.ib(default='')
+    effect = attr.ib(default='')
+
+
+@attr.s
+class TrackRSE(object):
+    instrument = attr.ib(default=attr.Factory(RSEInstrument))
+    equalizer = attr.ib(default=attr.Factory(RSEEqualizer))
+    humanize = attr.ib(default=0)
+    autoAccentuation = attr.ib(default=Accentuation.none)
+
+    def __attrs_post_init__(self):
+        if not self.equalizer.knobs:
+            self.equalizer.knobs = [0.0] * 3
+
+
 @attr.s
 class Track(object):
 
     """A track contains multiple measures."""
 
-    number = attr.ib(default=0)
+    song = attr.ib(cmp=False, repr=False)
+    number = attr.ib(default=1)
     fretCount = attr.ib(default=24)
     offset = attr.ib(default=0)
     isPercussionTrack = attr.ib(default=False)
@@ -517,18 +602,22 @@ class Track(object):
     isMute = attr.ib(default=False)
     indicateTuning = attr.ib(default=False)
     name = attr.ib(default='Track 1')
-    measures = attr.ib(default=attr.Factory(list))
-    strings = attr.ib(default=attr.Factory(list))
+    measures = attr.ib(default=None)
+    strings = attr.ib(default=None)
     port = attr.ib(default=1)
     channel = attr.ib(default=attr.Factory(MidiChannel))
     color = attr.ib(default=Color.red)
     settings = attr.ib(default=attr.Factory(TrackSettings))
     useRSE = attr.ib(default=False)
-    rse = attr.ib(default=None)
+    rse = attr.ib(default=attr.Factory(TrackRSE))
 
-    def addMeasure(self, measure):
-        measure.track = self
-        self.measures.append(measure)
+    def __attrs_post_init__(self):
+        if self.strings is None:
+            self.strings = [GuitarString(n, v)
+                            for n, v in [(1, 64), (2, 59), (3, 55),
+                                         (4, 50), (5, 45), (6, 40)]]
+        if self.measures is None:
+            self.measures = [Measure(self)]
 
 
 @attr.s
@@ -572,12 +661,20 @@ class Measure(object):
 
     """A measure contains multiple voices of beats."""
 
-    header = attr.ib()
+    track = attr.ib(cmp=False, repr=False)
+    header = attr.ib(default=attr.Factory(MeasureHeader))
     clef = attr.ib(default=MeasureClef.treble)
-    voices = attr.ib(default=attr.Factory(list))
+    voices = attr.ib(default=None)
     lineBreak = attr.ib(default=LineBreak.none)
 
     maxVoices = 2
+
+    def __attrs_post_init__(self):
+        if self.voices is None:
+            self.voices = []
+            for _ in range(self.maxVoices):
+                voice = Voice(self)
+                self.voices.append(voice)
 
     @property
     def isEmpty(self):
@@ -587,7 +684,7 @@ class Measure(object):
     def end(self):
         return self.start + self.length
 
-    def _readwriteproperty(name):
+    def _promote_header_attr(name):
         def fget(self):
             return getattr(self.header, name)
 
@@ -596,23 +693,19 @@ class Measure(object):
 
         return property(fget, fset)
 
-    number = _readwriteproperty('number')
-    keySignature = _readwriteproperty('keySignature')
-    repeatClose = _readwriteproperty('repeatClose')
-    start = _readwriteproperty('start')
-    length = _readwriteproperty('length')
-    tempo = _readwriteproperty('tempo')
-    timeSignature = _readwriteproperty('timeSignature')
-    isRepeatOpen = _readwriteproperty('isRepeatOpen')
-    tripletFeel = _readwriteproperty('tripletFeel')
-    hasMarker = _readwriteproperty('hasMarker')
-    marker = _readwriteproperty('marker')
+    number = _promote_header_attr('number')
+    keySignature = _promote_header_attr('keySignature')
+    repeatClose = _promote_header_attr('repeatClose')
+    start = _promote_header_attr('start')
+    length = _promote_header_attr('length')
+    tempo = _promote_header_attr('tempo')
+    timeSignature = _promote_header_attr('timeSignature')
+    isRepeatOpen = _promote_header_attr('isRepeatOpen')
+    tripletFeel = _promote_header_attr('tripletFeel')
+    hasMarker = _promote_header_attr('hasMarker')
+    marker = _promote_header_attr('marker')
 
-    del _readwriteproperty
-
-    def addVoice(self, voice):
-        voice.measure = self
-        self.voices.append(voice)
+    del _promote_header_attr
 
 
 class VoiceDirection(Enum):
@@ -629,16 +722,13 @@ class Voice(object):
 
     """A voice contains multiple beats."""
 
+    measure = attr.ib(cmp=False, repr=False)
     beats = attr.ib(default=attr.Factory(list))
     direction = attr.ib(default=VoiceDirection.none)
 
     @property
     def isEmpty(self):
         return len(self.beats) == 0
-
-    def addBeat(self, beat):
-        beat.voice = self
-        self.beats.append(beat)
 
 
 class BeatStrokeDirection(Enum):
@@ -783,6 +873,7 @@ class Beat(object):
 
     """A beat contains multiple notes."""
 
+    voice = attr.ib(cmp=False, repr=False)
     notes = attr.ib(default=attr.Factory(list))
     duration = attr.ib(default=attr.Factory(Duration))
     text = attr.ib(default=None)
@@ -810,10 +901,6 @@ class Beat(object):
         for note in self.notes:
             if note.effect.isHarmonic:
                 return note.effect.harmonic
-
-    def addNote(self, note):
-        note.beat = self
-        self.notes.append(note)
 
 
 @attr.s
@@ -1037,6 +1124,7 @@ class Note(object):
 
     """Describes a single note."""
 
+    beat = attr.ib(cmp=False, repr=False)
     value = attr.ib(default=0)
     velocity = attr.ib(default=Velocities.default)
     string = attr.ib(default=0)
@@ -1334,6 +1422,11 @@ class MixTableChange(object):
     hideTempo = attr.ib(default=True)
     wah = attr.ib(default=None)
     useRSE = attr.ib(default=False)
+    rse = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        if self.rse is None:
+            self.rse = RSEInstrument()
 
     @property
     def isJustWah(self):
@@ -1430,76 +1523,3 @@ class BendEffect(object):
 
     #: The max value of the bend points (y axis)
     maxValue = semitoneLength * 12
-
-
-@attr.s
-class RSEMasterEffect(object):
-
-    """Master effect as seen on "Score information"."""
-
-    volume = attr.ib(default=0)
-    reverb = attr.ib(default=0)
-    equalizer = attr.ib(default=0)
-
-
-@attr.s
-class RSEEqualizer(object):
-
-    """Equalizer found in master effect and track effect.
-
-    Attribute :attr:`RSEEqualizer.knobs` is a list of values in range
-    from -6.0 to 5.9. Master effect has 10 knobs, track effect has 3
-    knobs. Gain is a value in range from -6.0 to 5.9 which can be found
-    in both master and track effects and is named as "PRE" in Guitar Pro
-    5.
-
-    """
-
-    knobs = attr.ib(default=attr.Factory(list))
-    gain = attr.ib(default=0.0)
-
-
-class Accentuation(Enum):
-
-    """Values of auto-accentuation on the beat found in track RSE
-    settings."""
-
-    #: No auto-accentuation.
-    none = 0
-
-    #: Very soft accentuation.
-    verySoft = 1
-
-    #: Soft accentuation.
-    soft = 2
-
-    #: Medium accentuation.
-    medium = 3
-
-    #: Strong accentuation.
-    strong = 4
-
-    #: Very strong accentuation.
-    veryStrong = 5
-
-
-@attr.s
-class RSEInstrument(object):
-    instrument = attr.ib(default=-1)
-    unknown = attr.ib(default=1)
-    soundBank = attr.ib(default=-1)
-    effectNumber = attr.ib(default=-1)
-    effectCategory = attr.ib(default='')
-    effect = attr.ib(default='')
-
-
-@attr.s
-class TrackRSE(object):
-    instrument = attr.ib(default=attr.Factory(RSEInstrument))
-    equalizer = attr.ib(default=attr.Factory(RSEEqualizer))
-    humanize = attr.ib(default=0)
-    autoAccentuation = attr.ib(default=Accentuation.none)
-
-    def __attrs_post_init__(self):
-        if not self.equalizer.knobs:
-            self.equalizer.knobs = [0] * 3

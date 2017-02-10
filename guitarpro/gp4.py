@@ -50,7 +50,7 @@ class GP4File(gp3.GP3File):
         - Measures. See :meth:`readMeasures`.
 
         """
-        song = gp.Song()
+        song = gp.Song(tracks=[])
         song.version = self.readVersion()
         song.versionTuple = self.versionTuple
         song.clipboard = self.readClipboard()
@@ -519,8 +519,6 @@ class GP4File(gp3.GP3File):
         self.writeInt(clipboard.stopTrack)
 
     def writeLyrics(self, lyrics):
-        if lyrics is None:
-            lyrics = gp.Lyrics()
         self.writeInt(lyrics.trackChoice)
         for line in lyrics.lines:
             self.writeInt(line.startingMeasure)
