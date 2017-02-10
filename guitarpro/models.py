@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, print_function
 
 import attr
 from enum import Enum, IntEnum
@@ -116,7 +116,7 @@ class LyricLine(object):
 @attr.s
 class Lyrics(object):
 
-    """Represents a collection of lyrics lines for a track."""
+    """A collection of lyrics lines for a track."""
 
     trackChoice = attr.ib(default=0)
     lines = attr.ib(default=None)
@@ -162,8 +162,8 @@ class Padding(object):
 
 class HeaderFooterElements(IntEnum):
 
-    """A list of the elements which can be shown in the header and
-    footer of a rendered song sheet.
+    """An enumeration of the elements which can be shown in the header
+    and footer of a rendered song sheet.
 
     All values can be combined using bit-operators as they are flags.
     """
@@ -241,7 +241,7 @@ class RSEEqualizer(object):
 @attr.s
 class RSEMasterEffect(object):
 
-    """Master effect as seen on "Score information"."""
+    """Master effect as seen in "Score information"."""
 
     volume = attr.ib(default=0)
     reverb = attr.ib(default=0)
@@ -255,7 +255,7 @@ class RSEMasterEffect(object):
 @attr.s
 class Song(object):
 
-    """This is the top-level node of the song model.
+    """The top-level node of the song model.
 
     It contains basic information about the stored song.
 
@@ -344,7 +344,7 @@ class MidiChannel(object):
 @attr.s
 class DirectionSign(object):
 
-    """A navigation sign like Coda or Segno."""
+    """A navigation sign like *Coda* or *Segno*."""
 
     name = attr.ib(default='')
 
@@ -352,7 +352,7 @@ class DirectionSign(object):
 @attr.s
 class Tuplet(object):
 
-    """Represents a n:m tuplet."""
+    """A *n:m* tuplet."""
 
     enters = attr.ib(default=1)
     times = attr.ib(default=1)
@@ -451,7 +451,7 @@ class TimeSignature(object):
 
 class TripletFeel(Enum):
 
-    """A list of different triplet feels."""
+    """An enumeration of different triplet feels."""
 
     #: No triplet feel.
     none = 0
@@ -631,7 +631,7 @@ class GuitarString(object):
 
 class MeasureClef(Enum):
 
-    """A list of available clefs."""
+    """An enumeration of available clefs."""
 
     treble = 0
     bass = 1
@@ -959,7 +959,7 @@ class GraceEffectTransition(Enum):
 
 class Velocities(object):
 
-    """A list of velocities / dynamics."""
+    """A collection of velocities / dynamics."""
     minVelocity = 15
     velocityIncrement = 16
     pianoPianissimo = minVelocity
@@ -1010,7 +1010,7 @@ class TremoloPickingEffect(object):
 
 class SlideType(Enum):
 
-    """Lists all supported slide types."""
+    """An enumeration of all supported slide types."""
     intoFromAbove = -2
     intoFromBelow = -1
     none = 0
@@ -1278,14 +1278,14 @@ class PitchClass(object):
     :param accidental: flat (-1), none (0) or sharp (1).
 
     >>> p = PitchClass(4, -1)
-    >>> vars(p)
-    {'accidental': -1, 'intonation': 'flat', 'just': 4, 'value': 3}
-    >>> print p
+    >>> p
+    PitchClass(just=4, accidental=-1, value=3, intonation='flat')
+    >>> print(p)
     Eb
     >>> p = PitchClass(4, -1, intonation='sharp')
-    >>> vars(p)
-    {'accidental': -1, 'intonation': 'flat', 'just': 4, 'value': 3}
-    >>> print p
+    >>> p
+    PitchClass(just=4, accidental=-1, value=3, intonation='sharp')
+    >>> print(p)
     D#
 
     Second, semitone number can be directly passed to constructor:
@@ -1293,10 +1293,10 @@ class PitchClass(object):
     :param semitone: integer of semitone.
 
     >>> p = PitchClass(3)
-    >>> print p
+    >>> print(p)
     Eb
     >>> p = PitchClass(3, intonation='sharp')
-    >>> print p
+    >>> print(p)
     D#
 
     And last, but not least, note name:
@@ -1304,7 +1304,7 @@ class PitchClass(object):
     :param name: string representing note.
 
     >>> p = PitchClass('D#')
-    >>> print p
+    >>> print(p)
     D#
 
     """
@@ -1367,7 +1367,8 @@ class BeatText(object):
 @attr.s
 class MixTableItem(object):
 
-    """A mix table change describes several track changes."""
+    """A mix table item describes a mix parameter, e.g. volume or
+    reverb."""
 
     value = attr.ib(default=0)
     duration = attr.ib(default=0)
@@ -1376,7 +1377,7 @@ class MixTableItem(object):
 
 class WahState(Enum):
 
-    """State of wah-wah pedal."""
+    """A state of wah-wah pedal."""
 
     #: Wah-wah is off.
     off = -2
@@ -1400,7 +1401,7 @@ class WahEffect(object):
 @attr.s
 class MixTableChange(object):
 
-    """A MixTableChange describes several track changes."""
+    """A MixTableChange describes a change in mix parameters."""
 
     instrument = attr.ib(default=None)
     rse = attr.ib(default=None)

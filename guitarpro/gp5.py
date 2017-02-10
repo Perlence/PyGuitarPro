@@ -378,7 +378,7 @@ class GP5File(gp4.GP4File):
         - Track's color. The track's displayed color in Guitar Pro.
 
         The properties are followed by second set of flags stored in a
-        :r:`short`.
+        :ref:`short`.
 
         - *0x0001*: show tablature
         - *0x0002*: show standard notation

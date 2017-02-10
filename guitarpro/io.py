@@ -69,7 +69,7 @@ def write(song, stream, version=None, encoding='cp1252'):
     :param song: a song to write.
     :type song: guitarpro.models.Song
     :param stream: path to save GP file or file-like object.
-    :param version: explicitly set version of saved GP file, e.g.
+    :param version: explicitly set version of GP file to save, e.g.
         ``(5, 1, 0)``.
     :type version: tuple
     :param encoding: encode strings into given 8-bit charset.
