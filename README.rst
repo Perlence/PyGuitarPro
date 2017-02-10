@@ -4,7 +4,8 @@ PyGuitarPro
 Introduction
 ------------
 
-PyGuitarPro is a package to read, write and manipulate GP3, GP4 and GP5 files. Initially PyGuitarPro is a Python port of `AlphaTab`_ which is a Haxe port of `TuxGuitar`_.
+PyGuitarPro is a package to read, write and manipulate GP3, GP4 and GP5 files. Initially PyGuitarPro is a Python port
+of `AlphaTab`_ which is a Haxe port of `TuxGuitar`_.
 
 .. _AlphaTab: http://www.alphatab.net/
 .. _TuxGuitar: http://tuxguitar.herac.com.ar/
@@ -30,15 +31,18 @@ Writing ``.gp*`` files isn't that hard as well:
 
    guitarpro.write(curl, 'Mastodon - Curl of the Burl 2.gp5')
 
-All objects representing GP entities are *hashable*, so they can be easily stored in a ``dict`` and *compared*. This gives us the great opportunity to apply *diff* algorithm to tabs, or even *diff3* algorithm to merge tablatures.
+All objects representing GP entities are comparable. This gives the great opportunity to apply *diff* algorithm to tabs,
+or even *diff3* algorithm to merge tablatures.
 
-To anyone wanting to create their the best guitar tablature editor in Python this package will be the good thing to start with.
+To anyone wanting to create their the best guitar tablature editor in Python this package will be the good thing to
+start with.
 
 
 Examples
 --------
 
-Several usage examples are included in the ``/examples`` folder. Please feel free to add your own examples, or improve on some of the existing ones, and then submit them via pull request.
+Several usage examples are included in the ``/examples`` folder. Please feel free to add your own examples, or improve
+on some of the existing ones, and then submit them via pull request.
 
 To run one of the examples in your local environment, simply:
 
@@ -71,10 +75,12 @@ Documentation
 
 Package documentation is located at `Read the Docs`_.
 
-.. _Read the Docs: http://pyguitarpro.readthedocs.org/
+.. _Read the Docs: http://pyguitarpro.readthedocs.io/
 
 
 Licensing
 ---------
 
 Please see the file called ``LICENSE``.
+
+.. vim: tw=120 cc=121

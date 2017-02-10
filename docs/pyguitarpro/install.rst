@@ -20,3 +20,5 @@ or manually:
     $ hg clone https://bitbucket.org/Perlence/pyguitarpro
     $ cd pyguitarpro
     $ python setup.py install
+
+.. vim: tw=120 cc=121

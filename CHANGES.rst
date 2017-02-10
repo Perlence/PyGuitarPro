@@ -58,3 +58,5 @@ Version 0.1
 -----------
 
 First public release.
+
+.. vim: tw=120 cc=121
