@@ -17,6 +17,7 @@ Version 0.3
   Now they can be accessed as ``guitarpro.Song``, for example.
 - Swapped beat stroke directions. Downstroke is represented by ``BeatStrokeDirection.down`` and upstroke is represented
   by ``BeatStrokeDirection.up``.
+- Resolved #1. Now it's easier to create a tab from scratch.
 
 Minor changes:
 
