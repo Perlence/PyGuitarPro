@@ -1422,11 +1422,7 @@ class MixTableChange(object):
     hideTempo = attr.ib(default=True)
     wah = attr.ib(default=None)
     useRSE = attr.ib(default=False)
-    rse = attr.ib(default=None)
-
-    def __attrs_post_init__(self):
-        if self.rse is None:
-            self.rse = RSEInstrument()
+    rse = attr.ib(default=attr.Factory(RSEInstrument))
 
     @property
     def isJustWah(self):
@@ -1466,8 +1462,8 @@ class BendType(Enum):
     #: Prebend and then release.
     prebendRelease = 5
 
-    # Tremolobar
-    # ==========
+    # Tremolo Bar
+    # ===========
 
     #: Dip the bar down and then back up.
     dip = 6
