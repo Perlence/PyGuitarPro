@@ -1,10 +1,13 @@
-import os
+from __future__ import print_function
+
+from os import path
 
 import guitarpro
 
 
 def unfold_tracknumber(tracknumber, tracks):
-    """Substitute '*' with all track numbers except for percussion tracks."""
+    """Substitute '*' with all track numbers except for percussion
+    tracks."""
     if tracknumber == '*':
         for number, track in enumerate(tracks, start=1):
             if not track.isPercussionTrack:
@@ -15,13 +18,13 @@ def unfold_tracknumber(tracknumber, tracks):
 
 def process(track, measure, voice, beat, note, semitone, stringmap):
     if (1 << (note.string - 1) & stringmap and
-            not note.type == guitarpro.base.NoteType.dead):
+            not (note.type == guitarpro.NoteType.dead or
+                 note.type == guitarpro.NoteType.tie)):
         note.value += semitone
         capped = max(0, min(track.fretCount, note.value))
         if note.value != capped:
-            print ("Warning on track %d '%s', measure %d" %
-                   (track.number, track.name, measure.number))
-            note.type = guitarpro.base.NoteType.dead
+            print("Warning on track %d '%s', measure %d" % (track.number, track.name, measure.number))
+            note.type = guitarpro.NoteType.dead
             note.value = capped
     return note
 
@@ -31,8 +34,7 @@ def transpose(track, semitone, stringmap):
         for voice in measure.voices:
             for beat in voice.beats:
                 for note in beat.notes:
-                    note = process(track, measure, voice, beat, note, semitone,
-                                   stringmap)
+                    note = process(track, measure, voice, beat, note, semitone, stringmap)
 
 
 def main(source, dest, tracks, semitones, stringmaps):
@@ -46,7 +48,7 @@ def main(source, dest, tracks, semitones, stringmaps):
             track = song.tracks[number - 1]
             transpose(track, semitone, stringmap)
     if dest is None:
-        dest = '%s-transposed%s' % os.path.splitext(source)
+        dest = '%s-transposed%s' % path.splitext(source)
     guitarpro.write(song, dest)
 
 
@@ -74,16 +76,16 @@ if __name__ == '__main__':
                         metavar='DEST', nargs='?',
                         help='path to the processed tab')
     parser.add_argument('-t', '--track',
-                        metavar='NUMBER', type=tracknumber,
-                        dest='tracks', action='append',
+                        metavar='NUMBER', type=tracknumber, dest='tracks',
+                        action='append',
                         help='number of the track to transpose')
     parser.add_argument('-b', '--by',
-                        metavar='N', type=int, required=True,
-                        dest='semitones', action='append',
+                        metavar='N', type=int, required=True, dest='semitones',
+                        action='append',
                         help='transpose by N steps')
     parser.add_argument('-s', '--stringmap',
-                        metavar='BITARRAY', type=bitarray,
-                        dest='stringmaps', action='append',
+                        metavar='BITARRAY', type=bitarray, dest='stringmaps',
+                        action='append',
                         help='bit array where ones represent strings that '
                              'should be transposed, e.g. `100000` will '
                              'transpose only 6th string')

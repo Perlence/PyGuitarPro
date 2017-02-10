@@ -1,4 +1,3 @@
-syntax: glob
 *.py[cod]
 
 # C extensions
@@ -10,6 +9,7 @@ syntax: glob
 dist
 build
 eggs
+.eggs
 parts
 bin
 var
@@ -33,5 +33,16 @@ nosetests.xml
 # Built documentation
 docs/_build
 
+# Virtual environment
+env
+py27
+py35
+
+# Testing output
 tests/output
+
+# Sublime Text files
 *.sublime-*
+
+# ctags
+tags

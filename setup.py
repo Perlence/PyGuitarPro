@@ -2,44 +2,48 @@ from setuptools import setup, find_packages
 
 # http://bugs.python.org/issue15881
 try:
-    import multiprocessing
+    import multiprocessing  # noqa
 except ImportError:
     pass
 
+setup_requires = ['pytest-runner']
+
 install_requires = [
+    'attrs',
     'six',
     'enum34',
 ]
 
 tests_require = [
-    'nose',
+    'pytest',
 ]
 
 try:
-    import argparse
+    import argparse  # noqa
 except ImportError:
     install_requires.append('argparse')
 
 setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
-    version='0.2.2',
+    version='0.3',
     author='Sviatoslav Abakumov',
     author_email='dust.harvesting@gmail.com',
     url='https://bitbucket.org/Perlence/pyguitarpro/',
     platforms=['Windows', 'POSIX', 'Unix', 'MacOS X'],
-    license='zlib/libpng',
+    license='LGPL',
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    test_suite='nose.collector',
+    setup_requires=setup_requires,
     install_requires=install_requires,
     tests_require=tests_require,
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: zlib/libpng License',
+        'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
+        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Natural Language :: English',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX',
@@ -52,8 +56,9 @@ setup(
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
-        "Programming Language :: Python :: Implementation :: CPython",
-        "Programming Language :: Python :: Implementation :: PyPy",
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Artistic Software',
         'Topic :: Multimedia :: Sound/Audio',
     ],
