@@ -56,8 +56,7 @@ class GP4File(gp3.GP3File):
         song.clipboard = self.readClipboard()
 
         self.readInfo(song)
-        self._tripletFeel = (gp.TripletFeel.eighth if self.readBool()
-                             else gp.TripletFeel.none)
+        self._tripletFeel = gp.TripletFeel.eighth if self.readBool() else gp.TripletFeel.none
         song.lyrics = self.readLyrics()
         song.tempo = self.readInt()
         song.key = gp.KeySignature((self.readInt(), 0))
@@ -101,8 +100,7 @@ class GP4File(gp3.GP3File):
 
     def packMeasureHeaderFlags(self, header, previous=None):
         flags = super(GP4File, self).packMeasureHeaderFlags(header, previous)
-        if (previous is None or (previous is not None and
-                                 header.keySignature != previous.keySignature)):
+        if previous is None or header.keySignature != previous.keySignature:
             flags |= 0x40
         if header.hasDoubleBar:
             flags |= 0x80
@@ -199,8 +197,7 @@ class GP4File(gp3.GP3File):
         barreFrets = self.readByte(5)
         barreStarts = self.readByte(5)
         barreEnds = self.readByte(5)
-        for fret, start, end, _ in zip(barreFrets, barreStarts, barreEnds,
-                                       range(barresCount)):
+        for fret, start, end, _ in zip(barreFrets, barreStarts, barreEnds, range(barresCount)):
             barre = gp.Barre(fret, start, end)
             chord.barres.append(barre)
         chord.omissions = self.readBool(7)
@@ -535,8 +532,7 @@ class GP4File(gp3.GP3File):
         if not beat.effect.isDefault:
             flags |= 0x08
         if beat.effect.mixTableChange is not None:
-            if (not beat.effect.mixTableChange.isJustWah or
-                    self.versionTuple[0] > 4):
+            if not beat.effect.mixTableChange.isJustWah or self.versionTuple[0] > 4:
                 flags |= 0x10
         if beat.duration.tuplet != gp.Tuplet():
             flags |= 0x20
@@ -591,8 +587,7 @@ class GP4File(gp3.GP3File):
             self.writeBool(omission)
 
         self.placeholder(1)
-        for fingering in clamp(chord.fingerings, 7,
-                               fillvalue=gp.Fingering.unknown):
+        for fingering in clamp(chord.fingerings, 7, fillvalue=gp.Fingering.unknown):
             self.writeSignedByte(fingering.value)
         self.writeBool(chord.show)
 
@@ -721,8 +716,7 @@ class GP4File(gp3.GP3File):
             self.writeTrill(noteEffect.trill)
 
     def writeTremoloPicking(self, tremoloPicking):
-        self.writeSignedByte(
-            self.toTremoloValue(tremoloPicking.duration.value))
+        self.writeSignedByte(self.toTremoloValue(tremoloPicking.duration.value))
 
     def writeSlides(self, slides):
         self.writeSignedByte(slides[0].value)
@@ -740,14 +734,11 @@ class GP4File(gp3.GP3File):
             byte = harmonic.type
         else:
             if harmonic.pitch and harmonic.octave:
-                if (harmonic.pitch.value == (note.realValue + 7) % 12
-                        and harmonic.octave == gp.Octave.ottava):
+                if harmonic.pitch.value == (note.realValue + 7) % 12 and harmonic.octave == gp.Octave.ottava:
                     byte = 15
-                elif (harmonic.pitch.value == note.realValue % 12
-                        and harmonic.octave == gp.Octave.quindicesima):
+                elif harmonic.pitch.value == note.realValue % 12 and harmonic.octave == gp.Octave.quindicesima:
                     byte = 17
-                elif (harmonic.pitch.value == note.realValue % 12
-                        and harmonic.octave == gp.Octave.ottava):
+                elif harmonic.pitch.value == note.realValue % 12 and harmonic.octave == gp.Octave.ottava:
                     byte = 22
                 else:
                     byte = 22

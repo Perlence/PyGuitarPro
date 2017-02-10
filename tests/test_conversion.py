@@ -127,8 +127,7 @@ def bisect(test, song, dest_version=3):
         pass
     trackMeasures = [track.measures for track in song.tracks]
     for number, _ in enumerate(trackMeasures[0], 1):
-        dest_path = path.join(OUTPUT, folder, test + '-%03d.gp%d' %
-                              (number, dest_version))
+        dest_path = path.join(OUTPUT, folder, test + '-%03d.gp%d' % (number, dest_version))
         for track in song.tracks:
             track.measures = trackMeasures[track.number - 1][:number]
         guitarpro.write(song, dest_path)
@@ -155,7 +154,6 @@ def track_bisect(test, song, dest_version=3):
         pass
     tracks = song.tracks[:]
     for number, track in enumerate(tracks, 1):
-        dest_path = path.join(OUTPUT, folder, test + '-T%02d.gp%d' %
-                              (number, dest_version))
+        dest_path = path.join(OUTPUT, folder, test + '-T%02d.gp%d' % (number, dest_version))
         song.tracks = tracks[:number]
         guitarpro.write(song, dest_path)

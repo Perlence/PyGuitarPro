@@ -83,8 +83,7 @@ def write(song, stream, version=None, encoding='cp1252'):
 def _open(song, stream, mode='rb', version=None, encoding=None):
     """Open a GP file path for reading or writing."""
     if mode not in ('rb', 'wb'):
-        raise ValueError(
-            "cannot read or write unless in binary mode, not '%s'" % mode)
+        raise ValueError("cannot read or write unless in binary mode, not '%s'" % mode)
 
     if isinstance(stream, string_types):
         fp = open(stream, mode)

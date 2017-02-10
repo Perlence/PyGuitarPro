@@ -48,8 +48,8 @@ class RepeatGroup(object):
         if h.repeatClose > 0:
             self.closings.append(h)
             self.isClosed = True
-        # a new item after the header was closed? -> repeat alternative reopens
-        # the group
+        # A new item after the header was closed? -> repeat alternative
+        # reopens the group
         elif self.isClosed:
             self.isClosed = False
             self.openings.append(h)
@@ -177,8 +177,7 @@ class HeaderFooterElements(IntEnum):
     wordsAndMusic = 0x040
     copyright = 0x080
     pageNumber = 0x100
-    all = (title | subtitle | artist | album | words | music | wordsAndMusic |
-           copyright | pageNumber)
+    all = title | subtitle | artist | album | words | music | wordsAndMusic | copyright | pageNumber
 
 
 @attr.s
@@ -218,8 +217,7 @@ class PageSetup(object):
     music = attr.ib(default='Music by %music%')
     wordsAndMusic = attr.ib(default='Words & Music by %WORDSMUSIC%')
     copyright = attr.ib(default='Copyright %copyright%\n'
-                                'All Rights Reserved - '
-                                'International Copyright Secured')
+                                'All Rights Reserved - International Copyright Secured')
     pageNumber = attr.ib(default='Page %N%/%P%')
 
 
@@ -285,8 +283,7 @@ class Song(object):
     tracks = attr.ib(default=None)
     masterEffect = attr.ib(default=attr.Factory(RSEMasterEffect))
 
-    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), cmp=False,
-                                  repr=False)
+    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), cmp=False, repr=False)
 
     def __attrs_post_init__(self):
         if self.tracks is None:
@@ -299,8 +296,7 @@ class Song(object):
         # if the group is closed only the next upcoming header can
         # reopen the group in case of a repeat alternative, so we remove
         # the current group
-        if header.isRepeatOpen or (self._currentRepeatGroup.isClosed and
-                                   header.repeatAlternative <= 0):
+        if header.isRepeatOpen or self._currentRepeatGroup.isClosed and header.repeatAlternative <= 0:
             self._currentRepeatGroup = RepeatGroup()
 
         self._currentRepeatGroup.addMeasureHeader(header)
@@ -493,8 +489,7 @@ class MeasureHeader(object):
 
     @property
     def length(self):
-        return (self.timeSignature.numerator *
-                self.timeSignature.denominator.time)
+        return self.timeSignature.numerator * self.timeSignature.denominator.time
 
 
 @attr.s
@@ -756,8 +751,7 @@ class BeatStroke(object):
                     continue
                 currentDuration = voice.duration.time()
                 if duration == 0 or currentDuration < duration:
-                    duration = (currentDuration
-                                if currentDuration <= Duration.quarterTime
+                    duration = (currentDuration if currentDuration <= Duration.quarterTime
                                 else Duration.quarterTime)
             if duration > 0:
                 return round((duration / 8.0) * (4.0 / self.value))
@@ -1135,8 +1129,7 @@ class Note(object):
 
     @property
     def realValue(self):
-        return (self.value +
-                self.beat.voice.measure.track.strings[self.string - 1].value)
+        return self.value + self.beat.voice.measure.track.strings[self.string - 1].value
 
 
 @attr.s

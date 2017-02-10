@@ -71,8 +71,7 @@ class GP5File(gp4.GP4File):
         song.pageSetup = self.readPageSetup()
         song.tempoName = self.readIntByteSizeString()
         song.tempo = self.readInt()
-        song.hideTempo = (self.readBool()
-                          if self.versionTuple > (5, 0, 0) else False)
+        song.hideTempo = self.readBool() if self.versionTuple > (5, 0, 0) else False
         song.key = gp.KeySignature((self.readSignedByte(), 0))
         self.readInt()  # octave
         channels = self.readMidiChannels()
@@ -158,8 +157,7 @@ class GP5File(gp4.GP4File):
         :meth:`unpackVolumeValue`.
 
         """
-        knobs = list(map(self.unpackVolumeValue,
-                         self.readSignedByte(count=knobsNumber)))
+        knobs = list(map(self.unpackVolumeValue, self.readSignedByte(count=knobsNumber)))
         return gp.RSEEqualizer(knobs=knobs[:-1], gain=knobs[-1])
 
     def unpackVolumeValue(self, value):
@@ -218,8 +216,7 @@ class GP5File(gp4.GP4File):
         setup.words = self.readIntByteSizeString()
         setup.music = self.readIntByteSizeString()
         setup.wordsAndMusic = self.readIntByteSizeString()
-        setup.copyright = (self.readIntByteSizeString() + '\n' +
-                           self.readIntByteSizeString())
+        setup.copyright = self.readIntByteSizeString() + '\n' + self.readIntByteSizeString()
         setup.pageNumber = self.readIntByteSizeString()
         return setup
 
@@ -310,8 +307,7 @@ class GP5File(gp4.GP4File):
         if previous is not None:
             # Always 0
             self.skip(1)
-        header, flags = super(GP5File, self).readMeasureHeader(number, song,
-                                                               previous)
+        header, flags = super(GP5File, self).readMeasureHeader(number, song, previous)
         if header.repeatClose > -1:
             header.repeatClose -= 1
         if flags & 0x03:
@@ -702,8 +698,7 @@ class GP5File(gp4.GP4File):
             tableChange.tremolo.duration = self.readSignedByte()
         if tableChange.tempo is not None:
             tableChange.tempo.duration = self.readSignedByte()
-            tableChange.hideTempo = (self.versionTuple > (5, 0, 0) and
-                                     self.readBool())
+            tableChange.hideTempo = self.versionTuple > (5, 0, 0) and self.readBool()
 
     def readMixTableChangeFlags(self, tableChange):
         """Read mix table change flags.
@@ -964,8 +959,7 @@ class GP5File(gp4.GP4File):
         if self.versionTuple > (5, 0, 0):
             masterEffect.volume = masterEffect.volume or 100
             masterEffect.reverb = masterEffect.reverb or 0
-            masterEffect.equalizer = (masterEffect.equalizer or
-                                      gp.RSEEqualizer(knobs=[0] * 10, gain=0))
+            masterEffect.equalizer = masterEffect.equalizer or gp.RSEEqualizer(knobs=[0] * 10, gain=0)
             self.writeInt(masterEffect.volume)
             self.writeInt(0)
             self.writeEqualizer(masterEffect.equalizer)
