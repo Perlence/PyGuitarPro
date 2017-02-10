@@ -16,8 +16,7 @@ def main(source):
             try:
                 tab = guitarpro.parse(guitarProPath)
             except guitarpro.GPException as exc:
-                print("###This is not a supported Guitar Pro file:",
-                      guitarProPath, ":", exc)
+                print("###This is not a supported Guitar Pro file:", guitarProPath, ":", exc)
             else:
                 if isABassGuitarDrumsFile(tab):
                     print(guitarProPath)
@@ -25,9 +24,7 @@ def main(source):
 
 
 def isABassGuitarDrumsFile(tab):
-    drumsOK = False
-    bassOK = False
-    guitarOK = False
+    drumsOK = bassOK = guitarOK = False
 
     if len(tab.tracks) == 3:
         for track in tab.tracks:
@@ -40,6 +37,7 @@ def isABassGuitarDrumsFile(tab):
                 drumsOK = True
 
     return drumsOK and bassOK and guitarOK
+
 
 if __name__ == '__main__':
     import argparse

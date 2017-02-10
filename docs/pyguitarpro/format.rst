@@ -84,8 +84,8 @@ encoded in an 8-bit charset.
 IntByteSizeString
 ^^^^^^^^^^^^^^^^^
 
-Values of type :ref:`int-byte-size-string` are represented by :ref:`int` holding length of the string increased by 1, a
-:ref:`byte` holding length of the string and finally followed by characters encoded in an 8-bit charset.
+Values of type :ref:`int-byte-size-string` are represented by an :ref:`int` holding length of the string increased by 1,
+a :ref:`byte` holding length of the string and finally followed by characters encoded in an 8-bit charset.
 
 
 Guitar Pro 3 format
