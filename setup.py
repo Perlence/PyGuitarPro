@@ -26,7 +26,7 @@ except ImportError:
 setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
-    version='0.2.2',
+    version='0.3',
     author='Sviatoslav Abakumov',
     author_email='dust.harvesting@gmail.com',
     url='https://bitbucket.org/Perlence/pyguitarpro/',

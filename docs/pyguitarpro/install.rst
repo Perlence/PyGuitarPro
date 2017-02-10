@@ -1,22 +1,18 @@
 Installation
 ============
 
-Install the extension with:
+Install the package with:
 
-.. code-block:: console
+.. code-block:: sh
 
-    $ pip install pyguitarpro
+    pip install pyguitarpro
 
-or using ``easy_install``:
+For the latest development version:
 
-.. code-block:: console
+.. code-block:: sh
 
-    $ easy_install pyguitarpro
+    git clone https://github.com/Perlence/PyGuitarPro
+    cd pyguitarpro
+    pip install -e .
 
-or manually:
-
-.. code-block:: console
-
-    $ hg clone https://bitbucket.org/Perlence/pyguitarpro
-    $ cd pyguitarpro
-    $ python setup.py install
+.. vim: tw=120 cc=121

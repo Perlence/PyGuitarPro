@@ -51,8 +51,7 @@ def main(source, dest=None, tracks=None):
                         last = beat
                         newbeats.append(beat)
                     elif last is not None:
-                        last.duration = guitarpro.Duration.fromTime(
-                            last.duration.time + beat.duration.time)
+                        last.duration = guitarpro.Duration.fromTime(last.duration.time + beat.duration.time)
                     else:
                         newbeats.append(beat)
                 voice.beats = newbeats
@@ -60,6 +59,7 @@ def main(source, dest=None, tracks=None):
     if dest is None:
         dest = '%s-generalized%s' % path.splitext(source)
     guitarpro.write(song, dest)
+
 
 if __name__ == '__main__':
     import argparse

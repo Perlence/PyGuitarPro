@@ -66,8 +66,8 @@ Values of type :ref:`double` are stored in 8 little-endian bytes.
 ByteSizeString
 ^^^^^^^^^^^^^^
 
-Values of type :ref:`byte-size-string` are represented by length of the string
-(1 :ref:`byte`) followed by characters encoded in an 8-bit charset.
+Values of type :ref:`byte-size-string` are represented by length of the string (1 :ref:`byte`) followed by characters
+encoded in an 8-bit charset.
 
 
 .. _int-size-string:
@@ -75,8 +75,8 @@ Values of type :ref:`byte-size-string` are represented by length of the string
 IntSizeString
 ^^^^^^^^^^^^^
 
-Values of type :ref:`int-size-string` are represented by length of the string (1
-:ref:`int`) followed by characters encoded in an 8-bit charset.
+Values of type :ref:`int-size-string` are represented by length of the string (1 :ref:`int`) followed by characters
+encoded in an 8-bit charset.
 
 
 .. _int-byte-size-string:
@@ -84,9 +84,8 @@ Values of type :ref:`int-size-string` are represented by length of the string (1
 IntByteSizeString
 ^^^^^^^^^^^^^^^^^
 
-Values of type :ref:`int-byte-size-string` are represented by :ref:`int` holding
-length of the string increased by 1, a :ref:`byte` holding length of the string
-and finally followed by characters encoded in an 8-bit charset.
+Values of type :ref:`int-byte-size-string` are represented by an :ref:`int` holding length of the string increased by 1,
+a :ref:`byte` holding length of the string and finally followed by characters encoded in an 8-bit charset.
 
 
 Guitar Pro 3 format
@@ -109,3 +108,5 @@ Guitar Pro 5 format
 
 .. automodule:: guitarpro.gp5
    :members:
+
+.. vim: tw=120 cc=121

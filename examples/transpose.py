@@ -1,10 +1,13 @@
+from __future__ import print_function
+
 from os import path
 
 import guitarpro
 
 
 def unfold_tracknumber(tracknumber, tracks):
-    """Substitute '*' with all track numbers except for percussion tracks."""
+    """Substitute '*' with all track numbers except for percussion
+    tracks."""
     if tracknumber == '*':
         for number, track in enumerate(tracks, start=1):
             if not track.isPercussionTrack:
@@ -20,8 +23,7 @@ def process(track, measure, voice, beat, note, semitone, stringmap):
         note.value += semitone
         capped = max(0, min(track.fretCount, note.value))
         if note.value != capped:
-            print ("Warning on track %d '%s', measure %d" %
-                   (track.number, track.name, measure.number))
+            print("Warning on track %d '%s', measure %d" % (track.number, track.name, measure.number))
             note.type = guitarpro.NoteType.dead
             note.value = capped
     return note
@@ -32,8 +34,7 @@ def transpose(track, semitone, stringmap):
         for voice in measure.voices:
             for beat in voice.beats:
                 for note in beat.notes:
-                    note = process(track, measure, voice, beat, note, semitone,
-                                   stringmap)
+                    note = process(track, measure, voice, beat, note, semitone, stringmap)
 
 
 def main(source, dest, tracks, semitones, stringmaps):

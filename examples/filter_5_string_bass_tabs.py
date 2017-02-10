@@ -16,14 +16,14 @@ def main(source):
             try:
                 tab = guitarpro.parse(guitarProPath)
             except guitarpro.GPException as exception:
-                print("###This is not a supported GuitarPro file:",
-                      guitarProPath, ":", exception)
+                print("###This is not a supported GuitarPro file:", guitarProPath, ":", exception)
             else:
                 for track in tab.tracks:
                     if not track.isPercussionTrack:
                         if len(track.strings) == 5:
                             print(guitarProPath)
     print("\nDone!")
+
 
 if __name__ == '__main__':
     import argparse

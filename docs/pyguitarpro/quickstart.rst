@@ -16,20 +16,17 @@ Writing ``.gp*`` files isn't that hard as well:
 
     guitarpro.write(curl, 'Mastodon - Curl of the Burl 2.gp5')
 
-All objects representing GP entities are *hashable*, so they can be easily
-stored in a `dict` and *compared*. This gives us the great opportunity to
-apply *diff* algorithm to tabs, or even *diff3* algorithm to merge tablatures.
+All objects representing GP entities are comparable. This gives the great opportunity to apply *diff* algorithm to tabs,
+or even *diff3* algorithm to merge tablatures.
 
-The package is also designed to convert tablatures between formats. To
-do this, simply change extension of the output file according to your desired
-format:
+The package is also designed to convert tablatures between formats. To do this, simply change extension of the output
+file according to your desired format:
 
 .. code-block:: python
 
     guitarpro.write(curl, 'Mastodon - Curl of the Burl.gp4')
 
-Functions :func:`guitarpro.parse` and :func:`guitarpro.write` support not only
-filenames, but also file-like object:
+Functions :func:`guitarpro.parse` and :func:`guitarpro.write` support not only filenames, but also file-like object:
 
 .. code-block:: python
 
@@ -39,5 +36,7 @@ filenames, but also file-like object:
 
 .. note::
 
-    PyGuitarPro supports only GP3, GP4 and GP5 files. Support for GPX (Guitar
-    Pro 6) files is planned for the next release.
+    PyGuitarPro supports only GP3, GP4 and GP5 files. Support for GPX (Guitar Pro 6) files is out of scope of the
+    project.
+
+.. vim: tw=120 cc=121
