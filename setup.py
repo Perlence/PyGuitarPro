@@ -23,9 +23,13 @@ try:
 except ImportError:
     install_requires.append('argparse')
 
+with open('README.rst') as fp:
+    README = fp.read()
+
 setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
+    long_description=README,
     version='0.3',
     author='Sviatoslav Abakumov',
     author_email='dust.harvesting@gmail.com',
