@@ -29,7 +29,7 @@ setup(
     version='0.3',
     author='Sviatoslav Abakumov',
     author_email='dust.harvesting@gmail.com',
-    url='https://bitbucket.org/Perlence/pyguitarpro/',
+    url='https://github.com/Perlence/PyGuitarPro',
     platforms=['Windows', 'POSIX', 'Unix', 'MacOS X'],
     license='LGPL',
     packages=find_packages(),
