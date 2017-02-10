@@ -290,9 +290,11 @@ class GP3File(GPFileBase):
 
         """
         for i in range(trackCount):
-            song.addTrack(self.readTrack(i + 1, channels))
+            track = gp.Track(song, i + 1)
+            self.readTrack(track, channels)
+            song.tracks.append(track)
 
-    def readTrack(self, number, channels):
+    def readTrack(self, track, channels):
         """Read track.
 
         The first byte is the track's flags. It presides the track's
@@ -334,11 +336,9 @@ class GP3File(GPFileBase):
 
         """
         flags = self.readByte()
-        track = gp.Track()
         track.isPercussionTrack = bool(flags & 0x01)
         track.is12StringedGuitarTrack = bool(flags & 0x02)
         track.isBanjoTrack = bool(flags & 0x04)
-        track.number = number
         track.name = self.readByteSizeString(40)
         stringCount = self.readInt()
         for i in range(7):
@@ -353,7 +353,6 @@ class GP3File(GPFileBase):
         track.fretCount = self.readInt()
         track.offset = self.readInt()
         track.color = self.readColor()
-        return track
 
     def readChannel(self, channels):
         """Read MIDI channel.
@@ -398,9 +397,9 @@ class GP3File(GPFileBase):
         for header in song.measureHeaders:
             header.start = start
             for track in song.tracks:
-                measure = gp.Measure(header)
+                measure = gp.Measure(track, header)
                 tempo = header.tempo
-                track.addMeasure(measure)
+                track.measures.append(measure)
                 self.readMeasure(measure)
             header.tempo = tempo
             start += header.length
@@ -413,8 +412,10 @@ class GP3File(GPFileBase):
 
         """
         start = measure.start
-        voice = gp.Voice()
-        measure.addVoice(voice)
+        voice = measure.voices[0]
+        self.readVoice(start, voice)
+
+    def readVoice(self, start, voice):
         beats = self.readInt()
         for beat in range(beats):
             start += self.readBeat(start, voice)
@@ -477,9 +478,9 @@ class GP3File(GPFileBase):
         for beat in reversed(voice.beats):
             if beat.start == start:
                 return beat
-        newBeat = gp.Beat()
+        newBeat = gp.Beat(voice)
         newBeat.start = start
-        voice.addBeat(newBeat)
+        voice.beats.append(newBeat)
         return newBeat
 
     def readDuration(self, flags):
@@ -886,8 +887,8 @@ class GP3File(GPFileBase):
         stringFlags = self.readByte()
         for string in track.strings:
             if stringFlags & 1 << (7 - string.number):
-                note = gp.Note()
-                beat.addNote(note)
+                note = gp.Note(beat)
+                beat.notes.append(note)
                 if effect is None:
                     effect = gp.NoteEffect()
                 self.readNote(note, string, track, effect)
@@ -1239,10 +1240,13 @@ class GP3File(GPFileBase):
                 self.writeMeasure(measure)
 
     def writeMeasure(self, measure):
-        for voice in measure.voices[:1]:
-            self.writeInt(len(voice.beats))
-            for beat in voice.beats:
-                self.writeBeat(beat)
+        voice = measure.voices[0]
+        self.writeVoice(voice)
+
+    def writeVoice(self, voice):
+        self.writeInt(len(voice.beats))
+        for beat in voice.beats:
+            self.writeBeat(beat)
 
     def writeBeat(self, beat):
         flags = 0x00

@@ -336,7 +336,7 @@ class GP5File(gp4.GP4File):
         super(GP5File, self).readTracks(song, trackCount, channels)
         self.skip(2 if self.versionTuple == (5, 0, 0) else 1)  # Always 0
 
-    def readTrack(self, number, channels):
+    def readTrack(self, track, channels):
         """Read track.
 
         If it's Guitar Pro 5.0 format and track is first then one blank
@@ -403,11 +403,10 @@ class GP5File(gp4.GP4File):
         - Track RSE. See :meth:`readTrackRSE`.
 
         """
-        if number == 1 or self.versionTuple == (5, 0, 0):
+        if track.number == 1 or self.versionTuple == (5, 0, 0):
             # Always 0
             self.skip(1)
         flags1 = self.readByte()
-        track = gp.Track()
         track.isPercussionTrack = bool(flags1 & 0x01)
         track.is12StringedGuitarTrack = bool(flags1 & 0x02)
         track.isBanjoTrack = bool(flags1 & 0x04)
@@ -416,7 +415,6 @@ class GP5File(gp4.GP4File):
         track.isMute = bool(flags1 & 0x20)
         track.useRSE = bool(flags1 & 0x40)
         track.indicateTuning = bool(flags1 & 0x80)
-        track.number = number
         track.name = self.readByteSizeString(40)
         stringCount = self.readInt()
         for i in range(7):
@@ -451,7 +449,6 @@ class GP5File(gp4.GP4File):
         track.rse.autoAccentuation = gp.Accentuation(self.readByte())
         track.channel.bank = self.readByte()
         self.readTrackRSE(track.rse)
-        return track
 
     def readTrackRSE(self, trackRSE):
         """Read track RSE.
@@ -530,8 +527,9 @@ class GP5File(gp4.GP4File):
         :class:`~guitarpro.models.LineBreak` stored in :ref:`byte`.
 
         """
-        for voiceIndex in range(gp.Measure.maxVoices):
-            super(GP5File, self).readMeasure(measure)
+        start = measure.start
+        for voice in measure.voices[:gp.Measure.maxVoices]:
+            self.readVoice(start, voice)
         measure.lineBreak = gp.LineBreak(self.readByte(default=0))
 
     def readBeat(self, start, voice):
@@ -1183,10 +1181,8 @@ class GP5File(gp4.GP4File):
             self.writeIntByteSizeString(rseInstrument.effectCategory)
 
     def writeMeasure(self, measure):
-        for voice in measure.voices:
-            self.writeInt(len(voice.beats))
-            for beat in voice.beats:
-                self.writeBeat(beat)
+        for voice in measure.voices[:gp.Measure.maxVoices]:
+            self.writeVoice(voice)
         self.writeByte(measure.lineBreak.value)
 
     def writeBeat(self, beat):

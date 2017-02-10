@@ -132,27 +132,32 @@ class Song(object):
     hideTempo = attr.ib(default=False)
     key = attr.ib(default=KeySignature.CMajor)
     measureHeaders = attr.ib(default=attr.Factory(list))
-    tracks = attr.ib(default=attr.Factory(list))
+    tracks = attr.ib(default=None)
     masterEffect = attr.ib(default=None)
 
     _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), cmp=False)
+
+    def __attrs_post_init__(self):
+        if self.tracks is None:
+            self.tracks = []
 
     def addMeasureHeader(self, header):
         header.song = self
         self.measureHeaders.append(header)
 
         # if the group is closed only the next upcoming header can
-        # reopen the group in case of a repeat alternative, so we
-        # remove the current group
+        # reopen the group in case of a repeat alternative, so we remove
+        # the current group
         if header.isRepeatOpen or (self._currentRepeatGroup.isClosed and
                                    header.repeatAlternative <= 0):
             self._currentRepeatGroup = RepeatGroup()
 
         self._currentRepeatGroup.addMeasureHeader(header)
 
-    def addTrack(self, track):
-        track.song = self
-        self.tracks.append(track)
+    def newMeasure(self):
+        for track in self.tracks:
+            measure = Measure(track)
+            track.measures.append(measure)
 
 
 @attr.s
@@ -170,12 +175,13 @@ class Lyrics(object):
     """Represents a collection of lyrics lines for a track."""
 
     trackChoice = attr.ib(default=-1)
-    lines = attr.ib(default=attr.Factory(list))
+    lines = attr.ib(default=None)
 
     maxLineCount = 5
 
     def __attrs_post_init__(self):
-        if not self.lines:
+        if self.lines is None:
+            self.lines = []
             for __ in range(Lyrics.maxLineCount):
                 self.lines.append(LyricLine())
 
@@ -435,7 +441,7 @@ class MeasureHeader(object):
     """A measure header contains metadata for measures over multiple
     tracks."""
 
-    number = attr.ib(default=0, cmp=False)
+    number = attr.ib(default=1, cmp=False)
     start = attr.ib(default=Duration.quarterTime)
     hasDoubleBar = attr.ib(default=False)
     keySignature = attr.ib(default=KeySignature.CMajor)
@@ -506,7 +512,8 @@ class Track(object):
 
     """A track contains multiple measures."""
 
-    number = attr.ib(default=0)
+    song = attr.ib(cmp=False)
+    number = attr.ib(default=1)
     fretCount = attr.ib(default=24)
     offset = attr.ib(default=0)
     isPercussionTrack = attr.ib(default=False)
@@ -517,8 +524,8 @@ class Track(object):
     isMute = attr.ib(default=False)
     indicateTuning = attr.ib(default=False)
     name = attr.ib(default='Track 1')
-    measures = attr.ib(default=attr.Factory(list))
-    strings = attr.ib(default=attr.Factory(list))
+    measures = attr.ib(default=None)
+    strings = attr.ib(default=None)
     port = attr.ib(default=1)
     channel = attr.ib(default=attr.Factory(MidiChannel))
     color = attr.ib(default=Color.red)
@@ -526,9 +533,11 @@ class Track(object):
     useRSE = attr.ib(default=False)
     rse = attr.ib(default=None)
 
-    def addMeasure(self, measure):
-        measure.track = self
-        self.measures.append(measure)
+    def __attrs_post_init__(self):
+        if self.strings is None:
+            self.strings = []
+        if self.measures is None:
+            self.measures = []
 
 
 @attr.s
@@ -572,12 +581,20 @@ class Measure(object):
 
     """A measure contains multiple voices of beats."""
 
-    header = attr.ib()
+    track = attr.ib(cmp=False)
+    header = attr.ib(default=attr.Factory(MeasureHeader))
     clef = attr.ib(default=MeasureClef.treble)
-    voices = attr.ib(default=attr.Factory(list))
+    voices = attr.ib(default=None)
     lineBreak = attr.ib(default=LineBreak.none)
 
     maxVoices = 2
+
+    def __attrs_post_init__(self):
+        if self.voices is None:
+            self.voices = []
+            for _ in range(self.maxVoices):
+                voice = Voice(self)
+                self.voices.append(voice)
 
     @property
     def isEmpty(self):
@@ -587,7 +604,7 @@ class Measure(object):
     def end(self):
         return self.start + self.length
 
-    def _readwriteproperty(name):
+    def _promote_header_attr(name):
         def fget(self):
             return getattr(self.header, name)
 
@@ -596,23 +613,19 @@ class Measure(object):
 
         return property(fget, fset)
 
-    number = _readwriteproperty('number')
-    keySignature = _readwriteproperty('keySignature')
-    repeatClose = _readwriteproperty('repeatClose')
-    start = _readwriteproperty('start')
-    length = _readwriteproperty('length')
-    tempo = _readwriteproperty('tempo')
-    timeSignature = _readwriteproperty('timeSignature')
-    isRepeatOpen = _readwriteproperty('isRepeatOpen')
-    tripletFeel = _readwriteproperty('tripletFeel')
-    hasMarker = _readwriteproperty('hasMarker')
-    marker = _readwriteproperty('marker')
+    number = _promote_header_attr('number')
+    keySignature = _promote_header_attr('keySignature')
+    repeatClose = _promote_header_attr('repeatClose')
+    start = _promote_header_attr('start')
+    length = _promote_header_attr('length')
+    tempo = _promote_header_attr('tempo')
+    timeSignature = _promote_header_attr('timeSignature')
+    isRepeatOpen = _promote_header_attr('isRepeatOpen')
+    tripletFeel = _promote_header_attr('tripletFeel')
+    hasMarker = _promote_header_attr('hasMarker')
+    marker = _promote_header_attr('marker')
 
-    del _readwriteproperty
-
-    def addVoice(self, voice):
-        voice.measure = self
-        self.voices.append(voice)
+    del _promote_header_attr
 
 
 class VoiceDirection(Enum):
@@ -629,16 +642,13 @@ class Voice(object):
 
     """A voice contains multiple beats."""
 
+    measure = attr.ib(cmp=False)
     beats = attr.ib(default=attr.Factory(list))
     direction = attr.ib(default=VoiceDirection.none)
 
     @property
     def isEmpty(self):
         return len(self.beats) == 0
-
-    def addBeat(self, beat):
-        beat.voice = self
-        self.beats.append(beat)
 
 
 class BeatStrokeDirection(Enum):
@@ -783,6 +793,7 @@ class Beat(object):
 
     """A beat contains multiple notes."""
 
+    voice = attr.ib(cmp=False)
     notes = attr.ib(default=attr.Factory(list))
     duration = attr.ib(default=attr.Factory(Duration))
     text = attr.ib(default=None)
@@ -810,10 +821,6 @@ class Beat(object):
         for note in self.notes:
             if note.effect.isHarmonic:
                 return note.effect.harmonic
-
-    def addNote(self, note):
-        note.beat = self
-        self.notes.append(note)
 
 
 @attr.s
@@ -1037,6 +1044,7 @@ class Note(object):
 
     """Describes a single note."""
 
+    beat = attr.ib(cmp=False)
     value = attr.ib(default=0)
     velocity = attr.ib(default=Velocities.default)
     string = attr.ib(default=0)
