@@ -470,7 +470,7 @@ class MeasureHeader(object):
     tracks."""
 
     number = attr.ib(default=1, cmp=False)
-    start = attr.ib(default=Duration.quarterTime)
+    start = attr.ib(default=Duration.quarterTime, cmp=False)
     hasDoubleBar = attr.ib(default=False)
     keySignature = attr.ib(default=KeySignature.CMajor)
     timeSignature = attr.ib(default=attr.Factory(TimeSignature))
