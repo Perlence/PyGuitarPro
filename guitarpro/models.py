@@ -497,7 +497,8 @@ class MeasureHeader(object):
     hasDoubleBar = attr.ib(default=False)
     keySignature = attr.ib(default=KeySignature.CMajor)
     timeSignature = attr.ib(default=attr.Factory(TimeSignature))
-    tempo = attr.ib(default=attr.Factory(Tempo))
+    # TODO: Remove this attribute in next release
+    tempo = attr.ib(default=attr.Factory(Tempo), hash=False, cmp=False)
     marker = attr.ib(default=None)
     isRepeatOpen = attr.ib(default=False)
     repeatAlternative = attr.ib(default=0)
