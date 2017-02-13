@@ -4,7 +4,7 @@ Changelog
 Version 0.3.1
 -------------
 
-*YYYY-MM-DD*
+*2017-02-13*
 
 - Made models hashable again.
 

@@ -30,7 +30,7 @@ setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
     long_description=README,
-    version='0.3',
+    version='0.3.1',
     author='Sviatoslav Abakumov',
     author_email='dust.harvesting@gmail.com',
     url='https://github.com/Perlence/PyGuitarPro',
