@@ -1,6 +1,14 @@
 Changelog
 =========
 
+Version 0.3.1
+-------------
+
+*YYYY-MM-DD*
+
+- Made models hashable again.
+
+
 Version 0.3
 -----------
 

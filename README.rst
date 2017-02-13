@@ -31,8 +31,8 @@ Writing ``.gp*`` files isn't that hard as well:
 
    guitarpro.write(curl, 'Mastodon - Curl of the Burl 2.gp5')
 
-All objects representing GP entities are comparable. This gives the great opportunity to apply *diff* algorithm to tabs,
-or even *diff3* algorithm to merge tablatures.
+All objects representing GP entities are hashable and comparable. This gives the great opportunity to apply *diff*
+algorithm to tabs, or even *diff3* algorithm to merge tablatures.
 
 To anyone wanting to create their the best guitar tablature editor in Python this package will be the good thing to
 start with.
