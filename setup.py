@@ -23,13 +23,17 @@ try:
 except ImportError:
     install_requires.append('argparse')
 
+with open('README.rst') as fp:
+    README = fp.read()
+
 setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
-    version='0.3',
+    long_description=README,
+    version='0.3.1',
     author='Sviatoslav Abakumov',
     author_email='dust.harvesting@gmail.com',
-    url='https://bitbucket.org/Perlence/pyguitarpro/',
+    url='https://github.com/Perlence/PyGuitarPro',
     platforms=['Windows', 'POSIX', 'Unix', 'MacOS X'],
     license='LGPL',
     packages=find_packages(),
