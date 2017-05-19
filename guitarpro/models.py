@@ -302,7 +302,7 @@ class Song(object):
     tempo = attr.ib(default=120)
     hideTempo = attr.ib(default=False)
     key = attr.ib(default=KeySignature.CMajor)
-    measureHeaders = attr.ib(default=attr.Factory(list), hash=False, cmp=False)
+    measureHeaders = attr.ib(default=attr.Factory(list))
     tracks = attr.ib(default=None)
     masterEffect = attr.ib(default=attr.Factory(RSEMasterEffect))
 
@@ -610,7 +610,7 @@ class Track(object):
     """A track contains multiple measures."""
 
     song = attr.ib(hash=False, cmp=False, repr=False)
-    number = attr.ib(default=1)
+    number = attr.ib(default=1, hash=False, cmp=False)
     fretCount = attr.ib(default=24)
     offset = attr.ib(default=0)
     isPercussionTrack = attr.ib(default=False)
@@ -681,7 +681,7 @@ class Measure(object):
     """A measure contains multiple voices of beats."""
 
     track = attr.ib(hash=False, cmp=False, repr=False)
-    header = attr.ib(default=attr.Factory(MeasureHeader))
+    header = attr.ib(default=attr.Factory(MeasureHeader), hash=False, cmp=False, repr=False)
     clef = attr.ib(default=MeasureClef.treble)
     voices = attr.ib(default=None)
     lineBreak = attr.ib(default=LineBreak.none)
