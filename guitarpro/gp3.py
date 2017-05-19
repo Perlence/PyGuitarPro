@@ -1426,7 +1426,7 @@ class GP3File(GPFileBase):
         for note in beat.notes:
             stringFlags |= 1 << (7 - note.string)
         self.writeByte(stringFlags)
-        for note in beat.notes:
+        for note in sorted(beat.notes, key=lambda note: note.string):
             self.writeNote(note)
 
     def writeNote(self, note):
