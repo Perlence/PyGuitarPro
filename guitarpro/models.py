@@ -302,13 +302,15 @@ class Song(object):
     tempo = attr.ib(default=120)
     hideTempo = attr.ib(default=False)
     key = attr.ib(default=KeySignature.CMajor)
-    measureHeaders = attr.ib(default=attr.Factory(list))
+    measureHeaders = attr.ib(default=None)
     tracks = attr.ib(default=None)
     masterEffect = attr.ib(default=attr.Factory(RSEMasterEffect))
 
     _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, cmp=False, repr=False)
 
     def __attrs_post_init__(self):
+        if self.measureHeaders is None:
+            self.measureHeaders = [MeasureHeader()]
         if self.tracks is None:
             self.tracks = [Track(self)]
 
@@ -636,7 +638,7 @@ class Track(object):
                             for n, v in [(1, 64), (2, 59), (3, 55),
                                          (4, 50), (5, 45), (6, 40)]]
         if self.measures is None:
-            self.measures = [Measure(self)]
+            self.measures = [Measure(self, header) for header in self.song.measureHeaders]
 
 
 @hashable_attrs
@@ -681,7 +683,7 @@ class Measure(object):
     """A measure contains multiple voices of beats."""
 
     track = attr.ib(hash=False, cmp=False, repr=False)
-    header = attr.ib(default=attr.Factory(MeasureHeader), hash=False, cmp=False, repr=False)
+    header = attr.ib(hash=False, cmp=False, repr=False)
     clef = attr.ib(default=MeasureClef.treble)
     voices = attr.ib(default=None)
     lineBreak = attr.ib(default=LineBreak.none)

@@ -58,7 +58,7 @@ class GP5File(gp4.GP4File):
         - Measures. See :meth:`readMeasures`.
 
         """
-        song = gp.Song(tracks=[])
+        song = gp.Song(tracks=[], measureHeaders=[])
         song.version = self.readVersion()
         song.versionTuple = self.versionTuple
 
