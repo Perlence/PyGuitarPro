@@ -45,36 +45,36 @@ CLIPBOARD_TESTS = [
 
 
 @pytest.mark.parametrize('filename', TESTS)
-def test_conversion(output_folder, filename):
+def test_conversion(tmpdir, filename):
     __, ext = path.splitext(filename)
     filepath = path.join(LOCATION, filename)
     song_a = guitarpro.parse(filepath)
-    destpath = path.join(output_folder, filename + ext)
+    destpath = str(tmpdir.join(filename + ext))
     guitarpro.write(song_a, destpath)
     song_b = guitarpro.parse(destpath)
     assert song_a == song_b
 
 
-def test_clipboard(output_folder):
+def test_clipboard(tmpdir):
     filepath = path.join(LOCATION, '2 whole bars.tmp')
     song_a = guitarpro.parse(filepath)
     song_a.clipboard = None
-    destpath = path.join(output_folder, '2 whole bars.tmp.gp5')
+    destpath = str(tmpdir.join('2 whole bars.tmp.gp5'))
     guitarpro.write(song_a, destpath)
     song_b = guitarpro.parse(destpath)
     assert song_a == song_b
 
 
-def test_empty(output_folder):
+def test_empty(tmpdir):
     empty_a = guitarpro.Song()
-    destpath = path.join(output_folder, 'Empty.gp5')
+    destpath = str(tmpdir.join('Empty.gp5'))
     guitarpro.write(empty_a, destpath, version=(5, 2, 0))
 
     empty_b = guitarpro.parse(destpath)
     assert empty_a == empty_b
 
 
-def test_guess_version(output_folder):
+def test_guess_version(tmpdir):
     filename = 'Effects.gp5'
     filepath = path.join(LOCATION, filename)
     song_a = guitarpro.parse(filepath)
@@ -83,19 +83,12 @@ def test_guess_version(output_folder):
     for ext, versionTuple in guitarpro.io._EXT_VERSIONS.items():
         if ext == 'tmp':
             continue
-        destpath = path.join(output_folder, filename + '.' + ext)
+        destpath = str(tmpdir.join(filename + '.' + ext))
         guitarpro.write(song_a, destpath)
         song_b = guitarpro.parse(destpath)
         assert song_b.versionTuple == versionTuple
 
 
-@pytest.fixture
-def output_folder():
-    try:
-        os.mkdir(OUTPUT)
-    except OSError:
-        pass
-    return OUTPUT
 
 
 def product(test, song, versions=(3, 4, 5)):
