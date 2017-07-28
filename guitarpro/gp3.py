@@ -544,8 +544,7 @@ class GP3File(GPFileBase):
             self.readOldChord(chord)
         else:
             self.readNewChord(chord)
-        if len(chord.notes) > 0:
-            return chord
+        return chord
 
     def readOldChord(self, chord):
         """Read chord diagram encoded in GP3 format.

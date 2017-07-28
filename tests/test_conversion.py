@@ -89,6 +89,19 @@ def test_guess_version(tmpdir):
         assert song_b.versionTuple == versionTuple
 
 
+@pytest.mark.parametrize('filename', [
+    'chord_without_notes.gp5',
+    '001_Funky_Guy.gp5',
+])
+def test_chord(tmpdir, filename):
+    filepath = path.join(LOCATION, filename)
+    song = guitarpro.parse(filepath)
+    assert song.tracks[0].measures[0].voices[0].beats[0].effect.chord is not None
+
+    destpath = str(tmpdir.join('no_chord_strings.gp5'))
+    guitarpro.write(song, destpath)
+    song2 = guitarpro.parse(destpath)
+    assert song == song2
 
 
 def product(test, song, versions=(3, 4, 5)):
