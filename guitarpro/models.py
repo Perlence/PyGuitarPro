@@ -17,9 +17,9 @@ __all__ = (
     'GraceEffectTransition', 'Velocities', 'GraceEffect', 'TrillEffect',
     'TremoloPickingEffect', 'SlideType', 'Fingering', 'NoteEffect', 'NoteType',
     'Note', 'Chord', 'ChordType', 'Barre', 'ChordAlteration', 'ChordExtension',
-    'PitchClass', 'BeatText', 'MixTableItem', 'WahState', 'WahEffect',
-    'MixTableChange', 'BendType', 'BendPoint', 'BendEffect', 'RSEMasterEffect',
-    'RSEEqualizer', 'Accentuation', 'RSEInstrument', 'TrackRSE'
+    'PitchClass', 'BeatText', 'MixTableItem', 'WahEffect', 'MixTableChange',
+    'BendType', 'BendPoint', 'BendEffect', 'RSEMasterEffect', 'RSEEqualizer',
+    'Accentuation', 'RSEInstrument', 'TrackRSE'
 )
 
 
@@ -1401,27 +1401,28 @@ class MixTableItem(object):
     allTracks = attr.ib(default=False)
 
 
-class WahState(Enum):
-
-    """A state of wah-wah pedal."""
-
-    #: Wah-wah is off.
-    off = -2
-
-    #: No wah-wah.
-    none = -1
-
-    #: Wah-wah is opened.
-    opened = 0
-
-    #: Wah-wah is closed.
-    closed = 100
-
-
 @hashable_attrs
 class WahEffect(object):
-    state = attr.ib(default=WahState.none)
+    value = attr.ib(default=-1)
     display = attr.ib(default=False)
+
+    @value.validator
+    def checkValue(self, attrib, value):
+        if not -2 <= value <= 100:
+            raise ValueError('value must be in range from -2 to 100')
+
+    def isOff(self):
+        return self.value == WahEffect.off.value
+
+    def isNone(self):
+        return self.value == WahEffect.none.value
+
+    def isOn(self):
+        return 0 <= self.value <= 100
+
+
+WahEffect.off = WahEffect(-2)
+WahEffect.none = WahEffect(-1)
 
 
 @hashable_attrs

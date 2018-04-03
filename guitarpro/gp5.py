@@ -718,14 +718,12 @@ class GP5File(gp4.GP4File):
     def readWahEffect(self, flags):
         """Read wah-wah.
 
-        - Wah state: :ref:`signed-byte`. See
-          :class:`guitarpro.models.WahState` for value mapping.
+        - Wah value: :ref:`signed-byte`. See
+          :class:`guitarpro.models.WahEffect` for value mapping.
 
         """
-        wah = gp.WahEffect()
-        wah.display = bool(flags & 0x80)
-        wah.state = gp.WahState(self.readSignedByte())
-        return wah
+        return gp.WahEffect(value=self.readSignedByte(),
+                            display=bool(flags & 0x80))
 
     def readNote(self, note, guitarString, track):
         """Read note.
@@ -1274,9 +1272,9 @@ class GP5File(gp4.GP4File):
 
     def writeWahEffect(self, wah):
         if wah is not None:
-            self.writeSignedByte(wah.state.value)
+            self.writeSignedByte(wah.value)
         else:
-            self.writeSignedByte(gp.WahState.none.value)
+            self.writeSignedByte(gp.WahEffect.none.value)
 
     def writeNote(self, note):
         flags = self.packNoteFlags(note)
