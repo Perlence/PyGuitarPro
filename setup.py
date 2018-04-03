@@ -9,7 +9,7 @@ except ImportError:
 setup_requires = ['pytest-runner']
 
 install_requires = [
-    'attrs',
+    'attrs>=17.1',
     'six',
     'enum34',
 ]
