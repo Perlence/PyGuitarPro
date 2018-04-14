@@ -1,6 +1,35 @@
 Changelog
 =========
 
+Version 0.4
+-----------
+
+*2018-04-14*
+
+**Incompatible changes:**
+
+- Changed default instantiation behaviour of ``Song``, ``Track``, and ``Measure`` objects `#4
+  <https://github.com/Perlence/PyGuitarPro/issues/4>`_. When ``Track`` is created without ``measures`` argument, it
+  automatically creates a ``MeasureHeader`` with a ``Measure`` that has two ``Voices`` in it. To create a track without
+  measures, do:
+
+  .. code-block:: python
+
+      track = guitarpro.Track(base_song, measures=[])
+
+- Changed how measure headers are compared. Comparing measures won't consider measure headers. Measure headers are
+  stored in ``Song`` instances, so they will be compared there.
+
+- Implemented gradual wah-wah changes. There's no ``WahState`` enum, ``WahEffect`` now holds the exact value of wah-wah
+  pedal position.
+
+**Other changes:**
+
+- Updated `attrs <https://attrs.readthedocs.io>`_ to at least 17.1.
+- Fixed note order in beats before writing.
+- Fixed chord reading when there's no fingering.
+
+
 Version 0.3.1
 -------------
 
