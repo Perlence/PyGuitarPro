@@ -50,7 +50,7 @@ class GP4File(gp3.GP3File):
         - Measures. See :meth:`readMeasures`.
 
         """
-        song = gp.Song(tracks=[])
+        song = gp.Song(tracks=[], measureHeaders=[])
         song.version = self.readVersion()
         song.versionTuple = self.versionTuple
         song.clipboard = self.readClipboard()

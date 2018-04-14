@@ -9,7 +9,7 @@ except ImportError:
 setup_requires = ['pytest-runner']
 
 install_requires = [
-    'attrs',
+    'attrs>=17.1',
     'six',
     'enum34',
 ]
@@ -30,7 +30,7 @@ setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
     long_description=README,
-    version='0.3.1',
+    version='0.4',
     author='Sviatoslav Abakumov',
     author_email='dust.harvesting@gmail.com',
     url='https://github.com/Perlence/PyGuitarPro',

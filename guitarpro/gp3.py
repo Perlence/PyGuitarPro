@@ -47,7 +47,7 @@ class GP3File(GPFileBase):
         - Measures. See :meth:`readMeasures`.
 
         """
-        song = gp.Song(tracks=[])
+        song = gp.Song(tracks=[], measureHeaders=[])
         song.version = self.readVersion()
         song.versionTuple = self.versionTuple
         self.readInfo(song)
@@ -544,8 +544,7 @@ class GP3File(GPFileBase):
             self.readOldChord(chord)
         else:
             self.readNewChord(chord)
-        if len(chord.notes) > 0:
-            return chord
+        return chord
 
     def readOldChord(self, chord):
         """Read chord diagram encoded in GP3 format.
@@ -1426,7 +1425,7 @@ class GP3File(GPFileBase):
         for note in beat.notes:
             stringFlags |= 1 << (7 - note.string)
         self.writeByte(stringFlags)
-        for note in beat.notes:
+        for note in sorted(beat.notes, key=lambda note: note.string):
             self.writeNote(note)
 
     def writeNote(self, note):

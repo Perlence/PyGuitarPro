@@ -17,9 +17,9 @@ __all__ = (
     'GraceEffectTransition', 'Velocities', 'GraceEffect', 'TrillEffect',
     'TremoloPickingEffect', 'SlideType', 'Fingering', 'NoteEffect', 'NoteType',
     'Note', 'Chord', 'ChordType', 'Barre', 'ChordAlteration', 'ChordExtension',
-    'PitchClass', 'BeatText', 'MixTableItem', 'WahState', 'WahEffect',
-    'MixTableChange', 'BendType', 'BendPoint', 'BendEffect', 'RSEMasterEffect',
-    'RSEEqualizer', 'Accentuation', 'RSEInstrument', 'TrackRSE'
+    'PitchClass', 'BeatText', 'MixTableItem', 'WahEffect', 'MixTableChange',
+    'BendType', 'BendPoint', 'BendEffect', 'RSEMasterEffect', 'RSEEqualizer',
+    'Accentuation', 'RSEInstrument', 'TrackRSE'
 )
 
 
@@ -302,13 +302,15 @@ class Song(object):
     tempo = attr.ib(default=120)
     hideTempo = attr.ib(default=False)
     key = attr.ib(default=KeySignature.CMajor)
-    measureHeaders = attr.ib(default=attr.Factory(list), hash=False, cmp=False)
+    measureHeaders = attr.ib(default=None)
     tracks = attr.ib(default=None)
     masterEffect = attr.ib(default=attr.Factory(RSEMasterEffect))
 
     _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, cmp=False, repr=False)
 
     def __attrs_post_init__(self):
+        if self.measureHeaders is None:
+            self.measureHeaders = [MeasureHeader()]
         if self.tracks is None:
             self.tracks = [Track(self)]
 
@@ -610,7 +612,7 @@ class Track(object):
     """A track contains multiple measures."""
 
     song = attr.ib(hash=False, cmp=False, repr=False)
-    number = attr.ib(default=1)
+    number = attr.ib(default=1, hash=False, cmp=False)
     fretCount = attr.ib(default=24)
     offset = attr.ib(default=0)
     isPercussionTrack = attr.ib(default=False)
@@ -636,7 +638,7 @@ class Track(object):
                             for n, v in [(1, 64), (2, 59), (3, 55),
                                          (4, 50), (5, 45), (6, 40)]]
         if self.measures is None:
-            self.measures = [Measure(self)]
+            self.measures = [Measure(self, header) for header in self.song.measureHeaders]
 
 
 @hashable_attrs
@@ -681,7 +683,7 @@ class Measure(object):
     """A measure contains multiple voices of beats."""
 
     track = attr.ib(hash=False, cmp=False, repr=False)
-    header = attr.ib(default=attr.Factory(MeasureHeader))
+    header = attr.ib(hash=False, cmp=False, repr=False)
     clef = attr.ib(default=MeasureClef.treble)
     voices = attr.ib(default=None)
     lineBreak = attr.ib(default=LineBreak.none)
@@ -1399,27 +1401,28 @@ class MixTableItem(object):
     allTracks = attr.ib(default=False)
 
 
-class WahState(Enum):
-
-    """A state of wah-wah pedal."""
-
-    #: Wah-wah is off.
-    off = -2
-
-    #: No wah-wah.
-    none = -1
-
-    #: Wah-wah is opened.
-    opened = 0
-
-    #: Wah-wah is closed.
-    closed = 100
-
-
 @hashable_attrs
 class WahEffect(object):
-    state = attr.ib(default=WahState.none)
+    value = attr.ib(default=-1)
     display = attr.ib(default=False)
+
+    @value.validator
+    def checkValue(self, attrib, value):
+        if not -2 <= value <= 100:
+            raise ValueError('value must be in range from -2 to 100')
+
+    def isOff(self):
+        return self.value == WahEffect.off.value
+
+    def isNone(self):
+        return self.value == WahEffect.none.value
+
+    def isOn(self):
+        return 0 <= self.value <= 100
+
+
+WahEffect.off = WahEffect(-2)
+WahEffect.none = WahEffect(-1)
 
 
 @hashable_attrs
