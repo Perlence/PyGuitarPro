@@ -463,7 +463,9 @@ class GP3File(GPFileBase):
         if flags & 0x04:
             beat.text = self.readText()
         if flags & 0x08:
+            chord = beat.effect.chord
             beat.effect = self.readBeatEffects(effect)
+            beat.effect.chord = chord
         if flags & 0x10:
             mixTableChange = self.readMixTableChange(voice.measure)
             beat.effect.mixTableChange = mixTableChange
