@@ -13,5 +13,4 @@ env:
 install:
   - pip install tox flake8
 script:
-  - flake8 guitarpro
   - tox -v
