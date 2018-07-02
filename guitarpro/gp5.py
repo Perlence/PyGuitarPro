@@ -202,11 +202,11 @@ class GP5File(gp4.GP4File):
         """
         setup = gp.PageSetup()
         setup.pageSize = gp.Point(self.readInt(), self.readInt())
-        l = self.readInt()
-        r = self.readInt()
-        t = self.readInt()
-        b = self.readInt()
-        setup.pageMargin = gp.Padding(l, t, r, b)
+        left = self.readInt()
+        right = self.readInt()
+        top = self.readInt()
+        bottom = self.readInt()
+        setup.pageMargin = gp.Padding(left, top, right, bottom)
         setup.scoreSizeProportion = self.readInt() / 100
         setup.headerAndFooter = self.readShort()
         setup.title = self.readIntByteSizeString()
