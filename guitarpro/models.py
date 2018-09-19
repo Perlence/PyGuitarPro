@@ -43,7 +43,7 @@ def hashable_attrs(cls):
                 new_value = value
             if new_value != value:
                 obj = attr.assoc(obj, **{field.name: new_value})
-        return hash(attr.astuple(obj, recurse=False, filter=lambda a, v: a.hash))
+        return hash(attr.astuple(obj, recurse=False, filter=lambda a, v: a.hash is not False))
 
     decorated = attr.s(cls, hash=False)
     decorated.__hash__ = hash_
