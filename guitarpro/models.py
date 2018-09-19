@@ -1,5 +1,8 @@
 from __future__ import division, print_function
 
+from fractions import Fraction
+from math import log
+
 import attr
 from enum import Enum, IntEnum
 from six import string_types
@@ -385,6 +388,10 @@ class Tuplet(object):
     def convertTime(self, time):
         return int(time * self.times / self.enters)
 
+    @classmethod
+    def fromFraction(cls, frac):
+        return cls(frac.denominator, frac.numerator)
+
 
 @hashable_attrs
 class Duration(object):
@@ -432,32 +439,21 @@ class Duration(object):
         return index
 
     @classmethod
-    def fromTime(cls, time, minimum=None, diff=0):
-        import copy
-        if minimum is None:
-            minimum = Duration()
-        duration = copy.copy(minimum)
-        tmp = Duration()
-        tmp.value = cls.whole
-        tmp.isDotted = True
-        while True:
-            tmpTime = tmp.time
-            if tmpTime - diff <= time:
-                if abs(tmpTime - time) < abs(duration.time - time):
-                    duration = copy.copy(tmp)
-            if tmp.isDotted:
-                tmp.isDotted = False
-            elif tmp.tuplet == Tuplet():
-                tmp.tuplet.enters = 3
-                tmp.tuplet.times = 2
-            else:
-                tmp.value = tmp.value * 2
-                tmp.isDotted = True
-                tmp.tuplet.enters = 1
-                tmp.tuplet.times = 1
-            if tmp.value > cls.sixtyFourth:
-                break
-        return duration
+    def fromTime(cls, time):
+        timeFrac = Fraction(time, cls.quarterTime * 4)
+        exp = int(log(timeFrac, 2))
+        value = 2 ** -exp
+        tuplet = Tuplet.fromFraction(timeFrac * value)
+        isDotted = isDoubleDotted = False
+        if tuplet == Tuplet(4, 3):
+            tuplet = Tuplet(1, 1)
+            value *= 2
+            isDotted = True
+        elif tuplet == Tuplet(8, 7):
+            tuplet = Tuplet(1, 1)
+            value *= 2
+            isDoubleDotted = True
+        return Duration(value, isDotted, isDoubleDotted, tuplet)
 
 
 @hashable_attrs

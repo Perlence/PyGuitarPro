@@ -1,11 +1,24 @@
-import guitarpro
+import pytest
+
+import guitarpro as gp
 
 
 def test_hashable():
-    song = guitarpro.Song()
+    song = gp.Song()
     hash(song)
 
-    coda = guitarpro.DirectionSign('Coda')
-    segno = guitarpro.DirectionSign('Segno')
+    coda = gp.DirectionSign('Coda')
+    segno = gp.DirectionSign('Segno')
     assert coda != segno
     assert hash(coda) != hash(segno)
+
+
+@pytest.mark.parametrize('value', [1, 2, 4, 8, 16, 32, 64])
+@pytest.mark.parametrize('isDotted', [False, True])
+@pytest.mark.parametrize('isDoubleDotted', [False, True])
+@pytest.mark.parametrize('tuplet', [gp.Tuplet(1, 1), gp.Tuplet(3, 2)])
+def test_duration(value, isDotted, isDoubleDotted, tuplet):
+    dur = gp.Duration(value, isDotted=isDotted, isDoubleDotted=isDoubleDotted, tuplet=tuplet)
+    time = dur.time
+    new_dur = gp.Duration.fromTime(time)
+    assert time == new_dur.time
