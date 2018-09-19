@@ -529,6 +529,9 @@ class GP3File(GPFileBase):
             elif iTuplet == 12:
                 duration.tuplet.enters = 12
                 duration.tuplet.times = 8
+            elif iTuplet == 13:
+                duration.tuplet.enters = 13
+                duration.tuplet.times = 8
         return duration
 
     def readChord(self, stringCount):
@@ -1287,6 +1290,8 @@ class GP3File(GPFileBase):
                 iTuplet = 11
             elif (duration.tuplet.enters, duration.tuplet.times) == (12, 8):
                 iTuplet = 12
+            elif (duration.tuplet.enters, duration.tuplet.times) == (13, 8):
+                iTuplet = 13
             self.writeInt(iTuplet)
 
     def writeChord(self, chord):
