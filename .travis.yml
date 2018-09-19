@@ -6,6 +6,7 @@ env:
   - TOXENV=py27
   - TOXENV=py34
   - TOXENV=py36
+  - TOXENV=py37
 install:
   - pip install tox flake8
 script:
