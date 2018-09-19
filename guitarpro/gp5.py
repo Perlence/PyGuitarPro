@@ -1050,7 +1050,7 @@ class GP5File(gp4.GP4File):
         return flags
 
     def writeMeasureHeaderValues(self, header, flags):
-        header = attr.assoc(header, repeatClose=header.repeatClose+1)
+        header = attr.evolve(header, repeatClose=header.repeatClose+1)
         super(GP5File, self).writeMeasureHeaderValues(header, flags)
         if flags & 0x03:
             for beam in header.timeSignature.beams:
