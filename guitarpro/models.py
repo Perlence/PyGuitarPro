@@ -143,7 +143,7 @@ class LyricLine(object):
     lyrics = attr.ib(default='')
 
 
-@hashableAttrs
+@hashableAttrs(repr=False)
 class Lyrics(object):
 
     """A collection of lyrics lines for a track."""
@@ -282,7 +282,7 @@ class RSEMasterEffect(object):
             self.equalizer.knobs = [0.0] * 10
 
 
-@hashableAttrs
+@hashableAttrs(repr=False)
 class Song(object):
 
     """The top-level node of the song model.
@@ -488,7 +488,7 @@ class TripletFeel(Enum):
     sixteenth = 2
 
 
-@hashableAttrs
+@hashableAttrs(repr=False)
 class MeasureHeader(object):
 
     """A measure header contains metadata for measures over multiple
@@ -594,7 +594,7 @@ class RSEInstrument(object):
     effect = attr.ib(default='')
 
 
-@hashableAttrs
+@hashableAttrs(repr=False)
 class TrackRSE(object):
     instrument = attr.ib(default=attr.Factory(RSEInstrument))
     equalizer = attr.ib(default=attr.Factory(RSEEqualizer))
@@ -606,7 +606,7 @@ class TrackRSE(object):
             self.equalizer.knobs = [0.0] * 3
 
 
-@hashableAttrs
+@hashableAttrs(repr=False)
 class Track(object):
 
     """A track contains multiple measures."""
@@ -677,7 +677,7 @@ class LineBreak(Enum):
     protect = 2
 
 
-@hashableAttrs
+@hashableAttrs(repr=False)
 class Measure(object):
 
     """A measure contains multiple voices of beats."""
@@ -738,7 +738,7 @@ class VoiceDirection(Enum):
     down = 2
 
 
-@hashableAttrs
+@hashableAttrs(repr=False)
 class Voice(object):
 
     """A voice contains multiple beats."""
@@ -888,7 +888,7 @@ class BeatStatus(Enum):
     rest = 2
 
 
-@hashableAttrs
+@hashableAttrs(repr=False)
 class Beat(object):
 
     """A beat contains multiple notes."""
@@ -1067,7 +1067,7 @@ class Fingering(Enum):
     little = 4
 
 
-@hashableAttrs
+@hashableAttrs(repr=False)
 class NoteEffect(object):
 
     """Contains all effects which can be applied to one note."""
