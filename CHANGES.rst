@@ -4,6 +4,8 @@ Changelog
 Version 0.5
 -----------
 
+*2018-10-21*
+
 **Backward-incompatible changes:**
 
 - Changed the implementation of ``Duration.fromTime`` and removed its ``minimum`` and ``diff`` arguments. Now it raises
