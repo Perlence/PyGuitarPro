@@ -1,0 +1,17 @@
+language: python
+python: '3.6'
+sudo: false
+env:
+  - TOXENV=flake8
+  - TOXENV=py27
+  - TOXENV=py34
+  - TOXENV=py36
+install:
+  - pip install tox flake8
+script:
+  - tox -v
+matrix:
+  include:
+    - python: '3.5'
+      env:
+        - TOXENV=py35

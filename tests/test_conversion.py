@@ -13,6 +13,7 @@ TESTS = [
     # 'Ephemera - Dust for Tears.gp3',
     # 'CarpeDiem - I Ching.gp3',
     'Chords.gp3',
+    'Duration.gp3',
     'Harmonics.gp3',
 
     'Effects.gp4',
