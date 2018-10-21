@@ -53,21 +53,19 @@ def main(source, dest=None, tracks=None):
                     if beat.notes:
                         last = beat
                     elif last is not None:
-                        newduration = guitarpro.Duration.fromTime(last.duration.time + beat.duration.time)
-                        if isPowerOfTwo(newduration.tuplet.times):
+                        try:
+                            newduration = guitarpro.Duration.fromTime(last.duration.time + beat.duration.time)
+                        except ValueError:
+                            last = beat
+                        else:
                             last.duration = newduration
                             continue
-                        last = beat
                     newbeats.append(beat)
                 measure.beats = newbeats
 
     if dest is None:
         dest = '%s-generalized%s' % path.splitext(source)
     guitarpro.write(song, dest)
-
-
-def isPowerOfTwo(n):
-    return (n & (n - 1)) == 0
 
 
 if __name__ == '__main__':
