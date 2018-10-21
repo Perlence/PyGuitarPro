@@ -24,3 +24,11 @@ def test_duration(value, isDotted, tuplet):
     new_dur = gp.Duration.fromTime(time)
     assert isinstance(new_dur.value, int)
     assert time == new_dur.time
+
+
+def test_double_dot_warning(recwarn):
+    warnings.simplefilter('always')
+    d = gp.Duration()
+    assert len(recwarn) == 0
+    with pytest.deprecated_call():
+        d.isDoubleDotted = True

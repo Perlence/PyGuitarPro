@@ -438,6 +438,14 @@ class Duration(object):
     isDoubleDotted = attr.ib(default=False)
     tuplet = attr.ib(default=attr.Factory(Tuplet))
 
+    def __attrs_post_init__(self):
+        self._attrs_inited = True
+
+    def __setattr__(self, name, value):
+        if name == 'isDoubleDotted' and getattr(self, '_attrs_inited', False):
+            warn('Duration.isDoubleDotted is deprecated and will be removed in 0.6 release', DeprecationWarning)
+        return super(self.__class__, self).__setattr__(name, value)
+
     @property
     def time(self):
         result = int(self.quarterTime * (4.0 / self.value))
@@ -470,10 +478,6 @@ class Duration(object):
             value *= int(log(tuplet.enters, 2))
             tuplet = Tuplet(1, 1)
             isDotted = True
-        elif tuplet == Tuplet(8, 7):
-            tuplet = Tuplet(1, 1)
-            value *= 2
-            isDoubleDotted = True
         if not tuplet.isSupported():
             raise ValueError('cannot represent time {} as a Guitar Pro duration'.format(time))
         return Duration(value, isDotted, isDoubleDotted, tuplet)
