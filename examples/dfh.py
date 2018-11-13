@@ -1,5 +1,8 @@
 from os import path
-from itertools import izip
+try:
+    from itertools import izip
+except ImportError:
+    izip = zip
 
 import guitarpro
 
@@ -42,19 +45,23 @@ def main(source, dest=None, tracks=None):
 
         # Extend note durations to remove rests in-between.
         voiceparts = izip(*(measure.voices for measure in track.measures))
-        for voices in voiceparts:
-            for voice in voices:
+        for measures in voiceparts:
+            for measure in measures:
                 last = None
                 newbeats = []
-                for beat in voice.beats:
+                for beat in measure.beats:
                     if beat.notes:
                         last = beat
-                        newbeats.append(beat)
                     elif last is not None:
-                        last.duration = guitarpro.Duration.fromTime(last.duration.time + beat.duration.time)
-                    else:
-                        newbeats.append(beat)
-                voice.beats = newbeats
+                        try:
+                            newduration = guitarpro.Duration.fromTime(last.duration.time + beat.duration.time)
+                        except ValueError:
+                            last = beat
+                        else:
+                            last.duration = newduration
+                            continue
+                    newbeats.append(beat)
+                measure.beats = newbeats
 
     if dest is None:
         dest = '%s-generalized%s' % path.splitext(source)

@@ -1274,22 +1274,9 @@ class GP3File(GPFileBase):
         value = bit_length(duration.value) - 3
         self.writeSignedByte(value)
         if flags & 0x20:
-            if (duration.tuplet.enters, duration.tuplet.times) == (3, 2):
-                iTuplet = 3
-            elif (duration.tuplet.enters, duration.tuplet.times) == (5, 4):
-                iTuplet = 5
-            elif (duration.tuplet.enters, duration.tuplet.times) == (6, 4):
-                iTuplet = 6
-            elif (duration.tuplet.enters, duration.tuplet.times) == (7, 4):
-                iTuplet = 7
-            elif (duration.tuplet.enters, duration.tuplet.times) == (9, 8):
-                iTuplet = 9
-            elif (duration.tuplet.enters, duration.tuplet.times) == (10, 8):
-                iTuplet = 10
-            elif (duration.tuplet.enters, duration.tuplet.times) == (11, 8):
-                iTuplet = 11
-            elif (duration.tuplet.enters, duration.tuplet.times) == (12, 8):
-                iTuplet = 12
+            if not duration.tuplet.isSupported():
+                return
+            iTuplet = duration.tuplet.enters
             self.writeInt(iTuplet)
 
     def writeChord(self, chord):

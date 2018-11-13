@@ -202,11 +202,11 @@ class GP5File(gp4.GP4File):
         """
         setup = gp.PageSetup()
         setup.pageSize = gp.Point(self.readInt(), self.readInt())
-        l = self.readInt()
-        r = self.readInt()
-        t = self.readInt()
-        b = self.readInt()
-        setup.pageMargin = gp.Padding(l, t, r, b)
+        left = self.readInt()
+        right = self.readInt()
+        top = self.readInt()
+        bottom = self.readInt()
+        setup.pageMargin = gp.Padding(left, top, right, bottom)
         setup.scoreSizeProportion = self.readInt() / 100
         setup.headerAndFooter = self.readShort()
         setup.title = self.readIntByteSizeString()
@@ -1050,7 +1050,7 @@ class GP5File(gp4.GP4File):
         return flags
 
     def writeMeasureHeaderValues(self, header, flags):
-        header = attr.assoc(header, repeatClose=header.repeatClose+1)
+        header = attr.evolve(header, repeatClose=header.repeatClose+1)
         super(GP5File, self).writeMeasureHeaderValues(header, flags)
         if flags & 0x03:
             for beam in header.timeSignature.beams:
