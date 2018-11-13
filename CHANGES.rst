@@ -6,6 +6,10 @@ Version 0.6
 
 *TBA*
 
+**Backward-incompatible changes:**
+
+- Removed the deprecated ``Duration.isDoubleDotted`` property.
+
 **Deprecations:**
 
 - Deprecated the usage of ``Beat.realStart`` in favor of ``Beat.startInMeasure``. The former will be removed in the next

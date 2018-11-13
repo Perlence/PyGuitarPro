@@ -3,7 +3,6 @@ from __future__ import division, print_function
 from fractions import Fraction
 from functools import partial
 from math import log
-from warnings import warn
 
 import attr
 from enum import Enum, IntEnum
@@ -435,24 +434,13 @@ class Duration(object):
 
     value = attr.ib(default=quarter)
     isDotted = attr.ib(default=False)
-    isDoubleDotted = attr.ib(default=False)
     tuplet = attr.ib(default=attr.Factory(Tuplet))
-
-    def __attrs_post_init__(self):
-        self._attrs_inited = True
-
-    def __setattr__(self, name, value):
-        if name == 'isDoubleDotted' and getattr(self, '_attrs_inited', False):
-            warn('Duration.isDoubleDotted is deprecated and will be removed in 0.6 release', DeprecationWarning)
-        return super(self.__class__, self).__setattr__(name, value)
 
     @property
     def time(self):
         result = int(self.quarterTime * (4.0 / self.value))
         if self.isDotted:
             result += int(result / 2)
-        elif self.isDoubleDotted:
-            result += int((result / 4) * 3)
         return self.tuplet.convertTime(result)
 
     @property
@@ -473,14 +461,14 @@ class Duration(object):
         exp = int(log(timeFrac, 2))
         value = 2 ** -exp
         tuplet = Tuplet.fromFraction(timeFrac * value)
-        isDotted = isDoubleDotted = False
+        isDotted = False
         if tuplet.times == 3:
             value *= int(log(tuplet.enters, 2))
             tuplet = Tuplet(1, 1)
             isDotted = True
         if not tuplet.isSupported():
             raise ValueError('cannot represent time {} as a Guitar Pro duration'.format(time))
-        return Duration(value, isDotted, isDoubleDotted, tuplet)
+        return Duration(value, isDotted, tuplet)
 
 
 @hashableAttrs
