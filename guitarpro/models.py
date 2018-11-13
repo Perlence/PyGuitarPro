@@ -929,8 +929,8 @@ class Beat(object):
 
     @property
     def realStart(self):
-        offset = self.start - self.measure.start()
-        return self.measure.header.realStart + offset
+        offset = self.start - self.voice.measure.start
+        return offset
 
     @property
     def hasVibrato(self):

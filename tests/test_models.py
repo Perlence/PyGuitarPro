@@ -32,3 +32,14 @@ def test_double_dot_warning(recwarn):
     assert len(recwarn) == 0
     with pytest.deprecated_call():
         d.isDoubleDotted = True
+
+
+def test_beat_real_start():
+    song = gp.Song()
+    measure = song.tracks[0].measures[0]
+    voice = measure.voices[0]
+    beat = gp.Beat(voice, start=measure.start)
+    beat2 = gp.Beat(voice, start=measure.start + beat.duration.time)
+    voice.beats.append(beat)
+    assert beat.realStart == 0
+    assert beat2.realStart == 960
