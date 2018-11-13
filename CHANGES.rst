@@ -1,6 +1,17 @@
 Changelog
 =========
 
+Version 0.6
+-----------
+
+*TBA*
+
+**Deprecations:**
+
+- Deprecated the usage of ``Beat.realStart`` in favor of ``Beat.startInMeasure``. The former will be removed in the next
+  release.
+
+
 Version 0.5
 -----------
 
