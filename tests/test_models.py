@@ -34,12 +34,12 @@ def test_double_dot_warning(recwarn):
         d.isDoubleDotted = True
 
 
-def test_beat_real_start():
+def test_beat_start_in_measure():
     song = gp.Song()
     measure = song.tracks[0].measures[0]
     voice = measure.voices[0]
     beat = gp.Beat(voice, start=measure.start)
     beat2 = gp.Beat(voice, start=measure.start + beat.duration.time)
     voice.beats.append(beat)
-    assert beat.realStart == 0
-    assert beat2.realStart == 960
+    assert beat.startInMeasure == 0
+    assert beat2.startInMeasure == 960
