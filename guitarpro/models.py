@@ -928,7 +928,7 @@ class Beat(object):
     status = attr.ib(default=BeatStatus.empty)
 
     @property
-    def realStart(self):
+    def startInMeasure(self):
         offset = self.start - self.voice.measure.start
         return offset
 
