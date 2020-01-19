@@ -4,7 +4,7 @@ Changelog
 Version 0.6
 -----------
 
-*TBA*
+*2020-01-19*
 
 **Backward-incompatible changes:**
 
@@ -14,6 +14,10 @@ Version 0.6
 
 - Deprecated the usage of ``Beat.realStart`` in favor of ``Beat.startInMeasure``. The former will be removed in the next
   release.
+
+**Changes:**
+
+- Updated `attrs <https://attrs.readthedocs.io>`_ to at least 19.2.
 
 
 Version 0.5
