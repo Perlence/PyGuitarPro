@@ -9,9 +9,9 @@ except ImportError:
 setup_requires = ['pytest-runner']
 
 install_requires = [
-    'attrs>=17.1',
-    'six',
+    'attrs>=19.2',
     'enum34',
+    'six',
 ]
 
 tests_require = [
@@ -60,6 +60,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Artistic Software',

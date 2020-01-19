@@ -291,7 +291,7 @@ class Song(object):
 
     """
     # TODO: Store file format version here
-    versionTuple = attr.ib(default=None, hash=False, cmp=False)
+    versionTuple = attr.ib(default=None, hash=False, eq=False)
     clipboard = attr.ib(default=None)
     title = attr.ib(default='')
     subtitle = attr.ib(default='')
@@ -313,7 +313,7 @@ class Song(object):
     tracks = attr.ib(default=None)
     masterEffect = attr.ib(default=attr.Factory(RSEMasterEffect))
 
-    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, cmp=False, repr=False)
+    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, eq=False, repr=False)
 
     def __attrs_post_init__(self):
         if self.measureHeaders is None:
@@ -505,13 +505,13 @@ class MeasureHeader(object):
     """A measure header contains metadata for measures over multiple
     tracks."""
 
-    number = attr.ib(default=1, hash=False, cmp=False)
-    start = attr.ib(default=Duration.quarterTime, hash=False, cmp=False)
+    number = attr.ib(default=1, hash=False, eq=False)
+    start = attr.ib(default=Duration.quarterTime, hash=False, eq=False)
     hasDoubleBar = attr.ib(default=False)
     keySignature = attr.ib(default=KeySignature.CMajor)
     timeSignature = attr.ib(default=attr.Factory(TimeSignature))
     # TODO: Remove this attribute in next release
-    tempo = attr.ib(default=attr.Factory(Tempo), hash=False, cmp=False)
+    tempo = attr.ib(default=attr.Factory(Tempo), hash=False, eq=False)
     marker = attr.ib(default=None)
     isRepeatOpen = attr.ib(default=False)
     repeatAlternative = attr.ib(default=0)
@@ -622,8 +622,8 @@ class Track(object):
 
     """A track contains multiple measures."""
 
-    song = attr.ib(hash=False, cmp=False, repr=False)
-    number = attr.ib(default=1, hash=False, cmp=False)
+    song = attr.ib(hash=False, eq=False, repr=False)
+    number = attr.ib(default=1, hash=False, eq=False)
     fretCount = attr.ib(default=24)
     offset = attr.ib(default=0)
     isPercussionTrack = attr.ib(default=False)
@@ -693,8 +693,8 @@ class Measure(object):
 
     """A measure contains multiple voices of beats."""
 
-    track = attr.ib(hash=False, cmp=False, repr=False)
-    header = attr.ib(hash=False, cmp=False, repr=False)
+    track = attr.ib(hash=False, eq=False, repr=False)
+    header = attr.ib(hash=False, eq=False, repr=False)
     clef = attr.ib(default=MeasureClef.treble)
     voices = attr.ib(default=None)
     lineBreak = attr.ib(default=LineBreak.none)
@@ -754,7 +754,7 @@ class Voice(object):
 
     """A voice contains multiple beats."""
 
-    measure = attr.ib(hash=False, cmp=False, repr=False)
+    measure = attr.ib(hash=False, eq=False, repr=False)
     beats = attr.ib(default=attr.Factory(list))
     direction = attr.ib(default=VoiceDirection.none)
 
@@ -904,11 +904,11 @@ class Beat(object):
 
     """A beat contains multiple notes."""
 
-    voice = attr.ib(hash=False, cmp=False, repr=False)
+    voice = attr.ib(hash=False, eq=False, repr=False)
     notes = attr.ib(default=attr.Factory(list))
     duration = attr.ib(default=attr.Factory(Duration))
     text = attr.ib(default=None)
-    start = attr.ib(default=None, hash=False, cmp=False)
+    start = attr.ib(default=None, hash=False, eq=False)
     effect = attr.ib(default=attr.Factory(BeatEffect))
     index = attr.ib(default=None)
     octave = attr.ib(default=Octave.none)
@@ -1157,7 +1157,7 @@ class Note(object):
 
     """Describes a single note."""
 
-    beat = attr.ib(hash=False, cmp=False, repr=False)
+    beat = attr.ib(hash=False, eq=False, repr=False)
     value = attr.ib(default=0)
     velocity = attr.ib(default=Velocities.default)
     string = attr.ib(default=0)
