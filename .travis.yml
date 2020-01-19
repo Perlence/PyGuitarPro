@@ -1,11 +1,13 @@
 language: python
-python: '3.6'
+python: '3.8'
 sudo: false
 env:
   - TOXENV=flake8
   - TOXENV=py27
   - TOXENV=py34
   - TOXENV=py36
+  - TOXENV=py37
+  - TOXENV=py38
 install:
   - pip install tox flake8
 script:
