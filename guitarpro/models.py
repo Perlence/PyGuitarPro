@@ -3,6 +3,7 @@ from __future__ import division, print_function
 from fractions import Fraction
 from functools import partial
 from math import log
+from warnings import warn
 
 import attr
 from enum import Enum, IntEnum
@@ -920,7 +921,10 @@ class Beat(object):
         offset = self.start - self.voice.measure.start
         return offset
 
-    realStart = startInMeasure
+    @property
+    def realStart(self):
+        warn('Beat.realStart is deprecated and will be removed in 0.7 release', DeprecationWarning)
+        return self.startInMeasure
 
     @property
     def hasVibrato(self):
