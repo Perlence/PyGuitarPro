@@ -292,7 +292,7 @@ class Song(object):
 
     """
     # TODO: Store file format version here
-    versionTuple = attr.ib(default=None, hash=False, cmp=False)
+    versionTuple = attr.ib(default=None, hash=False, eq=False)
     clipboard = attr.ib(default=None)
     title = attr.ib(default='')
     subtitle = attr.ib(default='')
@@ -314,7 +314,7 @@ class Song(object):
     tracks = attr.ib(default=None)
     masterEffect = attr.ib(default=attr.Factory(RSEMasterEffect))
 
-    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, cmp=False, repr=False)
+    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, eq=False, repr=False)
 
     def __attrs_post_init__(self):
         if self.measureHeaders is None:
@@ -435,24 +435,13 @@ class Duration(object):
 
     value = attr.ib(default=quarter)
     isDotted = attr.ib(default=False)
-    isDoubleDotted = attr.ib(default=False)
     tuplet = attr.ib(default=attr.Factory(Tuplet))
-
-    def __attrs_post_init__(self):
-        self._attrs_inited = True
-
-    def __setattr__(self, name, value):
-        if name == 'isDoubleDotted' and getattr(self, '_attrs_inited', False):
-            warn('Duration.isDoubleDotted is deprecated and will be removed in 0.6 release', DeprecationWarning)
-        return super(self.__class__, self).__setattr__(name, value)
 
     @property
     def time(self):
         result = int(self.quarterTime * (4.0 / self.value))
         if self.isDotted:
             result += int(result / 2)
-        elif self.isDoubleDotted:
-            result += int((result / 4) * 3)
         return self.tuplet.convertTime(result)
 
     @property
@@ -473,14 +462,14 @@ class Duration(object):
         exp = int(log(timeFrac, 2))
         value = 2 ** -exp
         tuplet = Tuplet.fromFraction(timeFrac * value)
-        isDotted = isDoubleDotted = False
+        isDotted = False
         if tuplet.times == 3:
             value *= int(log(tuplet.enters, 2))
             tuplet = Tuplet(1, 1)
             isDotted = True
         if not tuplet.isSupported():
             raise ValueError('cannot represent time {} as a Guitar Pro duration'.format(time))
-        return Duration(value, isDotted, isDoubleDotted, tuplet)
+        return Duration(value, isDotted, tuplet)
 
 
 @hashableAttrs
@@ -517,13 +506,13 @@ class MeasureHeader(object):
     """A measure header contains metadata for measures over multiple
     tracks."""
 
-    number = attr.ib(default=1, hash=False, cmp=False)
-    start = attr.ib(default=Duration.quarterTime, hash=False, cmp=False)
+    number = attr.ib(default=1, hash=False, eq=False)
+    start = attr.ib(default=Duration.quarterTime, hash=False, eq=False)
     hasDoubleBar = attr.ib(default=False)
     keySignature = attr.ib(default=KeySignature.CMajor)
     timeSignature = attr.ib(default=attr.Factory(TimeSignature))
     # TODO: Remove this attribute in next release
-    tempo = attr.ib(default=attr.Factory(Tempo), hash=False, cmp=False)
+    tempo = attr.ib(default=attr.Factory(Tempo), hash=False, eq=False)
     marker = attr.ib(default=None)
     isRepeatOpen = attr.ib(default=False)
     repeatAlternative = attr.ib(default=0)
@@ -634,8 +623,8 @@ class Track(object):
 
     """A track contains multiple measures."""
 
-    song = attr.ib(hash=False, cmp=False, repr=False)
-    number = attr.ib(default=1, hash=False, cmp=False)
+    song = attr.ib(hash=False, eq=False, repr=False)
+    number = attr.ib(default=1, hash=False, eq=False)
     fretCount = attr.ib(default=24)
     offset = attr.ib(default=0)
     isPercussionTrack = attr.ib(default=False)
@@ -705,8 +694,8 @@ class Measure(object):
 
     """A measure contains multiple voices of beats."""
 
-    track = attr.ib(hash=False, cmp=False, repr=False)
-    header = attr.ib(hash=False, cmp=False, repr=False)
+    track = attr.ib(hash=False, eq=False, repr=False)
+    header = attr.ib(hash=False, eq=False, repr=False)
     clef = attr.ib(default=MeasureClef.treble)
     voices = attr.ib(default=None)
     lineBreak = attr.ib(default=LineBreak.none)
@@ -766,7 +755,7 @@ class Voice(object):
 
     """A voice contains multiple beats."""
 
-    measure = attr.ib(hash=False, cmp=False, repr=False)
+    measure = attr.ib(hash=False, eq=False, repr=False)
     beats = attr.ib(default=attr.Factory(list))
     direction = attr.ib(default=VoiceDirection.none)
 
@@ -916,11 +905,11 @@ class Beat(object):
 
     """A beat contains multiple notes."""
 
-    voice = attr.ib(hash=False, cmp=False, repr=False)
+    voice = attr.ib(hash=False, eq=False, repr=False)
     notes = attr.ib(default=attr.Factory(list))
     duration = attr.ib(default=attr.Factory(Duration))
     text = attr.ib(default=None)
-    start = attr.ib(default=None, hash=False, cmp=False)
+    start = attr.ib(default=None, hash=False, eq=False)
     effect = attr.ib(default=attr.Factory(BeatEffect))
     index = attr.ib(default=None)
     octave = attr.ib(default=Octave.none)
@@ -928,9 +917,14 @@ class Beat(object):
     status = attr.ib(default=BeatStatus.empty)
 
     @property
+    def startInMeasure(self):
+        offset = self.start - self.voice.measure.start
+        return offset
+
+    @property
     def realStart(self):
-        offset = self.start - self.measure.start()
-        return self.measure.header.realStart + offset
+        warn('Beat.realStart is deprecated and will be removed in 0.7 release', DeprecationWarning)
+        return self.startInMeasure
 
     @property
     def hasVibrato(self):
@@ -1167,7 +1161,7 @@ class Note(object):
 
     """Describes a single note."""
 
-    beat = attr.ib(hash=False, cmp=False, repr=False)
+    beat = attr.ib(hash=False, eq=False, repr=False)
     value = attr.ib(default=0)
     velocity = attr.ib(default=Velocities.default)
     string = attr.ib(default=0)

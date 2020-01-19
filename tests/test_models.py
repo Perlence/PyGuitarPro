@@ -1,8 +1,7 @@
-import warnings
-
 import pytest
 
 import guitarpro as gp
+import warnings
 
 
 def test_hashable():
@@ -26,9 +25,16 @@ def test_duration(value, isDotted, tuplet):
     assert time == new_dur.time
 
 
-def test_double_dot_warning(recwarn):
+def test_beat_start_in_measure():
+    song = gp.Song()
+    measure = song.tracks[0].measures[0]
+    voice = measure.voices[0]
+    beat = gp.Beat(voice, start=measure.start)
+    beat2 = gp.Beat(voice, start=measure.start + beat.duration.time)
+    voice.beats.append(beat)
+    assert beat.startInMeasure == 0
+    assert beat2.startInMeasure == 960
+
     warnings.simplefilter('always')
-    d = gp.Duration()
-    assert len(recwarn) == 0
     with pytest.deprecated_call():
-        d.isDoubleDotted = True
+        assert beat2.realStart == 960

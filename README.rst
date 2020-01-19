@@ -1,13 +1,13 @@
 PyGuitarPro
 ===========
 
-.. image:: http://img.shields.io/travis/Perlence/PyGuitarPro/develop.svg?style=flat&label=Travis
+.. image:: http://img.shields.io/travis/Perlence/PyGuitarPro/develop.svg?style=flat
     :alt: Travis-CI Build Status
     :target: https://travis-ci.org/Perlence/PyGuitarPro
 
 .. image:: http://img.shields.io/pypi/v/pyguitarpro.svg?style=flat
     :alt: PyPI Package latest release
-    :target: https://pypi.python.org/pypi/remote-pdb
+    :target: https://pypi.org/project/PyGuitarPro/
 
 
 Introduction
