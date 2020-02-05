@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Version 0.7
+-----------
+
+*TBA*
+
+**Backward-incompatible changes:**
+
+- Removed the deprecated ``Beat.realStart`` property.
+
+
 Version 0.6
 -----------
 

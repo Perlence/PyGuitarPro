@@ -1,7 +1,6 @@
 import pytest
 
 import guitarpro as gp
-import warnings
 
 
 def test_hashable():
@@ -35,6 +34,5 @@ def test_beat_start_in_measure():
     assert beat.startInMeasure == 0
     assert beat2.startInMeasure == 960
 
-    warnings.simplefilter('always')
-    with pytest.deprecated_call():
-        assert beat2.realStart == 960
+    with pytest.raises(AttributeError):
+        beat2.realStart
