@@ -93,12 +93,14 @@ class GPFileBase(object):
 
     def readByteSizeString(self, size):
         """Read length of the string stored in 1 byte and followed by character
-        bytes."""
+        bytes.
+        """
         return self.readString(size, self.readByte())
 
     def readIntSizeString(self):
         """Read length of the string stored in 1 integer and followed by
-        character bytes."""
+        character bytes.
+        """
         return self.readString(self.readInt())
 
     def readIntByteSizeString(self):

@@ -55,7 +55,6 @@ def parse(stream, encoding='cp1252'):
     :param stream: path to a GP file or file-like object.
     :param encoding: decode strings in tablature using this charset.
         Given encoding must be an 8-bit charset.
-
     """
     gpfile = _open(None, stream, 'rb', encoding=encoding)
     song = gpfile.readSong()
@@ -73,7 +72,6 @@ def write(song, stream, version=None, encoding='cp1252'):
         ``(5, 1, 0)``.
     :type version: tuple
     :param encoding: encode strings into given 8-bit charset.
-
     """
     gpfile = _open(song, stream, 'wb', version=version, encoding=encoding)
     gpfile.writeSong(song)

@@ -8,7 +8,6 @@ from .utils import clamp
 
 
 class GP4File(gp3.GP3File):
-
     """A reader for GuitarPro 4 files."""
 
     # Reading
@@ -48,7 +47,6 @@ class GP4File(gp3.GP3File):
         - Tracks. See :meth:`readTracks`.
 
         - Measures. See :meth:`readMeasures`.
-
         """
         song = gp.Song(tracks=[], measureHeaders=[])
         song.version = self.readVersion()
@@ -89,7 +87,6 @@ class GP4File(gp3.GP3File):
         bound to. Then it is followed by 5 lyric lines. Each one
         constists of number of starting measure encoded in :ref:`int`
         and :ref:`int-size-string` holding text of the lyric line.
-
         """
         lyrics = gp.Lyrics()
         lyrics.trackChoice = self.readInt()
@@ -172,7 +169,6 @@ class GP4File(gp3.GP3File):
 
         - Fingering: 7 :ref:`SignedBytes <signed-byte>`. For value
           mapping, see :class:`guitarpro.models.Fingering`.
-
         """
         chord.sharp = self.readBool()
         intonation = 'sharp' if chord.sharp else 'flat'
@@ -243,7 +239,6 @@ class GP4File(gp3.GP3File):
 
         - Pick stroke: :ref:`signed-byte`. For value mapping see
           :class:`guitarpro.models.BeatStrokeDirection`.
-
         """
         beatEffect = gp.BeatEffect()
         flags1 = self.readSignedByte()
@@ -275,7 +270,6 @@ class GP4File(gp3.GP3File):
         :meth:`durations
         <guitarpro.gp3.GP3File.readMixTableChangeDurations>`, and, new
         to GP3, :meth:`flags <readMixTableChangeFlags>`.
-
         """
         tableChange = super(GP4File, self).readMixTableChange(measure)
         self.readMixTableChangeFlags(tableChange)
@@ -292,7 +286,6 @@ class GP4File(gp3.GP3File):
         - *0x08*: change reverb for all tracks
         - *0x10*: change phaser for all tracks
         - *0x20*: change tremolo for all tracks
-
         """
         flags = self.readSignedByte()
         if tableChange.volume is not None:
@@ -350,7 +343,6 @@ class GP4File(gp3.GP3File):
         - Harmonic. See :meth:`readHarmonic`.
 
         - Trill. See :meth:`readTrill`.
-
         """
         noteEffect = note.effect or gp.NoteEffect()
         flags1 = self.readSignedByte()
@@ -380,7 +372,6 @@ class GP4File(gp3.GP3File):
         Tremolo constists of picking speed encoded in
         :ref:`signed-byte`. For value mapping refer to
         :meth:`fromTremoloValue`.
-
         """
         value = self.readSignedByte()
         tp = gp.TremoloPickingEffect()
@@ -395,7 +386,6 @@ class GP4File(gp3.GP3File):
         - *1*: eighth
         - *2*: sixteenth
         - *3*: thirtySecond
-
         """
         if value == 1:
             return gp.Duration.eighth
@@ -409,7 +399,6 @@ class GP4File(gp3.GP3File):
 
         Slide is encoded in :ref:`signed-byte`. See
         :class:`guitarpro.models.SlideType` for value mapping.
-
         """
         return [gp.SlideType(self.readSignedByte())]
 
@@ -425,7 +414,6 @@ class GP4File(gp3.GP3File):
         - *15*: artificial harmonic on (*n + 5*)th fret
         - *17*: artificial harmonic on (*n + 7*)th fret
         - *22*: artificial harmonic on (*n + 12*)th fret
-
         """
         harmonicType = self.readSignedByte()
         if harmonicType == 1:
@@ -456,7 +444,6 @@ class GP4File(gp3.GP3File):
         - Fret: :ref:`signed-byte`.
 
         - Period: :ref:`signed-byte`. See :meth:`fromTrillPeriod`.
-
         """
         trill = gp.TrillEffect()
         trill.fret = self.readSignedByte()
@@ -471,7 +458,6 @@ class GP4File(gp3.GP3File):
         - *1*: sixteenth
         - *2*: thirty-second
         - *3*: sixty-fourth
-
         """
         if period == 1:
             return gp.Duration.sixteenth

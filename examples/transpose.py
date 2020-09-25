@@ -7,7 +7,8 @@ import guitarpro
 
 def unfold_tracknumber(tracknumber, tracks):
     """Substitute '*' with all track numbers except for percussion
-    tracks."""
+    tracks.
+    """
     if tracknumber == '*':
         for number, track in enumerate(tracks, start=1):
             if not track.isPercussionTrack:

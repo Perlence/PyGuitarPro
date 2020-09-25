@@ -124,7 +124,6 @@ def bisect(test, song, dest_version=3):
 
     This function helps to find the measure where erroneous data was
     written using bisection method.
-
     """
     folder, _ = path.splitext(test)
     try:
@@ -151,7 +150,6 @@ def track_bisect(test, song, dest_version=3):
 
     This function helps to find the track where erroneous data was
     written using bisection method.
-
     """
     folder, _ = path.splitext(test)
     try:

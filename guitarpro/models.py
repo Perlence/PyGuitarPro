@@ -2,14 +2,13 @@ from __future__ import division, print_function
 
 from fractions import Fraction
 from functools import partial
-from math import log
-from warnings import warn
+from math import log2
 
 import attr
 from enum import Enum, IntEnum
 from six import string_types
 
-__all__ = (
+__all__ = [
     'GPException', 'RepeatGroup', 'Clipboard', 'KeySignature', 'Song',
     'LyricLine', 'Lyrics', 'Point', 'Padding', 'HeaderFooterElements',
     'PageSetup', 'Tempo', 'MidiChannel', 'DirectionSign', 'Tuplet', 'Duration',
@@ -24,8 +23,8 @@ __all__ = (
     'Note', 'Chord', 'ChordType', 'Barre', 'ChordAlteration', 'ChordExtension',
     'PitchClass', 'BeatText', 'MixTableItem', 'WahEffect', 'MixTableChange',
     'BendType', 'BendPoint', 'BendEffect', 'RSEMasterEffect', 'RSEEqualizer',
-    'Accentuation', 'RSEInstrument', 'TrackRSE'
-)
+    'Accentuation', 'RSEInstrument', 'TrackRSE',
+]
 
 
 class GPException(Exception):
@@ -60,9 +59,9 @@ def hashableAttrs(cls=None, repr=True):
 
 @hashableAttrs
 class RepeatGroup(object):
-
     """This class can store the information about a group of measures
-    which are repeated."""
+    which are repeated.
+    """
 
     measureHeaders = attr.ib(default=attr.Factory(list))
     closings = attr.ib(default=attr.Factory(list))
@@ -137,7 +136,6 @@ class KeySignature(Enum):
 
 @hashableAttrs
 class LyricLine(object):
-
     """A lyrics line."""
 
     startingMeasure = attr.ib(default=1)
@@ -146,7 +144,6 @@ class LyricLine(object):
 
 @hashableAttrs(repr=False)
 class Lyrics(object):
-
     """A collection of lyrics lines for a track."""
 
     trackChoice = attr.ib(default=0)
@@ -173,7 +170,6 @@ class Lyrics(object):
 
 @hashableAttrs
 class Point(object):
-
     """A point construct using floating point coordinates."""
 
     x = attr.ib()
@@ -182,7 +178,6 @@ class Point(object):
 
 @hashableAttrs
 class Padding(object):
-
     """A padding construct."""
 
     right = attr.ib()
@@ -192,12 +187,12 @@ class Padding(object):
 
 
 class HeaderFooterElements(IntEnum):
-
     """An enumeration of the elements which can be shown in the header
     and footer of a rendered song sheet.
 
     All values can be combined using bit-operators as they are flags.
     """
+
     none = 0x000
     title = 0x001
     subtitle = 0x002
@@ -213,7 +208,6 @@ class HeaderFooterElements(IntEnum):
 
 @hashableAttrs
 class PageSetup(object):
-
     """The page setup describes how the document is rendered.
 
     Page setup contains page size, margins, paddings, and how the title
@@ -234,8 +228,8 @@ class PageSetup(object):
       supported by layout)
     - ``%P%``: will be replaced with the number of pages (if supported
       by layout)
-
     """
+
     pageSize = attr.ib(default=Point(210, 297))
     pageMargin = attr.ib(default=Padding(10, 15, 10, 10))
     scoreSizeProportion = attr.ib(default=1.0)
@@ -254,7 +248,6 @@ class PageSetup(object):
 
 @hashableAttrs
 class RSEEqualizer(object):
-
     """Equalizer found in master effect and track effect.
 
     Attribute :attr:`RSEEqualizer.knobs` is a list of values in range
@@ -262,7 +255,6 @@ class RSEEqualizer(object):
     knobs. Gain is a value in range from -6.0 to 5.9 which can be found
     in both master and track effects and is named as "PRE" in Guitar Pro
     5.
-
     """
 
     knobs = attr.ib(default=attr.Factory(list))
@@ -271,7 +263,6 @@ class RSEEqualizer(object):
 
 @hashableAttrs
 class RSEMasterEffect(object):
-
     """Master effect as seen in "Score information"."""
 
     volume = attr.ib(default=0)
@@ -285,12 +276,11 @@ class RSEMasterEffect(object):
 
 @hashableAttrs(repr=False)
 class Song(object):
-
     """The top-level node of the song model.
 
     It contains basic information about the stored song.
-
     """
+
     # TODO: Store file format version here
     versionTuple = attr.ib(default=None, hash=False, eq=False)
     clipboard = attr.ib(default=None)
@@ -342,7 +332,6 @@ class Song(object):
 
 @hashableAttrs
 class Tempo(object):
-
     """A song tempo in BPM."""
 
     value = attr.ib(default=120)
@@ -353,7 +342,6 @@ class Tempo(object):
 
 @hashableAttrs
 class MidiChannel(object):
-
     """A MIDI channel describes playing data for a track."""
 
     channel = attr.ib(default=0)
@@ -376,7 +364,6 @@ class MidiChannel(object):
 
 @hashableAttrs
 class DirectionSign(object):
-
     """A navigation sign like *Coda* or *Segno*."""
 
     name = attr.ib(default='')
@@ -384,7 +371,6 @@ class DirectionSign(object):
 
 @hashableAttrs
 class Tuplet(object):
-
     """A *n:m* tuplet."""
 
     enters = attr.ib(default=1)
@@ -404,7 +390,10 @@ class Tuplet(object):
     ]
 
     def convertTime(self, time):
-        return int(time * self.times / self.enters)
+        result = Fraction(time * self.times, self.enters)
+        if result.denominator == 1:
+            return result.numerator
+        return result
 
     def isSupported(self):
         return (self.enters, self.times) in self.supportedTuplets
@@ -416,7 +405,6 @@ class Tuplet(object):
 
 @hashableAttrs
 class Duration(object):
-
     """A duration."""
 
     quarterTime = 960
@@ -459,13 +447,16 @@ class Duration(object):
     @classmethod
     def fromTime(cls, time):
         timeFrac = Fraction(time, cls.quarterTime * 4)
-        exp = int(log(timeFrac, 2))
+        exp = int(log2(timeFrac))
         value = 2 ** -exp
         tuplet = Tuplet.fromFraction(timeFrac * value)
         isDotted = False
-        if tuplet.times == 3:
-            value *= int(log(tuplet.enters, 2))
-            tuplet = Tuplet(1, 1)
+        if not tuplet.isSupported():
+            # Check if it's dotted
+            timeFrac = Fraction(time, cls.quarterTime * 4) * Fraction(2, 3)
+            exp = int(log2(timeFrac))
+            value = 2 ** -exp
+            tuplet = Tuplet.fromFraction(timeFrac * value)
             isDotted = True
         if not tuplet.isSupported():
             raise ValueError('cannot represent time {} as a Guitar Pro duration'.format(time))
@@ -474,7 +465,6 @@ class Duration(object):
 
 @hashableAttrs
 class TimeSignature(object):
-
     """A time signature."""
 
     numerator = attr.ib(default=4)
@@ -487,7 +477,6 @@ class TimeSignature(object):
 
 
 class TripletFeel(Enum):
-
     """An enumeration of different triplet feels."""
 
     #: No triplet feel.
@@ -502,9 +491,9 @@ class TripletFeel(Enum):
 
 @hashableAttrs(repr=False)
 class MeasureHeader(object):
-
     """A measure header contains metadata for measures over multiple
-    tracks."""
+    tracks.
+    """
 
     number = attr.ib(default=1, hash=False, eq=False)
     start = attr.ib(default=Duration.quarterTime, hash=False, eq=False)
@@ -532,7 +521,6 @@ class MeasureHeader(object):
 
 @hashableAttrs
 class Color(object):
-
     """An RGB Color."""
 
     r = attr.ib()
@@ -547,7 +535,6 @@ Color.red = Color(255, 0, 0)
 
 @hashableAttrs
 class Marker(object):
-
     """A marker annotation for beats."""
 
     title = attr.ib(default='Section')
@@ -556,7 +543,6 @@ class Marker(object):
 
 @hashableAttrs
 class TrackSettings(object):
-
     """Settings of the track."""
 
     tablature = attr.ib(default=True)
@@ -573,9 +559,9 @@ class TrackSettings(object):
 
 
 class Accentuation(Enum):
-
     """Values of auto-accentuation on the beat found in track RSE
-    settings."""
+    settings.
+    """
 
     #: No auto-accentuation.
     none = 0
@@ -620,7 +606,6 @@ class TrackRSE(object):
 
 @hashableAttrs(repr=False)
 class Track(object):
-
     """A track contains multiple measures."""
 
     song = attr.ib(hash=False, eq=False, repr=False)
@@ -655,7 +640,6 @@ class Track(object):
 
 @hashableAttrs
 class GuitarString(object):
-
     """A guitar string with a special tuning."""
 
     number = attr.ib()
@@ -668,7 +652,6 @@ class GuitarString(object):
 
 
 class MeasureClef(Enum):
-
     """An enumeration of available clefs."""
 
     treble = 0
@@ -678,7 +661,6 @@ class MeasureClef(Enum):
 
 
 class LineBreak(Enum):
-
     """A line break directive."""
 
     #: No line break.
@@ -691,7 +673,6 @@ class LineBreak(Enum):
 
 @hashableAttrs(repr=False)
 class Measure(object):
-
     """A measure contains multiple voices of beats."""
 
     track = attr.ib(hash=False, eq=False, repr=False)
@@ -742,7 +723,6 @@ class Measure(object):
 
 
 class VoiceDirection(Enum):
-
     """Voice directions indicating the direction of beams."""
 
     none = 0
@@ -752,7 +732,6 @@ class VoiceDirection(Enum):
 
 @hashableAttrs(repr=False)
 class Voice(object):
-
     """A voice contains multiple beats."""
 
     measure = attr.ib(hash=False, eq=False, repr=False)
@@ -765,7 +744,6 @@ class Voice(object):
 
 
 class BeatStrokeDirection(Enum):
-
     """All beat stroke directions."""
 
     none = 0
@@ -775,7 +753,6 @@ class BeatStrokeDirection(Enum):
 
 @hashableAttrs
 class BeatStroke(object):
-
     """A stroke effect for beats."""
 
     direction = attr.ib(default=BeatStrokeDirection.none)
@@ -804,7 +781,6 @@ class BeatStroke(object):
 
 
 class SlapEffect(Enum):
-
     """Characteristic of articulation."""
 
     #: No slap effect.
@@ -822,7 +798,6 @@ class SlapEffect(Enum):
 
 @hashableAttrs
 class BeatEffect(object):
-
     """This class contains all beat effects."""
 
     stroke = attr.ib(default=attr.Factory(BeatStroke))
@@ -871,7 +846,6 @@ class TupletBracket(Enum):
 
 @hashableAttrs
 class BeatDisplay(object):
-
     """Parameters of beat display."""
 
     breakBeam = attr.ib(default=False)
@@ -884,7 +858,6 @@ class BeatDisplay(object):
 
 
 class Octave(Enum):
-
     """Octave signs."""
 
     none = 0
@@ -902,7 +875,6 @@ class BeatStatus(Enum):
 
 @hashableAttrs(repr=False)
 class Beat(object):
-
     """A beat contains multiple notes."""
 
     voice = attr.ib(hash=False, eq=False, repr=False)
@@ -922,11 +894,6 @@ class Beat(object):
         return offset
 
     @property
-    def realStart(self):
-        warn('Beat.realStart is deprecated and will be removed in 0.7 release', DeprecationWarning)
-        return self.startInMeasure
-
-    @property
     def hasVibrato(self):
         for note in self.notes:
             if note.effect.vibrato:
@@ -942,7 +909,6 @@ class Beat(object):
 
 @hashableAttrs
 class HarmonicEffect(object):
-
     """A harmonic note effect."""
 
     type = attr.ib(init=False)
@@ -984,7 +950,6 @@ class SemiHarmonic(HarmonicEffect):
 
 
 class GraceEffectTransition(Enum):
-
     """All transition types for grace notes."""
 
     #: No transition.
@@ -1001,8 +966,8 @@ class GraceEffectTransition(Enum):
 
 
 class Velocities(object):
-
     """A collection of velocities / dynamics."""
+
     minVelocity = 15
     velocityIncrement = 16
     pianoPianissimo = minVelocity
@@ -1018,7 +983,6 @@ class Velocities(object):
 
 @hashableAttrs
 class GraceEffect(object):
-
     """A grace note effect."""
 
     duration = attr.ib(default=1)
@@ -1036,7 +1000,6 @@ class GraceEffect(object):
 
 @hashableAttrs
 class TrillEffect(object):
-
     """A trill effect."""
 
     fret = attr.ib(default=0)
@@ -1045,15 +1008,14 @@ class TrillEffect(object):
 
 @hashableAttrs
 class TremoloPickingEffect(object):
-
     """A tremolo picking effect."""
 
     duration = attr.ib(default=attr.Factory(Duration))
 
 
 class SlideType(Enum):
-
     """An enumeration of all supported slide types."""
+
     intoFromAbove = -2
     intoFromBelow = -1
     none = 0
@@ -1064,9 +1026,9 @@ class SlideType(Enum):
 
 
 class Fingering(Enum):
-
     """Left and right hand fingering used in tabs and chord diagram
-    editor."""
+    editor.
+    """
 
     #: Unknown (used only in chord editor).
     unknown = -2
@@ -1086,7 +1048,6 @@ class Fingering(Enum):
 
 @hashableAttrs(repr=False)
 class NoteEffect(object):
-
     """Contains all effects which can be applied to one note."""
 
     accentuatedNote = attr.ib(default=False)
@@ -1158,7 +1119,6 @@ class NoteType(Enum):
 
 @hashableAttrs
 class Note(object):
-
     """Describes a single note."""
 
     beat = attr.ib(hash=False, eq=False, repr=False)
@@ -1177,7 +1137,6 @@ class Note(object):
 
 @hashableAttrs
 class Chord(object):
-
     """A chord annotation for beats."""
 
     length = attr.ib()
@@ -1209,7 +1168,6 @@ class Chord(object):
 
 
 class ChordType(Enum):
-
     """Type of the chord."""
 
     #: Major chord.
@@ -1260,13 +1218,12 @@ class ChordType(Enum):
 
 @hashableAttrs
 class Barre(object):
-
     """A single barre.
 
     :param start: first string from the bottom of the barre.
     :param end: last string on the top of the barre.
-
     """
+
     fret = attr.ib()
     start = attr.ib(default=0)
     end = attr.ib(default=0)
@@ -1277,7 +1234,6 @@ class Barre(object):
 
 
 class ChordAlteration(Enum):
-
     """Tonality of the chord."""
 
     #: Perfect.
@@ -1291,7 +1247,6 @@ class ChordAlteration(Enum):
 
 
 class ChordExtension(Enum):
-
     """Extension type of the chord."""
 
     #: No extension.
@@ -1309,7 +1264,6 @@ class ChordExtension(Enum):
 
 @hashableAttrs
 class PitchClass(object):
-
     """A pitch class.
 
     Constructor provides several overloads. Each overload provides
@@ -1349,8 +1303,8 @@ class PitchClass(object):
     >>> p = PitchClass('D#')
     >>> print(p)
     D#
-
     """
+
     just = attr.ib()
     accidental = attr.ib(default=None)
     value = attr.ib(default=None)
@@ -1401,7 +1355,6 @@ class PitchClass(object):
 
 @hashableAttrs
 class BeatText(object):
-
     """A text annotation for beats."""
 
     value = attr.ib(default='')
@@ -1409,9 +1362,9 @@ class BeatText(object):
 
 @hashableAttrs
 class MixTableItem(object):
-
     """A mix table item describes a mix parameter, e.g. volume or
-    reverb."""
+    reverb.
+    """
 
     value = attr.ib(default=0)
     duration = attr.ib(default=0)
@@ -1444,7 +1397,6 @@ WahEffect.none = WahEffect(-1)
 
 @hashableAttrs
 class MixTableChange(object):
-
     """A MixTableChange describes a change in mix parameters."""
 
     instrument = attr.ib(default=None)
@@ -1476,7 +1428,6 @@ class MixTableChange(object):
 
 
 class BendType(Enum):
-
     """All Bend presets."""
 
     #: No Preset.
@@ -1524,7 +1475,6 @@ class BendType(Enum):
 
 @hashableAttrs
 class BendPoint(object):
-
     """A single point within the BendEffect."""
 
     position = attr.ib(default=0)
@@ -1535,14 +1485,13 @@ class BendPoint(object):
         """Gets the exact time when the point need to be played (MIDI).
 
         :param duration: the full duration of the effect.
-
         """
+
         return int(duration * self.position / BendEffect.maxPosition)
 
 
 @hashableAttrs
 class BendEffect(object):
-
     """This effect is used to describe string bends and tremolo bars."""
 
     type = attr.ib(default=BendType.none)

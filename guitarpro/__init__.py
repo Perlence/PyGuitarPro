@@ -1,4 +1,4 @@
 from .io import parse, write  # noqa
 from .models import *  # noqa
 
-__version__ = '0.6'
+__version__ = '0.7'

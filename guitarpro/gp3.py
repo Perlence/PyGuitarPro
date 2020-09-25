@@ -8,7 +8,6 @@ from .utils import clamp, bit_length
 
 
 class GP3File(GPFileBase):
-
     """A reader for GuitarPro 3 files."""
 
     _tripletFeel = gp.TripletFeel.none
@@ -45,7 +44,6 @@ class GP3File(GPFileBase):
         - Tracks. See :meth:`readTracks`.
 
         - Measures. See :meth:`readMeasures`.
-
         """
         song = gp.Song(tracks=[], measureHeaders=[])
         song.version = self.readVersion()
@@ -80,7 +78,6 @@ class GP3File(GPFileBase):
         The sequence if followed by notice. Notice starts with the
         number of notice lines stored in :ref:`int`. Each line is
         encoded in :ref:`int-byte-size-string`.
-
         """
         song.title = self.readIntByteSizeString()
         song.subtitle = self.readIntByteSizeString()
@@ -129,7 +126,6 @@ class GP3File(GPFileBase):
         - blank1: :ref:`byte`.
 
         - blank2: :ref:`byte`.
-
         """
         channels = []
         for i in range(64):
@@ -162,7 +158,6 @@ class GP3File(GPFileBase):
         been specified previously.
 
         :param measureCount: number of measures to expect.
-
         """
         previous = None
         for number in range(1, measureCount + 1):
@@ -209,7 +204,6 @@ class GP3File(GPFileBase):
         - Tonality of the measure: 2 :ref:`Bytes <byte>`. These values
           encode a key signature change on the current piece. First byte
           is key signature root, second is key signature type.
-
         """
         flags = self.readByte()
         header = gp.MeasureHeader()
@@ -257,7 +251,6 @@ class GP3File(GPFileBase):
         integer equal to the marker's name length + 1, then a string
         containing the marker's name. Finally the marker's color is
         written.
-
         """
         marker = gp.Marker()
         marker.title = self.readIntByteSizeString()
@@ -270,7 +263,6 @@ class GP3File(GPFileBase):
         Colors are used by :class:`guitarpro.models.Marker` and
         :class:`guitarpro.models.Track`. They consist of 3 consecutive
         bytes and one blank byte.
-
         """
         r = self.readByte()
         g = self.readByte()
@@ -285,7 +277,6 @@ class GP3File(GPFileBase):
         been specified previously in :meth:`GP3File.readSong`.
 
         :param trackCount: number of tracks to expect.
-
         """
         for i in range(trackCount):
             track = gp.Track(song, i + 1, strings=[], measures=[])
@@ -331,7 +322,6 @@ class GP3File(GPFileBase):
           which a capo is set. If no capo is used, the value is 0.
 
         - Track's color. The track's displayed color in Guitar Pro.
-
         """
         flags = self.readByte()
         track.isPercussionTrack = bool(flags & 0x01)
@@ -358,7 +348,6 @@ class GP3File(GPFileBase):
         MIDI channel in Guitar Pro is represented by two integers. First
         is zero-based number of channel, second is zero-based number of
         channel used for effects.
-
         """
         index = self.readInt() - 1
         effectChannel = self.readInt() - 1
@@ -388,7 +377,6 @@ class GP3File(GPFileBase):
         - measure n/track 2
         - ...
         - measure n/track m
-
         """
         tempo = gp.Tempo(song.tempo)
         start = gp.Duration.quarterTime
@@ -407,7 +395,6 @@ class GP3File(GPFileBase):
 
         The measure is written as number of beats followed by sequence
         of beats.
-
         """
         start = measure.start
         voice = measure.voices[0]
@@ -448,7 +435,6 @@ class GP3File(GPFileBase):
         - Beat effects. See :meth:`readBeatEffects`.
 
         - Mix table change effect. See :meth:`readMixTableChange`.
-
         """
         flags = self.readByte()
         beat = self.getBeat(voice, start)
@@ -498,7 +484,6 @@ class GP3File(GPFileBase):
         -  *3*: thirty-second note
 
         If flag at *0x20* is true, the tuplet is read.
-
         """
         duration = gp.Duration()
         duration.value = 1 << (self.readSignedByte() + 2)
@@ -541,7 +526,6 @@ class GP3File(GPFileBase):
         chord is written in default (GP3) format. If chord header is set
         to 1, then chord diagram in encoded in more advanced (GP4)
         format.
-
         """
         chord = gp.Chord(stringCount)
         chord.newFormat = self.readBool()
@@ -566,7 +550,6 @@ class GP3File(GPFileBase):
           fret on the string 1, fret on the string 2, ..., fret on the
           string 6. If string is untouched then the values of fret is
           *-1*.
-
         """
         chord.name = self.readIntByteSizeString()
         chord.firstFret = self.readInt()
@@ -633,7 +616,6 @@ class GP3File(GPFileBase):
           note is played in chord.
 
         - Blank space, 1 :ref:`byte`.
-
         """
         chord.sharp = self.readBool()
         intonation = 'sharp' if chord.sharp else 'flat'
@@ -668,7 +650,6 @@ class GP3File(GPFileBase):
         """Read beat text.
 
         Text is stored in :ref:`int-byte-size-string`.
-
         """
         text = gp.BeatText()
         text.value = self.readIntByteSizeString()
@@ -697,7 +678,6 @@ class GP3File(GPFileBase):
           - *3*: pop
 
         - Beat stroke direction. See :meth:`readBeatStroke`.
-
         """
         beatEffects = gp.BeatEffect()
         flags1 = self.readByte()
@@ -726,7 +706,6 @@ class GP3File(GPFileBase):
         :attr:`dip <guitarpro.models.BendType.dip>`. The value of the
         effect is encoded in :ref:`Int` and shows how deep tremolo bar
         is pressed.
-
         """
         barEffect = gp.BendEffect()
         barEffect.type = gp.BendType.dip
@@ -745,7 +724,6 @@ class GP3File(GPFileBase):
         Beat stroke consists of two :ref:`Bytes <byte>` which correspond
         to stroke up and stroke down speed. See
         :class:`guitarpro.models.BeatStrokeDirection` for value mapping.
-
         """
         strokeDown = self.readSignedByte()
         strokeUp = self.readSignedByte()
@@ -765,7 +743,6 @@ class GP3File(GPFileBase):
         - *4*: sixteenth
         - *5*: eighth
         - *6*: quarter
-
         """
         if value == 1:
             return gp.Duration.hundredTwentyEighth
@@ -791,7 +768,6 @@ class GP3File(GPFileBase):
         List of values is followed by the list of durations for
         parameters that have changed. See
         :meth:`readMixTableChangeDurations`.
-
         """
         tableChange = gp.MixTableChange()
         self.readMixTableChangeValues(tableChange, measure)
@@ -815,7 +791,6 @@ class GP3File(GPFileBase):
 
         If signed byte is *-1* then corresponding parameter hasn't
         changed.
-
         """
         instrument = self.readSignedByte()
         volume = self.readSignedByte()
@@ -849,7 +824,6 @@ class GP3File(GPFileBase):
         Durations are read for each non-null
         :class:`~guitarpro.models.MixTableItem`. Durations are encoded
         in :ref:`signed-byte`.
-
         """
         if tableChange.volume is not None:
             tableChange.volume.duration = self.readSignedByte()
@@ -880,7 +854,6 @@ class GP3File(GPFileBase):
         - *0x20*: 2th string
         - *0x40*: 1th string
         - *0x80*: *blank*
-
         """
         stringFlags = self.readByte()
         for string in track.strings:
@@ -922,7 +895,6 @@ class GP3File(GPFileBase):
           :class:`guitarpro.models.Fingering`.
 
         - Note effects. See :meth:`readNoteEffects`.
-
         """
         flags = self.readByte()
         note.string = guitarString.number
@@ -984,7 +956,6 @@ class GP3File(GPFileBase):
         - Bend. See :meth:`readBend`.
 
         - Grace note. See :meth:`readGrace`.
-
         """
         noteEffect = note.effect or gp.NoteEffect()
         flags = self.readByte()
@@ -1018,7 +989,6 @@ class GP3File(GPFileBase):
           * Value: :ref:`int`. Shows where point is set along *y*-axis.
 
           * Vibrato: :ref:`bool`.
-
         """
         bendEffect = gp.BendEffect()
         bendEffect.type = gp.BendType(self.readSignedByte())
@@ -1048,7 +1018,6 @@ class GP3File(GPFileBase):
           - *1*: Thirty-second note.
           - *2*: Twenty-fourth note.
           - *3*: Sixteenth note.
-
         """
         grace = gp.GraceEffect()
         grace.fret = self.readSignedByte()
