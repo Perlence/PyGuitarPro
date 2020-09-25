@@ -4,11 +4,16 @@ Changelog
 Version 0.7
 -----------
 
-*TBA*
+*2020-09-25*
 
 **Backward-incompatible changes:**
 
 - Removed the deprecated ``Beat.realStart`` property.
+- Made ``Tuplet.convertTime()`` and ``Duration.time`` return `int` for whole times and ``Fraction`` for rational times.
+
+**Changes:**
+
+- Fixed creating durations from dotted tuplets `#16 <https://github.com/Perlence/PyGuitarPro/issues/16>`_.
 
 
 Version 0.6
