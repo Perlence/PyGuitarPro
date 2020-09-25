@@ -8,7 +8,6 @@ from .utils import bit_length
 
 
 class GP5File(gp4.GP4File):
-
     """A reader for GuitarPro 5 files."""
 
     # Reading
@@ -56,7 +55,6 @@ class GP5File(gp4.GP4File):
         - Tracks. See :meth:`readTracks`.
 
         - Measures. See :meth:`readMeasures`.
-
         """
         song = gp.Song(tracks=[], measureHeaders=[])
         song.version = self.readVersion()
@@ -112,7 +110,6 @@ class GP5File(gp4.GP4File):
         The sequence if followed by notice. Notice starts with the
         number of notice lines stored in :ref:`int`. Each line is
         encoded in :ref:`int-byte-size-string`.
-
         """
         song.title = self.readIntByteSizeString()
         song.subtitle = self.readIntByteSizeString()
@@ -137,7 +134,6 @@ class GP5File(gp4.GP4File):
         - Master volume: :ref:`int`. Values are in range from 0 to 200.
 
         - 10-band equalizer. See :meth:`readEqualizer`.
-
         """
         masterEffect = gp.RSEMasterEffect()
         if self.versionTuple > (5, 0, 0):
@@ -155,7 +151,6 @@ class GP5File(gp4.GP4File):
 
         Volume values are stored as opposite to actual value. See
         :meth:`unpackVolumeValue`.
-
         """
         knobs = list(map(self.unpackVolumeValue, self.readSignedByte(count=knobsNumber)))
         return gp.RSEEqualizer(knobs=knobs[:-1], gain=knobs[-1])
@@ -165,7 +160,6 @@ class GP5File(gp4.GP4File):
 
         Equalizer volumes are float but stored as
         :ref:`SignedBytes <signed-byte>`.
-
         """
         return -value / 10
 
@@ -198,7 +192,6 @@ class GP5File(gp4.GP4File):
           * copyright2, e.g. *"All Rights Reserved - International
             Copyright Secured"*
           * pageNumber
-
         """
         setup = gp.PageSetup()
         setup.pageSize = gp.Point(self.readInt(), self.readInt())
@@ -247,7 +240,6 @@ class GP5File(gp4.GP4File):
         - Da Segno Segno al Fine
         - Da Coda
         - Da Double Coda
-
         """
         signs = {
             gp.DirectionSign('Coda'): self.readShort(),
@@ -302,7 +294,6 @@ class GP5File(gp4.GP4File):
 
         - Triplet feel: :ref:`byte`. See
           :class:`guitarpro.models.TripletFeel`.
-
         """
         if previous is not None:
             # Always 0
@@ -330,7 +321,6 @@ class GP5File(gp4.GP4File):
         Pro 3. If it's Guitar Pro 5.0 then 2 blank bytes are read after
         :meth:`guitarpro.gp3.readTracks`. If format version is higher
         than 5.0, 1 blank byte is read.
-
         """
         super(GP5File, self).readTracks(song, trackCount, channels)
         self.skip(2 if self.versionTuple == (5, 0, 0) else 1)  # Always 0
@@ -400,7 +390,6 @@ class GP5File(gp4.GP4File):
         - MIDI bank: :ref:`byte`.
 
         - Track RSE. See :meth:`readTrackRSE`.
-
         """
         if track.number == 1 or self.versionTuple == (5, 0, 0):
             # Always 0
@@ -463,7 +452,6 @@ class GP5File(gp4.GP4File):
         - 3-band track equalizer. See :meth:`readEqualizer`.
 
         - RSE instrument effect. See :meth:`readRSEInstrumentEffect`.
-
         """
         trackRSE.humanize = self.readByte()
         self.readInt(3)  # ???
@@ -484,7 +472,6 @@ class GP5File(gp4.GP4File):
         - Sound bank: :ref:`int`.
 
         - Effect number: :ref:`int`. Vestige of Guitar Pro 5.0 format.
-
         """
         instrument = gp.RSEInstrument()
         instrument.instrument = self.readInt()
@@ -505,7 +492,6 @@ class GP5File(gp4.GP4File):
         - Effect name: :ref:`int-byte-size-string`.
 
         - Effect category: :ref:`int-byte-size-string`.
-
         """
         if self.versionTuple > (5, 0, 0):
             effect = self.readIntByteSizeString()
@@ -524,7 +510,6 @@ class GP5File(gp4.GP4File):
 
         Sub-measures are followed by a
         :class:`~guitarpro.models.LineBreak` stored in :ref:`byte`.
-
         """
         start = measure.start
         for voice in measure.voices[:gp.Measure.maxVoices]:
@@ -554,7 +539,6 @@ class GP5File(gp4.GP4File):
 
         - Break secondary beams: :ref:`byte`. Appears if flag at
           *0x0800* is set. Signifies how much beams should be broken.
-
         """
         duration = super(GP5File, self).readBeat(start, voice)
         beat = self.getBeat(voice, start)
@@ -591,7 +575,6 @@ class GP5File(gp4.GP4File):
         Beat stroke consists of two :ref:`Bytes <byte>` which correspond
         to stroke down and stroke up speed. See
         :class:`guitarpro.models.BeatStroke` for value mapping.
-
         """
         stroke = super(GP5File, self).readBeatStroke()
         return stroke.swapDirection()
@@ -605,7 +588,6 @@ class GP5File(gp4.GP4File):
         - Wah effect. See :meth:`readWahEffect`.
 
         - RSE instrument effect. See :meth:`readRSEInstrumentEffect`.
-
         """
         tableChange = super(gp4.GP4File, self).readMixTableChange(measure)
         flags = self.readMixTableChangeFlags(tableChange)
@@ -639,7 +621,6 @@ class GP5File(gp4.GP4File):
         - Tempo: :ref:`int`.
 
         If the value is -1 then corresponding parameter hasn't changed.
-
         """
         instrument = self.readSignedByte()
         rse = self.readRSEInstrument()
@@ -682,7 +663,6 @@ class GP5File(gp4.GP4File):
 
         If tempo did change, then one :ref:`bool` is read. If it's true,
         then tempo change won't be displayed on the score.
-
         """
         if tableChange.volume is not None:
             tableChange.volume.duration = self.readSignedByte()
@@ -709,7 +689,6 @@ class GP5File(gp4.GP4File):
 
         - *0x40*: use RSE
         - *0x80*: show wah-wah
-
         """
         flags = super(GP5File, self).readMixTableChangeFlags(tableChange)
         tableChange.useRSE = bool(flags & 0x40)
@@ -720,7 +699,6 @@ class GP5File(gp4.GP4File):
 
         - Wah value: :ref:`signed-byte`. See
           :class:`guitarpro.models.WahEffect` for value mapping.
-
         """
         return gp.WahEffect(value=self.readSignedByte(),
                             display=bool(flags & 0x80))
@@ -760,7 +738,6 @@ class GP5File(gp4.GP4File):
           - *0x02*: swap accidentals.
 
         - Note effects. See :meth:`guitarpro.gp4.readNoteEffects`.
-
         """
         flags = self.readByte()
         note.string = guitarString.number
@@ -811,7 +788,6 @@ class GP5File(gp4.GP4File):
 
           - *0x01*: grace note is muted (dead)
           - *0x02*: grace note is on beat
-
         """
         grace = gp.GraceEffect()
         grace.fret = self.readByte()
@@ -834,7 +810,6 @@ class GP5File(gp4.GP4File):
         - *0x08*: slide out upwards
         - *0x10*: slide into from below
         - *0x20*: slide into from above
-
         """
         slideType = self.readByte()
         slides = []
@@ -872,7 +847,6 @@ class GP5File(gp4.GP4File):
         If harmonic type is tapped:
 
         - Fret: :ref:`byte`.
-
         """
         harmonicType = self.readSignedByte()
         if harmonicType == 1:
