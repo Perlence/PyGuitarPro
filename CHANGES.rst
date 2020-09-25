@@ -9,7 +9,8 @@ Version 0.7
 **Backward-incompatible changes:**
 
 - Removed the deprecated ``Beat.realStart`` property.
-- Made ``Tuplet.convertTime()`` and ``Duration.time`` return `int` for whole times and ``Fraction`` for rational times.
+- Made ``Tuplet.convertTime()`` and ``Duration.time`` return ``int`` for whole times and ``Fraction`` for rational
+  times.
 
 **Changes:**
 
