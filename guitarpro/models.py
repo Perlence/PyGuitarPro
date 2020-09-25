@@ -2,7 +2,7 @@ from __future__ import division, print_function
 
 from fractions import Fraction
 from functools import partial
-from math import log
+from math import log2
 
 import attr
 from enum import Enum, IntEnum
@@ -403,7 +403,10 @@ class Tuplet(object):
     ]
 
     def convertTime(self, time):
-        return int(time * self.times / self.enters)
+        result = Fraction(time * self.times, self.enters)
+        if result.denominator == 1:
+            return result.numerator
+        return result
 
     def isSupported(self):
         return (self.enters, self.times) in self.supportedTuplets
@@ -458,13 +461,16 @@ class Duration(object):
     @classmethod
     def fromTime(cls, time):
         timeFrac = Fraction(time, cls.quarterTime * 4)
-        exp = int(log(timeFrac, 2))
+        exp = int(log2(timeFrac))
         value = 2 ** -exp
         tuplet = Tuplet.fromFraction(timeFrac * value)
         isDotted = False
-        if tuplet.times == 3:
-            value *= int(log(tuplet.enters, 2))
-            tuplet = Tuplet(1, 1)
+        if not tuplet.isSupported():
+            # Check if it's dotted
+            timeFrac = Fraction(time, cls.quarterTime * 4) * Fraction(2, 3)
+            exp = int(log2(timeFrac))
+            value = 2 ** -exp
+            tuplet = Tuplet.fromFraction(timeFrac * value)
             isDotted = True
         if not tuplet.isSupported():
             raise ValueError('cannot represent time {} as a Guitar Pro duration'.format(time))
