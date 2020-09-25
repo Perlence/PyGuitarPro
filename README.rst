@@ -84,7 +84,7 @@ Documentation
 
 Package documentation is located at `Read the Docs`_.
 
-.. _Read the Docs: http://pyguitarpro.readthedocs.io/
+.. _Read the Docs: https://pyguitarpro.readthedocs.io/
 
 
 Licensing
