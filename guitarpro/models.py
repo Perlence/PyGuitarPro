@@ -2,7 +2,7 @@ from __future__ import division, print_function
 
 from fractions import Fraction
 from functools import partial
-from math import log2
+from math import log
 
 import attr
 from enum import Enum, IntEnum
@@ -447,14 +447,14 @@ class Duration(object):
     @classmethod
     def fromTime(cls, time):
         timeFrac = Fraction(time, cls.quarterTime * 4)
-        exp = int(log2(timeFrac))
+        exp = int(log(timeFrac, 2))
         value = 2 ** -exp
         tuplet = Tuplet.fromFraction(timeFrac * value)
         isDotted = False
         if not tuplet.isSupported():
             # Check if it's dotted
             timeFrac = Fraction(time, cls.quarterTime * 4) * Fraction(2, 3)
-            exp = int(log2(timeFrac))
+            exp = int(log(timeFrac, 2))
             value = 2 ** -exp
             tuplet = Tuplet.fromFraction(timeFrac * value)
             isDotted = True
