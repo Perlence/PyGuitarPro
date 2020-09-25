@@ -1,11 +1,11 @@
 PyGuitarPro
 ===========
 
-.. image:: http://img.shields.io/travis/Perlence/PyGuitarPro/develop.svg?style=flat
+.. image:: https://img.shields.io/travis/Perlence/PyGuitarPro/master.svg?style=flat
     :alt: Travis-CI Build Status
     :target: https://travis-ci.org/Perlence/PyGuitarPro
 
-.. image:: http://img.shields.io/pypi/v/pyguitarpro.svg?style=flat
+.. image:: https://img.shields.io/pypi/v/pyguitarpro.svg?style=flat
     :alt: PyPI Package latest release
     :target: https://pypi.org/project/PyGuitarPro/
 
@@ -16,8 +16,8 @@ Introduction
 PyGuitarPro is a package to read, write and manipulate GP3, GP4 and GP5 files. Initially PyGuitarPro is a Python port
 of `AlphaTab`_ which is a Haxe port of `TuxGuitar`_.
 
-.. _AlphaTab: http://www.alphatab.net/
-.. _TuxGuitar: http://tuxguitar.herac.com.ar/
+.. _AlphaTab: https://www.alphatab.net/
+.. _TuxGuitar: https://tuxguitar.herac.com.ar/
 
 This package helps you achieve several goals you might find yourself yearning to do in a day-to-day tabber life:
 
