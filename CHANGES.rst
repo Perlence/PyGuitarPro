@@ -11,6 +11,10 @@ Version 0.8
 - Removed the ``Fingering.unknown`` member.
 - Lenient handling of unknown ``Fingering``, ``NoteType``, ``ChordType``, ``ChordExtension`` values.
 
+**Changes:**
+
+- Drop support for Python 3.4.
+
 
 Version 0.7
 -----------
