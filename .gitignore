@@ -37,8 +37,6 @@ docs/_build
 
 # Virtual environment
 env
-py27
-py35
 
 # Testing output
 tests/output

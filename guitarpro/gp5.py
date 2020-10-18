@@ -1,5 +1,3 @@
-from __future__ import division
-
 import attr
 
 from . import models as gp

@@ -1,7 +1,5 @@
 import os
 
-from six import string_types
-
 from .iobase import GPFileBase
 from .gp3 import GP3File
 from .gp4 import GP4File
@@ -83,7 +81,7 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
     if mode not in ('rb', 'wb'):
         raise ValueError("cannot read or write unless in binary mode, not '%s'" % mode)
 
-    if isinstance(stream, string_types):
+    if isinstance(stream, str):
         fp = open(stream, mode)
         filename = stream
     else:

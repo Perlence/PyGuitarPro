@@ -1,32 +1,19 @@
-from setuptools import setup, find_packages
-
-# http://bugs.python.org/issue15881
-try:
-    import multiprocessing  # noqa
-except ImportError:
-    pass
+import setuptools
 
 setup_requires = ['pytest-runner']
 
 install_requires = [
     'attrs>=19.2',
-    'enum34',
-    'six',
 ]
 
 tests_require = [
     'pytest',
 ]
 
-try:
-    import argparse  # noqa
-except ImportError:
-    install_requires.append('argparse')
-
 with open('README.rst') as fp:
     README = fp.read()
 
-setup(
+setuptools.setup(
     name='PyGuitarPro',
     description='Read, write, and manipulate GP3, GP4 and GP5 files.',
     long_description=README,
@@ -36,7 +23,7 @@ setup(
     url='https://github.com/Perlence/PyGuitarPro',
     platforms=['Windows', 'POSIX', 'Unix', 'MacOS X'],
     license='LGPL',
-    packages=find_packages(),
+    packages=setuptools.find_packages(),
     include_package_data=True,
     zip_safe=False,
     setup_requires=setup_requires,
@@ -53,13 +40,12 @@ setup(
         'Operating System :: POSIX',
         'Operating System :: Unix',
         'Operating System :: MacOS :: MacOS X',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Artistic Software',

@@ -1,8 +1,4 @@
 from os import path
-try:
-    from itertools import izip
-except ImportError:
-    izip = zip
 
 import guitarpro
 
@@ -44,7 +40,7 @@ def main(source, dest=None, tracks=None):
                         note.value = MAPPING.get(note.value, note.value)
 
         # Extend note durations to remove rests in-between.
-        voiceparts = izip(*(measure.voices for measure in track.measures))
+        voiceparts = zip(*(measure.voices for measure in track.measures))
         for measures in voiceparts:
             for measure in measures:
                 last = None

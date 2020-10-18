@@ -1,12 +1,9 @@
-from __future__ import division, print_function
-
 from fractions import Fraction
 from functools import partial
 from math import log
 
 import attr
 from enum import Enum, IntEnum
-from six import string_types
 
 __all__ = [
     'GPException', 'RepeatGroup', 'Clipboard', 'KeySignature', 'Song',
@@ -1329,7 +1326,7 @@ class PitchClass(object):
 
     def __attrs_post_init__(self):
         if self.accidental is None:
-            if isinstance(self.just, string_types):
+            if isinstance(self.just, str):
                 # Assume string input
                 string = self.just
                 try:

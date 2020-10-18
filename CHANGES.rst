@@ -8,12 +8,11 @@ Version 0.8
 
 **Backward-incompatible changes:**
 
+- Drop support for Python 2.7.
+- Drop support for Python 3.4.
+- Drop support for Python 3.5.
 - Removed the ``Fingering.unknown`` member.
 - Lenient handling of unknown ``Fingering``, ``NoteType``, ``ChordType``, ``ChordExtension`` values.
-
-**Changes:**
-
-- Drop support for Python 3.4.
 
 
 Version 0.7
