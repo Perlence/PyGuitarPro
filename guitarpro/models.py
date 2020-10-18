@@ -42,9 +42,8 @@ class LenientEnum(Enum):
         return pseudo_member
 
     def __eq__(self, other):
-        if self._name_ == other._name_ == 'unknown':
-            if not isinstance(other, self.__class__):
-                return False
+        if (self.__class__ is other.__class__ and
+                self._name_ == other._name_ == 'unknown'):
             return self._value_ == other._value_
         return super().__eq__(other)
 
