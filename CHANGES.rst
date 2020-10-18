@@ -1,6 +1,17 @@
 Changelog
 =========
 
+Version 0.8
+-----------
+
+*TBA*
+
+**Backward-incompatible changes:**
+
+- Removed the ``Fingering.unknown`` member.
+- Lenient handling of unknown ``Fingering``, ``NoteType``, ``ChordType``, ``ChordExtension`` values.
+
+
 Version 0.7
 -----------
 

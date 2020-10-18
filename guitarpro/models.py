@@ -31,6 +31,24 @@ class GPException(Exception):
     pass
 
 
+class LenientEnum(Enum):
+    """Enum subclass that doesn't have invalid members."""
+
+    @classmethod
+    def _missing_(cls, value):
+        pseudo_member = object.__new__(cls)
+        pseudo_member._name_ = 'unknown'
+        pseudo_member._value_ = value
+        return pseudo_member
+
+    def __eq__(self, other):
+        if self._name_ == other._name_ == 'unknown':
+            if not isinstance(other, self.__class__):
+                return False
+            return self._value_ == other._value_
+        return super().__eq__(other)
+
+
 def hashableAttrs(cls=None, repr=True):
     """A fully hashable attrs decorator.
 
@@ -46,9 +64,6 @@ def hashableAttrs(cls=None, repr=True):
             value = getattr(self, field.name)
             if isinstance(value, (list, set)):
                 new_value = tuple(value)
-            else:
-                new_value = value
-            if new_value != value:
                 obj = attr.evolve(obj, **{field.name: new_value})
         return hash(attr.astuple(obj, recurse=False, filter=lambda a, v: a.hash is not False))
 
@@ -1025,13 +1040,11 @@ class SlideType(Enum):
     outUpwards = 4
 
 
-class Fingering(Enum):
+class Fingering(LenientEnum):
     """Left and right hand fingering used in tabs and chord diagram
     editor.
     """
 
-    #: Unknown (used only in chord editor).
-    unknown = -2
     #: Open or muted.
     open = -1
     #: Thumb.
@@ -1110,7 +1123,7 @@ class NoteEffect(object):
                 self.letRing == default.letRing)
 
 
-class NoteType(Enum):
+class NoteType(LenientEnum):
     rest = 0
     normal = 1
     tie = 2
@@ -1167,7 +1180,7 @@ class Chord(object):
         return [string for string in self.strings if string >= 0]
 
 
-class ChordType(Enum):
+class ChordType(LenientEnum):
     """Type of the chord."""
 
     #: Major chord.
@@ -1246,7 +1259,7 @@ class ChordAlteration(Enum):
     augmented = 2
 
 
-class ChordExtension(Enum):
+class ChordExtension(LenientEnum):
     """Extension type of the chord."""
 
     #: No extension.

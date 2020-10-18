@@ -93,6 +93,7 @@ def test_guess_version(tmpdir):
 @pytest.mark.parametrize('filename', [
     'chord_without_notes.gp5',
     '001_Funky_Guy.gp5',
+    'Unknown Chord Extension.gp5',
 ])
 def test_chord(tmpdir, filename):
     filepath = path.join(LOCATION, filename)

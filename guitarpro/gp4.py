@@ -573,7 +573,8 @@ class GP4File(gp3.GP3File):
             self.writeBool(omission)
 
         self.placeholder(1)
-        for fingering in clamp(chord.fingerings, 7, fillvalue=gp.Fingering.unknown):
+        placeholder = gp.Fingering(-2)
+        for fingering in clamp(chord.fingerings, 7, fillvalue=placeholder):
             self.writeSignedByte(fingering.value)
         self.writeBool(chord.show)
 
