@@ -1263,8 +1263,8 @@ class GP3File(GPFileBase):
         self.writeBool(chord.sharp)
         self.placeholder(3)
         self.writeInt(chord.root.value if chord.root else 0)
-        self.writeInt(chord.type.value if chord.type else 0)
-        self.writeInt(chord.extension.value if chord.extension else 0)
+        self.writeInt(chord.type.checked_value if chord.type else 0)
+        self.writeInt(chord.extension.checked_value if chord.extension else 0)
         self.writeInt(chord.bass.value if chord.bass else 0)
         self.writeInt(chord.tonality.value if chord.tonality else 0)
         self.writeBool(chord.add)
@@ -1391,7 +1391,7 @@ class GP3File(GPFileBase):
         flags = self.packNoteFlags(note)
         self.writeByte(flags)
         if flags & 0x20:
-            self.writeByte(note.type.value)
+            self.writeByte(note.type.checked_value)
         if flags & 0x01:
             self.writeSignedByte(note.duration)
             self.writeSignedByte(note.tuplet)

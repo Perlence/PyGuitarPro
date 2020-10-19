@@ -1,3 +1,4 @@
+import contextlib
 import os
 from os import path
 
@@ -101,7 +102,11 @@ def test_chord(tmpdir, filename):
     assert song.tracks[0].measures[0].voices[0].beats[0].effect.chord is not None
 
     destpath = str(tmpdir.join('no_chord_strings.gp5'))
-    guitarpro.write(song, destpath)
+    check_warnings = contextlib.nullcontext()
+    if filename == 'Unknown Chord Extension.gp5':
+        check_warnings = pytest.warns(UserWarning, match="is an unknown ChordExtension")
+    with check_warnings:
+        guitarpro.write(song, destpath)
     song2 = guitarpro.parse(destpath)
     assert song == song2
 
