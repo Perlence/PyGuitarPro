@@ -55,7 +55,7 @@ class GP3File(GPFileBase):
         trackCount = self.readInt()
         self.readMeasureHeaders(song, measureCount)
         self.readTracks(song, trackCount, channels)
-        self.readMeasures(song)
+        self.readMeasuresWithErrors(song)
         return song
 
     def readInfo(self, song):
@@ -381,12 +381,17 @@ class GP3File(GPFileBase):
         for header in song.measureHeaders:
             header.start = start
             for track in song.tracks:
+                self._currentTrack = track
                 measure = gp.Measure(track, header)
+                self._currentMeasure = measure
                 tempo = header.tempo
                 track.measures.append(measure)
                 self.readMeasure(measure)
             header.tempo = tempo
             start += header.length
+
+        self._currentTrack = None
+        self._currentMeasure = None
 
     def readMeasure(self, measure):
         """Read measure.
@@ -396,12 +401,16 @@ class GP3File(GPFileBase):
         """
         start = measure.start
         voice = measure.voices[0]
+        self._currentVoiceNumber = 1
         self.readVoice(start, voice)
+        self._currentVoiceNumber = None
 
     def readVoice(self, start, voice):
         beats = self.readInt()
         for beat in range(beats):
+            self._currentBeatNumber = beat + 1
             start += self.readBeat(start, voice)
+        self._currentBeatNumber = None
 
     def readBeat(self, start, voice):
         """Read beat.

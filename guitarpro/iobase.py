@@ -2,18 +2,25 @@ import struct
 
 import attr
 
+from . import models as gp
+
 
 @attr.s
 class GPFileBase(object):
+    data = attr.ib()
+    encoding = attr.ib()
+    version = attr.ib(default=None)
+    versionTuple = attr.ib(default=None)
+
     bendPosition = 60
     bendSemitone = 25
 
     _supportedVersions = []
 
-    data = attr.ib()
-    encoding = attr.ib()
-    version = attr.ib(default=None)
-    versionTuple = attr.ib(default=None)
+    _currentTrack = None
+    _currentMeasure = None
+    _currentVoiceNumber = None
+    _currentBeatNumber = None
 
     def close(self):
         self.data.close()
@@ -116,6 +123,36 @@ class GPFileBase(object):
             self.version = self.readByteSizeString(30)
         return self.version
 
+    def readMeasuresWithErrors(self, song):
+        try:
+            self.readMeasures(song)
+        except Exception as err:
+            location = self.getErrorLocation()
+            if not location:
+                raise
+            raise gp.GPException(f"error reading {', '.join(location)}, "
+                                 f"got {err.__class__.__name__}: {err}") from err
+
+    def getErrorLocation(self):
+        location = []
+
+        if self._currentTrack is None:
+            return location
+        location.append(f"track {self._currentTrack.number}")
+
+        if self._currentMeasure is None:
+            return location
+        location.append(f"measure {self._currentMeasure.number}")
+
+        if self._currentVoiceNumber is None:
+            return location
+        location.append(f"voice {self._currentVoiceNumber}")
+
+        if self._currentBeatNumber is None:
+            return location
+        location.append(f"beat {self._currentBeatNumber}")
+
+        return location
     # Writing
     # =======
 

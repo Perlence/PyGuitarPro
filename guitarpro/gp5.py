@@ -76,7 +76,7 @@ class GP5File(gp4.GP4File):
         trackCount = self.readInt()
         self.readMeasureHeaders(song, measureCount, directions)
         self.readTracks(song, trackCount, channels)
-        self.readMeasures(song)
+        self.readMeasuresWithErrors(song)
         return song
 
     def readClipboard(self):
@@ -509,8 +509,10 @@ class GP5File(gp4.GP4File):
         :class:`~guitarpro.models.LineBreak` stored in :ref:`byte`.
         """
         start = measure.start
-        for voice in measure.voices[:gp.Measure.maxVoices]:
+        for number, voice in enumerate(measure.voices[:gp.Measure.maxVoices]):
+            self._currentVoiceNumber = number + 1
             self.readVoice(start, voice)
+        self._currentVoiceNumber = None
         measure.lineBreak = gp.LineBreak(self.readByte(default=0))
 
     def readBeat(self, start, voice):
