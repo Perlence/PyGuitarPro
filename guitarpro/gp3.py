@@ -2,7 +2,7 @@ import attr
 
 from . import models as gp
 from .iobase import GPFileBase
-from .utils import clamp, bit_length
+from .utils import clamp
 
 
 class GP3File(GPFileBase):
@@ -1144,7 +1144,7 @@ class GP3File(GPFileBase):
     def writeRepeatAlternative(self, value):
         first_one = False
         i = 0
-        for i in range(bit_length(value) + 1):
+        for i in range(value.bit_length() + 1):
             if value & 1 << i:
                 first_one = True
             elif first_one:
@@ -1238,7 +1238,7 @@ class GP3File(GPFileBase):
         self.writeNotes(beat)
 
     def writeDuration(self, duration, flags):
-        value = bit_length(duration.value) - 3
+        value = duration.value.bit_length() - 3
         self.writeSignedByte(value)
         if flags & 0x20:
             if not duration.tuplet.isSupported():
@@ -1453,7 +1453,7 @@ class GP3File(GPFileBase):
     def writeGrace(self, grace):
         self.writeSignedByte(grace.fret)
         self.writeByte(self.packVelocity(grace.velocity))
-        self.writeByte(8 - bit_length(grace.duration))
+        self.writeByte(8 - grace.duration.bit_length())
         self.writeSignedByte(grace.transition.value)
 
     def packVelocity(self, velocity):

@@ -1,7 +1,3 @@
-import re
-import math
-
-
 def clamp(iterable, length, fillvalue=None):
     """Set length of iterable to given length.
 
@@ -16,18 +12,3 @@ def clamp(iterable, length, fillvalue=None):
             return
     for _ in range(i + 1, length):
         yield fillvalue
-
-
-def hexify(string):
-    """Encode string in hex and insert whitespace after each byte."""
-    return ' '.join(re.findall('[0-9a-zA-Z]{2}', string.encode('hex')))
-
-
-try:
-    bit_length = int.bit_length
-except AttributeError:
-    def bit_length(integer):
-        if integer == 0:
-            return 0
-        else:
-            return int(math.log(abs(integer), 2)) + 1

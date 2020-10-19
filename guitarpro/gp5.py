@@ -2,7 +2,6 @@ import attr
 
 from . import models as gp
 from . import gp4
-from .utils import bit_length
 
 
 class GP5File(gp4.GP4File):
@@ -1281,7 +1280,7 @@ class GP5File(gp4.GP4File):
         self.writeByte(grace.fret)
         self.writeByte(self.packVelocity(grace.velocity))
         self.writeByte(grace.transition.value)
-        self.writeByte(8 - bit_length(grace.duration))
+        self.writeByte(8 - grace.duration.bit_length())
         flags = 0x00
         if grace.isDead:
             flags |= 0x01
