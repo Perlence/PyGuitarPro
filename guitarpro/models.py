@@ -41,7 +41,7 @@ class LenientEnum(Enum):
         return pseudo_member
 
     @DynamicClassAttribute
-    def checked_value(self):
+    def checkedValue(self):
         if self._name_ == 'unknown':
             warnings.warn(f'{self._value_!r} is an unknown {self.__class__.__name__}')
         return self._value_

@@ -47,48 +47,48 @@ CLIPBOARD_TESTS = [
 
 
 @pytest.mark.parametrize('filename', TESTS)
-def test_conversion(tmpdir, filename):
+def testConversion(tmpdir, filename):
     __, ext = path.splitext(filename)
     filepath = path.join(LOCATION, filename)
-    song_a = guitarpro.parse(filepath)
+    songA = guitarpro.parse(filepath)
     destpath = str(tmpdir.join(filename + ext))
-    guitarpro.write(song_a, destpath)
-    song_b = guitarpro.parse(destpath)
-    assert song_a == song_b
+    guitarpro.write(songA, destpath)
+    songB = guitarpro.parse(destpath)
+    assert songA == songB
 
 
-def test_clipboard(tmpdir):
+def testClipboard(tmpdir):
     filepath = path.join(LOCATION, '2 whole bars.tmp')
-    song_a = guitarpro.parse(filepath)
-    song_a.clipboard = None
+    songA = guitarpro.parse(filepath)
+    songA.clipboard = None
     destpath = str(tmpdir.join('2 whole bars.tmp.gp5'))
-    guitarpro.write(song_a, destpath)
-    song_b = guitarpro.parse(destpath)
-    assert song_a == song_b
+    guitarpro.write(songA, destpath)
+    songB = guitarpro.parse(destpath)
+    assert songA == songB
 
 
-def test_empty(tmpdir):
-    empty_a = guitarpro.Song()
+def testEmpty(tmpdir):
+    emptyA = guitarpro.Song()
     destpath = str(tmpdir.join('Empty.gp5'))
-    guitarpro.write(empty_a, destpath, version=(5, 2, 0))
+    guitarpro.write(emptyA, destpath, version=(5, 2, 0))
 
-    empty_b = guitarpro.parse(destpath)
-    assert empty_a == empty_b
+    emptyB = guitarpro.parse(destpath)
+    assert emptyA == emptyB
 
 
-def test_guess_version(tmpdir):
+def testGuessVersion(tmpdir):
     filename = 'Effects.gp5'
     filepath = path.join(LOCATION, filename)
-    song_a = guitarpro.parse(filepath)
-    song_a.version = song_a.versionTuple = None
+    songA = guitarpro.parse(filepath)
+    songA.version = songA.versionTuple = None
 
     for ext, versionTuple in guitarpro.io._EXT_VERSIONS.items():
         if ext == 'tmp':
             continue
         destpath = str(tmpdir.join(filename + '.' + ext))
-        guitarpro.write(song_a, destpath)
-        song_b = guitarpro.parse(destpath)
-        assert song_b.versionTuple == versionTuple
+        guitarpro.write(songA, destpath)
+        songB = guitarpro.parse(destpath)
+        assert songB.versionTuple == versionTuple
 
 
 @pytest.mark.parametrize('filename', [
@@ -96,16 +96,16 @@ def test_guess_version(tmpdir):
     '001_Funky_Guy.gp5',
     'Unknown Chord Extension.gp5',
 ])
-def test_chord(tmpdir, filename):
+def testChord(tmpdir, filename):
     filepath = path.join(LOCATION, filename)
     song = guitarpro.parse(filepath)
     assert song.tracks[0].measures[0].voices[0].beats[0].effect.chord is not None
 
     destpath = str(tmpdir.join('no_chord_strings.gp5'))
-    check_warnings = contextlib.nullcontext()
+    checkWarnings = contextlib.nullcontext()
     if filename == 'Unknown Chord Extension.gp5':
-        check_warnings = pytest.warns(UserWarning, match="is an unknown ChordExtension")
-    with check_warnings:
+        checkWarnings = pytest.warns(UserWarning, match="is an unknown ChordExtension")
+    with checkWarnings:
         guitarpro.write(song, destpath)
     song2 = guitarpro.parse(destpath)
     assert song == song2
@@ -115,7 +115,7 @@ def test_chord(tmpdir, filename):
 
 
 @pytest.mark.parametrize('version', ['gp3', 'gp4', 'gp5'])
-def test_write_error_annotation(tmpdir, version):
+def testWriteErrorAnnotation(tmpdir, version):
     filename = str(tmpdir.join(f'beep.{version}'))
     with open(filename, 'wb') as fp:
         song = guitarpro.Song()
@@ -132,15 +132,15 @@ def test_write_error_annotation(tmpdir, version):
 
         song = guitarpro.Song()
         voice = song.tracks[0].measures[0].voices[0]
-        invalid_beat = guitarpro.Beat(voice, status='nooo')
-        voice.beats.append(invalid_beat)
+        invalidBeat = guitarpro.Beat(voice, status='nooo')
+        voice.beats.append(invalidBeat)
         # writeMeasures
         with pytest.raises(guitarpro.GPException,
                            match="writing track 1, measure 1, voice 1, beat 1, got AttributeError: 'str'"):
             guitarpro.write(song, fp)
 
 
-def bisect(test, song, dest_version=3):
+def bisect(test, song, destVersion=3):
     """Save song in *n* files, where *n* is number of measures in song.
 
     Resulting tabs have following measures:
@@ -160,13 +160,13 @@ def bisect(test, song, dest_version=3):
         pass
     trackMeasures = [track.measures for track in song.tracks]
     for number, _ in enumerate(trackMeasures[0], 1):
-        dest_path = path.join(OUTPUT, folder, test + '-%03d.gp%d' % (number, dest_version))
+        destPath = path.join(OUTPUT, folder, test + '-%03d.gp%d' % (number, destVersion))
         for track in song.tracks:
             track.measures = trackMeasures[track.number - 1][:number]
-        guitarpro.write(song, dest_path)
+        guitarpro.write(song, destPath)
 
 
-def track_bisect(test, song, dest_version=3):
+def trackBisect(test, song, destVersion=3):
     """Save song in *n* files, where *n* is number of tracks in song.
 
     Resulting tabs have following tracks:
@@ -186,6 +186,6 @@ def track_bisect(test, song, dest_version=3):
         pass
     tracks = song.tracks[:]
     for number, track in enumerate(tracks, 1):
-        dest_path = path.join(OUTPUT, folder, test + '-T%02d.gp%d' % (number, dest_version))
+        destPath = path.join(OUTPUT, folder, test + '-T%02d.gp%d' % (number, destVersion))
         song.tracks = tracks[:number]
-        guitarpro.write(song, dest_path)
+        guitarpro.write(song, destPath)
