@@ -1,4 +1,5 @@
 import struct
+from contextlib import contextmanager
 
 import attr
 
@@ -18,7 +19,7 @@ class GPFileBase(object):
     _supportedVersions = []
 
     _currentTrack = None
-    _currentMeasure = None
+    _currentMeasureNumber = None
     _currentVoiceNumber = None
     _currentBeatNumber = None
 
@@ -123,36 +124,38 @@ class GPFileBase(object):
             self.version = self.readByteSizeString(30)
         return self.version
 
-    def readMeasuresWithErrors(self, song):
+    @contextmanager
+    def annotateErrors(self, action):
+        self._currentTrack = None
+        self._currentMeasureNumber = None
+        self._currentVoiceNumber = None
+        self._currentBeatNumber = None
         try:
-            self.readMeasures(song)
+            yield
         except Exception as err:
             location = self.getErrorLocation()
             if not location:
                 raise
-            raise gp.GPException(f"error reading {', '.join(location)}, "
+            raise gp.GPException(f"{action} {', '.join(location)}, "
                                  f"got {err.__class__.__name__}: {err}") from err
+        finally:
+            self._currentTrack = None
+            self._currentMeasureNumber = None
+            self._currentVoiceNumber = None
+            self._currentBeatNumber = None
 
     def getErrorLocation(self):
         location = []
-
-        if self._currentTrack is None:
-            return location
-        location.append(f"track {self._currentTrack.number}")
-
-        if self._currentMeasure is None:
-            return location
-        location.append(f"measure {self._currentMeasure.number}")
-
-        if self._currentVoiceNumber is None:
-            return location
-        location.append(f"voice {self._currentVoiceNumber}")
-
-        if self._currentBeatNumber is None:
-            return location
-        location.append(f"beat {self._currentBeatNumber}")
-
+        if self._currentTrack is not None:
+            location.append(f"track {self._currentTrack.number}")
+        if self._currentMeasureNumber is not None:
+            location.append(f"measure {self._currentMeasureNumber}")
+        if self._currentVoiceNumber is not None:
+            location.append(f"voice {self._currentVoiceNumber}")
+        if self._currentBeatNumber is not None:
+            location.append(f"beat {self._currentBeatNumber}")
         return location
+
     # Writing
     # =======
 

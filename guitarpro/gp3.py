@@ -53,9 +53,10 @@ class GP3File(GPFileBase):
         channels = self.readMidiChannels()
         measureCount = self.readInt()
         trackCount = self.readInt()
-        self.readMeasureHeaders(song, measureCount)
-        self.readTracks(song, trackCount, channels)
-        self.readMeasuresWithErrors(song)
+        with self.annotateErrors('reading'):
+            self.readMeasureHeaders(song, measureCount)
+            self.readTracks(song, trackCount, channels)
+            self.readMeasures(song)
         return song
 
     def readInfo(self, song):
@@ -159,9 +160,11 @@ class GP3File(GPFileBase):
         """
         previous = None
         for number in range(1, measureCount + 1):
+            self._currentMeasureNumber = number
             header, _ = self.readMeasureHeader(number, song, previous)
             song.addMeasureHeader(header)
             previous = header
+        self._currentMeasureNumber = None
 
     def readMeasureHeader(self, number, song, previous=None):
         """Read measure header.
@@ -278,8 +281,10 @@ class GP3File(GPFileBase):
         """
         for i in range(trackCount):
             track = gp.Track(song, i + 1, strings=[], measures=[])
+            self._currentTrack = track
             self.readTrack(track, channels)
             song.tracks.append(track)
+        self._currentTrack = None
 
     def readTrack(self, track, channels):
         """Read track.
@@ -383,7 +388,7 @@ class GP3File(GPFileBase):
             for track in song.tracks:
                 self._currentTrack = track
                 measure = gp.Measure(track, header)
-                self._currentMeasure = measure
+                self._currentMeasureNumber = measure.number
                 tempo = header.tempo
                 track.measures.append(measure)
                 self.readMeasure(measure)
@@ -391,7 +396,7 @@ class GP3File(GPFileBase):
             start += header.length
 
         self._currentTrack = None
-        self._currentMeasure = None
+        self._currentMeasureNumber = None
 
     def readMeasure(self, measure):
         """Read measure.

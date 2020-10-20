@@ -60,9 +60,10 @@ class GP4File(gp3.GP3File):
         channels = self.readMidiChannels()
         measureCount = self.readInt()
         trackCount = self.readInt()
-        self.readMeasureHeaders(song, measureCount)
-        self.readTracks(song, trackCount, channels)
-        self.readMeasuresWithErrors(song)
+        with self.annotateErrors('reading'):
+            self.readMeasureHeaders(song, measureCount)
+            self.readTracks(song, trackCount, channels)
+            self.readMeasures(song)
         return song
 
     def readClipboard(self):

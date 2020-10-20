@@ -74,9 +74,10 @@ class GP5File(gp4.GP4File):
         song.masterEffect.reverb = self.readInt()
         measureCount = self.readInt()
         trackCount = self.readInt()
-        self.readMeasureHeaders(song, measureCount, directions)
-        self.readTracks(song, trackCount, channels)
-        self.readMeasuresWithErrors(song)
+        with self.annotateErrors('reading'):
+            self.readMeasureHeaders(song, measureCount, directions)
+            self.readTracks(song, trackCount, channels)
+            self.readMeasures(song)
         return song
 
     def readClipboard(self):
