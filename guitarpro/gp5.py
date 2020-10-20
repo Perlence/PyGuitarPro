@@ -900,9 +900,10 @@ class GP5File(gp4.GP4File):
         self.writeInt(measureCount)
         self.writeInt(trackCount)
 
-        self.writeMeasureHeaders(song.tracks[0].measures)
-        self.writeTracks(song.tracks)
-        self.writeMeasures(song.tracks)
+        with self.annotateErrors('writing'):
+            self.writeMeasureHeaders(song.tracks[0].measures)
+            self.writeTracks(song.tracks)
+            self.writeMeasures(song.tracks)
 
     def writeClipboard(self, clipboard):
         if clipboard is None:
@@ -1138,8 +1139,10 @@ class GP5File(gp4.GP4File):
             self.writeIntByteSizeString(instrument.effectCategory)
 
     def writeMeasure(self, measure):
-        for voice in measure.voices[:gp.Measure.maxVoices]:
+        for number, voice in enumerate(measure.voices[:gp.Measure.maxVoices]):
+            self._currentVoiceNumber = number + 1
             self.writeVoice(voice)
+        self._currentVoiceNumber = None
         self.writeByte(measure.lineBreak.value)
 
     def writeBeat(self, beat):

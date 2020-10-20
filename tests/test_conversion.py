@@ -111,11 +111,33 @@ def test_chord(tmpdir, filename):
     assert song == song2
 
 
-def product(test, song, versions=(3, 4, 5)):
-    """Save song in given format *versions*."""
-    for dest_version in versions:
-        dest_path = path.join(OUTPUT, test + '.gp%d' % dest_version)
-        guitarpro.write(song, dest_path)
+# TODO: testReadErrorAnnotation
+
+
+@pytest.mark.parametrize('version', ['gp3', 'gp4', 'gp5'])
+def test_write_error_annotation(tmpdir, version):
+    filename = str(tmpdir.join(f'beep.{version}'))
+    with open(filename, 'wb') as fp:
+        song = guitarpro.Song()
+        song.tracks[0].measures[0].timeSignature.numerator = 'nooo'
+        # writeMeasureHeader
+        with pytest.raises(guitarpro.GPException, match="writing measure 1, got ValueError: invalid"):
+            guitarpro.write(song, fp)
+
+        song = guitarpro.Song()
+        song.tracks[0].fretCount = 'nooo'
+        # writeTracks
+        with pytest.raises(guitarpro.GPException, match="writing track 1, got ValueError: invalid"):
+            guitarpro.write(song, fp)
+
+        song = guitarpro.Song()
+        voice = song.tracks[0].measures[0].voices[0]
+        invalid_beat = guitarpro.Beat(voice, status='nooo')
+        voice.beats.append(invalid_beat)
+        # writeMeasures
+        with pytest.raises(guitarpro.GPException,
+                           match="writing track 1, measure 1, voice 1, beat 1, got AttributeError: 'str'"):
+            guitarpro.write(song, fp)
 
 
 def bisect(test, song, dest_version=3):

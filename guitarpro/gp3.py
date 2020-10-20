@@ -1056,9 +1056,10 @@ class GP3File(GPFileBase):
         self.writeMidiChannels(song.tracks)
         self.writeInt(len(song.tracks[0].measures))
         self.writeInt(len(song.tracks))
-        self.writeMeasureHeaders(song.tracks[0].measures)
-        self.writeTracks(song.tracks)
-        self.writeMeasures(song.tracks)
+        with self.annotateErrors('writing'):
+            self.writeMeasureHeaders(song.tracks[0].measures)
+            self.writeTracks(song.tracks)
+            self.writeMeasures(song.tracks)
         self.writeInt(0)
 
     def writeInfo(self, song):
@@ -1115,8 +1116,10 @@ class GP3File(GPFileBase):
     def writeMeasureHeaders(self, measures):
         previous = None
         for measure in measures:
+            self._currentMeasureNumber = measure.number
             self.writeMeasureHeader(measure.header, previous)
             previous = measure.header
+        self._currentMeasureNumber = None
 
     def writeMeasureHeader(self, header, previous=None):
         flags = self.packMeasureHeaderFlags(header, previous=previous)
@@ -1177,7 +1180,9 @@ class GP3File(GPFileBase):
 
     def writeTracks(self, tracks):
         for number, track in enumerate(tracks, 1):
+            self._currentTrack = track
             self.writeTrack(track, number)
+        self._currentTrack = None
 
     def writeTrack(self, track, number):
         flags = 0x00
@@ -1210,16 +1215,24 @@ class GP3File(GPFileBase):
         partwiseMeasures = [track.measures for track in tracks]
         for timewiseMeasures in zip(*partwiseMeasures):
             for measure in timewiseMeasures:
+                self._currentTrack = measure.track
+                self._currentMeasureNumber = measure.number
                 self.writeMeasure(measure)
+        self._currentTrack = None
+        self._currentMeasureNumber = None
 
     def writeMeasure(self, measure):
+        self._currentVoiceNumber = 1
         voice = measure.voices[0]
         self.writeVoice(voice)
+        self._currentVoiceNumber = None
 
     def writeVoice(self, voice):
         self.writeInt(len(voice.beats))
-        for beat in voice.beats:
+        for number, beat in enumerate(voice.beats):
+            self._currentBeatNumber = number + 1
             self.writeBeat(beat)
+        self._currentBeatNumber = None
 
     def writeBeat(self, beat):
         flags = 0x00

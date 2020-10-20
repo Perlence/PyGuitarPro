@@ -488,9 +488,10 @@ class GP4File(gp3.GP3File):
         self.writeInt(measureCount)
         self.writeInt(trackCount)
 
-        self.writeMeasureHeaders(song.tracks[0].measures)
-        self.writeTracks(song.tracks)
-        self.writeMeasures(song.tracks)
+        with self.annotateErrors('writing'):
+            self.writeMeasureHeaders(song.tracks[0].measures)
+            self.writeTracks(song.tracks)
+            self.writeMeasures(song.tracks)
 
     def writeClipboard(self, clipboard):
         if clipboard is None:
