@@ -22,7 +22,7 @@ setuptools.setup(
     author_email='dust.harvesting@gmail.com',
     url='https://github.com/Perlence/PyGuitarPro',
     platforms=['Windows', 'POSIX', 'Unix', 'MacOS X'],
-    license='LGPL',
+    license='LGPLv3',
     packages=setuptools.find_packages(),
     include_package_data=True,
     zip_safe=False,
