@@ -1,9 +1,7 @@
-import warnings
 from enum import Enum, IntEnum
 from fractions import Fraction
 from functools import partial
 from math import log
-from types import DynamicClassAttribute
 
 import attr
 
@@ -39,12 +37,6 @@ class LenientEnum(Enum):
         pseudo_member._name_ = 'unknown'
         pseudo_member._value_ = value
         return pseudo_member
-
-    @DynamicClassAttribute
-    def checkedValue(self):
-        if self._name_ == 'unknown':
-            warnings.warn(f'{self._value_!r} is an unknown {self.__class__.__name__}')
-        return self._value_
 
     def __eq__(self, other):
         if (self.__class__ is other.__class__ and

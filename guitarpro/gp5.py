@@ -1257,7 +1257,7 @@ class GP5File(gp4.GP4File):
         flags = self.packNoteFlags(note)
         self.writeByte(flags)
         if flags & 0x20:
-            self.writeByte(note.type.checkedValue)
+            self.writeByte(self.getEnumValue(note.type))
         if flags & 0x10:
             value = self.packVelocity(note.velocity)
             self.writeSignedByte(value)
@@ -1265,8 +1265,8 @@ class GP5File(gp4.GP4File):
             fret = note.value if note.type != gp.NoteType.tie else 0
             self.writeSignedByte(fret)
         if flags & 0x80:
-            self.writeSignedByte(note.effect.leftHandFinger.checkedValue)
-            self.writeSignedByte(note.effect.rightHandFinger.checkedValue)
+            self.writeSignedByte(self.getEnumValue(note.effect.leftHandFinger))
+            self.writeSignedByte(self.getEnumValue(note.effect.rightHandFinger))
         if flags & 0x01:
             self.writeDouble(note.durationPercent)
         flags2 = 0x00

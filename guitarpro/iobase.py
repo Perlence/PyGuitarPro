@@ -1,9 +1,13 @@
 import struct
+import logging
 from contextlib import contextmanager
 
 import attr
 
 from . import models as gp
+
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s
@@ -133,7 +137,7 @@ class GPFileBase(object):
         try:
             yield
         except Exception as err:
-            location = self.getErrorLocation()
+            location = self.getCurrentLocation()
             if not location:
                 raise
             raise gp.GPException(f"{action} {', '.join(location)}, "
@@ -144,7 +148,13 @@ class GPFileBase(object):
             self._currentVoiceNumber = None
             self._currentBeatNumber = None
 
-    def getErrorLocation(self):
+    def getEnumValue(self, enum):
+        if enum.name == 'unknown':
+            location = self.getCurrentLocation()
+            logger.warning(f"{enum.value!r} is an unknown {enum.__class__.__name__} in {', '.join(location)}")
+        return enum.value
+
+    def getCurrentLocation(self):
         location = []
         if self._currentTrack is not None:
             location.append(f"track {self._currentTrack.number}")

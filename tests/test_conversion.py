@@ -96,17 +96,17 @@ def testGuessVersion(tmpdir):
     '001_Funky_Guy.gp5',
     'Unknown Chord Extension.gp5',
 ])
-def testChord(tmpdir, filename):
+def testChord(tmpdir, caplog, filename):
     filepath = path.join(LOCATION, filename)
     song = guitarpro.parse(filepath)
     assert song.tracks[0].measures[0].voices[0].beats[0].effect.chord is not None
 
     destpath = str(tmpdir.join('no_chord_strings.gp5'))
-    checkWarnings = contextlib.nullcontext()
+    guitarpro.write(song, destpath)
     if filename == 'Unknown Chord Extension.gp5':
-        checkWarnings = pytest.warns(UserWarning, match="is an unknown ChordExtension")
-    with checkWarnings:
-        guitarpro.write(song, destpath)
+        iobase_logs = [log for log in caplog.records if log.name == 'guitarpro.iobase']
+        [record] = iobase_logs
+        assert 'is an unknown ChordExtension' in record.msg
     song2 = guitarpro.parse(destpath)
     assert song == song2
 

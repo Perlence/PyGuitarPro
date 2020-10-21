@@ -543,8 +543,8 @@ class GP4File(gp3.GP3File):
         self.writeBool(chord.sharp)
         self.placeholder(3)
         self.writeByte(chord.root.value if chord.root else 0)
-        self.writeByte(chord.type.checkedValue if chord.type else 0)
-        self.writeByte(chord.extension.checkedValue if chord.extension else 0)
+        self.writeByte(self.getEnumValue(chord.type) if chord.type else 0)
+        self.writeByte(self.getEnumValue(chord.extension) if chord.extension else 0)
         self.writeInt(chord.bass.value if chord.bass else 0)
         self.writeInt(chord.tonality.value if chord.tonality else 0)
         self.writeBool(chord.add)
@@ -637,7 +637,7 @@ class GP4File(gp3.GP3File):
         flags = self.packNoteFlags(note)
         self.writeByte(flags)
         if flags & 0x20:
-            self.writeByte(note.type.checkedValue)
+            self.writeByte(self.getEnumValue(note.type))
         if flags & 0x01:
             self.writeSignedByte(note.duration)
             self.writeSignedByte(note.tuplet)
@@ -648,8 +648,8 @@ class GP4File(gp3.GP3File):
             fret = note.value if note.type != gp.NoteType.tie else 0
             self.writeSignedByte(fret)
         if flags & 0x80:
-            self.writeSignedByte(note.effect.leftHandFinger.checkedValue)
-            self.writeSignedByte(note.effect.rightHandFinger.checkedValue)
+            self.writeSignedByte(self.getEnumValue(note.effect.leftHandFinger))
+            self.writeSignedByte(self.getEnumValue(note.effect.rightHandFinger))
         if flags & 0x08:
             self.writeNoteEffects(note)
 
