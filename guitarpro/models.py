@@ -70,7 +70,7 @@ def hashableAttrs(cls=None, repr=True):
 
 
 @hashableAttrs
-class RepeatGroup(object):
+class RepeatGroup:
     """This class can store the information about a group of measures
     which are repeated.
     """
@@ -98,7 +98,7 @@ class RepeatGroup(object):
 
 
 @hashableAttrs
-class Clipboard(object):
+class Clipboard:
     startMeasure: int = 1
     stopMeasure: int = 1
     startTrack: int = 1
@@ -147,7 +147,7 @@ class KeySignature(Enum):
 
 
 @hashableAttrs
-class LyricLine(object):
+class LyricLine:
     """A lyrics line."""
 
     startingMeasure: int = 1
@@ -155,7 +155,7 @@ class LyricLine(object):
 
 
 @hashableAttrs(repr=False)
-class Lyrics(object):
+class Lyrics:
     """A collection of lyrics lines for a track."""
 
     trackChoice: int = 0
@@ -181,7 +181,7 @@ class Lyrics(object):
 
 
 @hashableAttrs
-class Point(object):
+class Point:
     """A point construct using integer coordinates."""
 
     x: int
@@ -189,7 +189,7 @@ class Point(object):
 
 
 @hashableAttrs
-class Padding(object):
+class Padding:
     """A padding construct."""
 
     right: int
@@ -219,7 +219,7 @@ class HeaderFooterElements(IntEnum):
 
 
 @hashableAttrs
-class PageSetup(object):
+class PageSetup:
     """The page setup describes how the document is rendered.
 
     Page setup contains page size, margins, paddings, and how the title
@@ -258,7 +258,7 @@ class PageSetup(object):
 
 
 @hashableAttrs
-class RSEEqualizer(object):
+class RSEEqualizer:
     """Equalizer found in master effect and track effect.
 
     Attribute :attr:`RSEEqualizer.knobs` is a list of values in range
@@ -273,7 +273,7 @@ class RSEEqualizer(object):
 
 
 @hashableAttrs
-class RSEMasterEffect(object):
+class RSEMasterEffect:
     """Master effect as seen in "Score information"."""
 
     volume: float = 0
@@ -286,7 +286,7 @@ class RSEMasterEffect(object):
 
 
 @hashableAttrs(repr=False)
-class Song(object):
+class Song:
     """The top-level node of the song model.
 
     It contains basic information about the stored song.
@@ -342,7 +342,7 @@ class Song(object):
 
 
 @hashableAttrs
-class MidiChannel(object):
+class MidiChannel:
     """A MIDI channel describes playing data for a track."""
 
     channel: int = 0
@@ -364,7 +364,7 @@ class MidiChannel(object):
 
 
 @hashableAttrs
-class DirectionSign(object):
+class DirectionSign:
     """A navigation sign like *Coda* or *Segno*."""
 
     # TODO: Consider making DirectionSign an Enum.
@@ -372,7 +372,7 @@ class DirectionSign(object):
 
 
 @hashableAttrs
-class Tuplet(object):
+class Tuplet:
     """A *n:m* tuplet."""
 
     enters: int = 1
@@ -406,7 +406,7 @@ class Tuplet(object):
 
 
 @hashableAttrs
-class Duration(object):
+class Duration:
     """A duration."""
 
     quarterTime = 960
@@ -466,7 +466,7 @@ class Duration(object):
 
 
 @hashableAttrs
-class TimeSignature(object):
+class TimeSignature:
     """A time signature."""
 
     numerator: int = 4
@@ -492,7 +492,7 @@ class TripletFeel(Enum):
 
 
 @hashableAttrs(repr=False)
-class MeasureHeader(object):
+class MeasureHeader:
     """A measure header contains metadata for measures over multiple
     tracks.
     """
@@ -520,7 +520,7 @@ class MeasureHeader(object):
 
 
 @hashableAttrs
-class Color(object):
+class Color:
     """An RGB Color."""
 
     r: int
@@ -535,7 +535,7 @@ Color.red = Color(255, 0, 0)
 
 
 @hashableAttrs
-class Marker(object):
+class Marker:
     """A marker annotation for beats."""
 
     title: str = 'Section'
@@ -543,7 +543,7 @@ class Marker(object):
 
 
 @hashableAttrs
-class TrackSettings(object):
+class TrackSettings:
     """Settings of the track."""
 
     tablature: bool = True
@@ -584,7 +584,7 @@ class Accentuation(Enum):
 
 
 @hashableAttrs
-class RSEInstrument(object):
+class RSEInstrument:
     instrument: int = -1
     unknown: int = -1
     soundBank: int = -1
@@ -594,7 +594,7 @@ class RSEInstrument(object):
 
 
 @hashableAttrs(repr=False)
-class TrackRSE(object):
+class TrackRSE:
     instrument: RSEInstrument = attr.Factory(RSEInstrument)
     equalizer: RSEEqualizer = attr.Factory(RSEEqualizer)
     humanize: int = 0
@@ -606,7 +606,7 @@ class TrackRSE(object):
 
 
 @hashableAttrs(repr=False)
-class Track(object):
+class Track:
     """A track contains multiple measures."""
 
     song: Song = attr.ib(hash=False, eq=False, repr=False)
@@ -640,7 +640,7 @@ class Track(object):
 
 
 @hashableAttrs
-class GuitarString(object):
+class GuitarString:
     """A guitar string with a special tuning."""
 
     number: int
@@ -673,7 +673,7 @@ class LineBreak(Enum):
 
 
 @hashableAttrs(repr=False)
-class Measure(object):
+class Measure:
     """A measure contains multiple voices of beats."""
 
     track: Track = attr.ib(hash=False, eq=False, repr=False)
@@ -731,7 +731,7 @@ class VoiceDirection(Enum):
 
 
 @hashableAttrs(repr=False)
-class Voice(object):
+class Voice:
     """A voice contains multiple beats."""
 
     measure: Measure = attr.ib(hash=False, eq=False, repr=False)
@@ -752,7 +752,7 @@ class BeatStrokeDirection(Enum):
 
 
 @hashableAttrs
-class BeatStroke(object):
+class BeatStroke:
     """A stroke effect for beats."""
 
     direction: BeatStrokeDirection = BeatStrokeDirection.none
@@ -797,7 +797,7 @@ class SlapEffect(Enum):
 
 
 @hashableAttrs
-class BeatEffect(object):
+class BeatEffect:
     """This class contains all beat effects."""
 
     stroke: BeatStroke = attr.Factory(BeatStroke)
@@ -845,7 +845,7 @@ class TupletBracket(Enum):
 
 
 @hashableAttrs
-class BeatDisplay(object):
+class BeatDisplay:
     """Parameters of beat display."""
 
     breakBeam: bool = False
@@ -874,7 +874,7 @@ class BeatStatus(Enum):
 
 
 @hashableAttrs(repr=False)
-class Beat(object):
+class Beat:
     """A beat contains multiple notes."""
 
     voice: Voice = attr.ib(hash=False, eq=False, repr=False)
@@ -907,7 +907,7 @@ class Beat(object):
 
 
 @hashableAttrs
-class HarmonicEffect(object):
+class HarmonicEffect:
     """A harmonic note effect."""
 
     type: int = attr.ib(init=False)
@@ -964,7 +964,7 @@ class GraceEffectTransition(Enum):
     hammer = 3
 
 
-class Velocities(object):
+class Velocities:
     """A collection of velocities / dynamics."""
 
     minVelocity = 15
@@ -981,7 +981,7 @@ class Velocities(object):
 
 
 @hashableAttrs
-class GraceEffect(object):
+class GraceEffect:
     """A grace note effect."""
 
     duration: int = 1
@@ -998,7 +998,7 @@ class GraceEffect(object):
 
 
 @hashableAttrs
-class TrillEffect(object):
+class TrillEffect:
     """A trill effect."""
 
     fret: int = 0
@@ -1006,7 +1006,7 @@ class TrillEffect(object):
 
 
 @hashableAttrs
-class TremoloPickingEffect(object):
+class TremoloPickingEffect:
     """A tremolo picking effect."""
 
     duration: Duration = attr.Factory(Duration)
@@ -1044,7 +1044,7 @@ class Fingering(LenientEnum):
 
 
 @hashableAttrs(repr=False)
-class NoteEffect(object):
+class NoteEffect:
     """Contains all effects which can be applied to one note."""
 
     accentuatedNote: bool = False
@@ -1115,7 +1115,7 @@ class NoteType(LenientEnum):
 
 
 @hashableAttrs
-class Note(object):
+class Note:
     """Describes a single note."""
 
     beat: Beat = attr.ib(hash=False, eq=False, repr=False)
@@ -1133,7 +1133,7 @@ class Note(object):
 
 
 @hashableAttrs
-class Chord(object):
+class Chord:
     """A chord annotation for beats."""
 
     length: int
@@ -1214,7 +1214,7 @@ class ChordType(LenientEnum):
 
 
 @hashableAttrs
-class Barre(object):
+class Barre:
     """A single barre.
 
     :param start: first string from the bottom of the barre.
@@ -1260,7 +1260,7 @@ class ChordExtension(LenientEnum):
 
 
 @hashableAttrs
-class PitchClass(object):
+class PitchClass:
     """A pitch class.
 
     Constructor provides several overloads. Each overload provides
@@ -1351,7 +1351,7 @@ class PitchClass(object):
 
 
 @hashableAttrs
-class BeatText(object):
+class BeatText:
     """A text annotation for beats."""
     # TODO: Remove this class and just put string in the Beat.
 
@@ -1359,7 +1359,7 @@ class BeatText(object):
 
 
 @hashableAttrs
-class MixTableItem(object):
+class MixTableItem:
     """A mix table item describes a mix parameter, e.g. volume or
     reverb.
     """
@@ -1370,7 +1370,7 @@ class MixTableItem(object):
 
 
 @hashableAttrs
-class WahEffect(object):
+class WahEffect:
     value: int = attr.ib(default=-1)
     display: bool = False
 
@@ -1394,7 +1394,7 @@ WahEffect.none = WahEffect(-1)
 
 
 @hashableAttrs
-class MixTableChange(object):
+class MixTableChange:
     """A MixTableChange describes a change in mix parameters."""
 
     instrument: Optional[MixTableItem] = None
@@ -1471,7 +1471,7 @@ class BendType(Enum):
 
 
 @hashableAttrs
-class BendPoint(object):
+class BendPoint:
     """A single point within the BendEffect."""
 
     position: int = 0
@@ -1488,7 +1488,7 @@ class BendPoint(object):
 
 
 @hashableAttrs
-class BendEffect(object):
+class BendEffect:
     """This effect is used to describe string bends and tremolo bars."""
 
     type: BendType = BendType.none
