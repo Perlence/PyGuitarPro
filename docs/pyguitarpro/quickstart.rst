@@ -31,7 +31,7 @@ Functions :func:`guitarpro.parse` and :func:`guitarpro.write` support not only f
 .. code-block:: python
 
     from urllib.request import urlopen
-    stream = urlopen('https://github.com/Perlence/PyGuitarPro/raw/master/tests/Mastodon%20-%20Curl%20of%20the%20Burl.gp5')
+    stream = urlopen('https://github.com/Perlence/PyGuitarPro/raw/master/tests/Demo%20v5.gp5')
     curl = guitarpro.parse(stream)
 
 .. note::
