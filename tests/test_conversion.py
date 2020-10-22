@@ -1,4 +1,3 @@
-import contextlib
 import os
 from os import path
 
