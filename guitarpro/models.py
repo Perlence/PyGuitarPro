@@ -526,8 +526,6 @@ class Color:
     r: int
     g: int
     b: int
-    # TODO: Alpha attribute is not used. Consider removing.
-    a: float = 1
 
 
 Color.black = Color(0, 0, 0)
