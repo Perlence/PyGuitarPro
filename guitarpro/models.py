@@ -511,8 +511,6 @@ class MeasureHeader(object):
     hasDoubleBar = attr.ib(default=False)
     keySignature = attr.ib(default=KeySignature.CMajor)
     timeSignature = attr.ib(default=attr.Factory(TimeSignature))
-    # TODO: Remove this attribute in next release
-    tempo = attr.ib(default=attr.Factory(Tempo), hash=False, eq=False)
     marker = attr.ib(default=None)
     isRepeatOpen = attr.ib(default=False)
     repeatAlternative = attr.ib(default=0)
@@ -723,7 +721,6 @@ class Measure(object):
     repeatClose = _promote_header_attr('repeatClose')
     start = _promote_header_attr('start')
     length = _promote_header_attr('length')
-    tempo = _promote_header_attr('tempo')
     timeSignature = _promote_header_attr('timeSignature')
     isRepeatOpen = _promote_header_attr('isRepeatOpen')
     tripletFeel = _promote_header_attr('tripletFeel')

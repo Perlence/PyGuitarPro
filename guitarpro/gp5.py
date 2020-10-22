@@ -652,7 +652,6 @@ class GP5File(gp4.GP4File):
         if tempo >= 0:
             tableChange.tempo = gp.MixTableItem(tempo)
             tableChange.tempoName = tempoName
-            measure.tempo.value = tempo
 
     def readMixTableChangeDurations(self, tableChange):
         """Read mix table change durations.

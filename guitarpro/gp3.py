@@ -210,7 +210,6 @@ class GP3File(GPFileBase):
         header = gp.MeasureHeader()
         header.number = number
         header.start = 0
-        header.tempo.value = song.tempo
         header.tripletFeel = self._tripletFeel
         if flags & 0x01:
             header.timeSignature.numerator = self.readSignedByte()
@@ -381,7 +380,6 @@ class GP3File(GPFileBase):
         - ...
         - measure n/track m
         """
-        tempo = gp.Tempo(song.tempo)
         start = gp.Duration.quarterTime
         for header in song.measureHeaders:
             header.start = start
@@ -389,10 +387,8 @@ class GP3File(GPFileBase):
                 self._currentTrack = track
                 measure = gp.Measure(track, header)
                 self._currentMeasureNumber = measure.number
-                tempo = header.tempo
                 track.measures.append(measure)
                 self.readMeasure(measure)
-            header.tempo = tempo
             start += header.length
 
         self._currentTrack = None
@@ -828,7 +824,6 @@ class GP3File(GPFileBase):
             tableChange.tremolo = gp.MixTableItem(tremolo)
         if tempo >= 0:
             tableChange.tempo = gp.MixTableItem(tempo)
-            measure.tempo.value = tempo
 
     def readMixTableChangeDurations(self, tableChange):
         """Read mix table change durations.
