@@ -19,7 +19,7 @@ __all__ = [
     'GraceEffectTransition', 'Velocities', 'GraceEffect', 'TrillEffect',
     'TremoloPickingEffect', 'SlideType', 'Fingering', 'NoteEffect', 'NoteType',
     'Note', 'Chord', 'ChordType', 'Barre', 'ChordAlteration', 'ChordExtension',
-    'PitchClass', 'BeatText', 'MixTableItem', 'WahEffect', 'MixTableChange',
+    'PitchClass', 'MixTableItem', 'WahEffect', 'MixTableChange',
     'BendType', 'BendPoint', 'BendEffect', 'RSEMasterEffect', 'RSEEqualizer',
     'Accentuation', 'RSEInstrument', 'TrackRSE',
 ]
@@ -880,7 +880,7 @@ class Beat:
     voice: Voice = attr.ib(hash=False, eq=False, repr=False)
     notes: List['Note'] = attr.Factory(list)
     duration: Duration = attr.Factory(Duration)
-    text: Optional['BeatText'] = None
+    text: Optional[str] = None
     start: Optional[int] = attr.ib(default=None, hash=False, eq=False)
     effect: BeatEffect = attr.Factory(BeatEffect)
     octave: Octave = Octave.none
@@ -1348,14 +1348,6 @@ class PitchClass:
 
     def __str__(self):
         return self._notes[self.intonation][self.value]
-
-
-@hashableAttrs
-class BeatText:
-    """A text annotation for beats."""
-    # TODO: Remove this class and just put string in the Beat.
-
-    value: str = ''
 
 
 @hashableAttrs

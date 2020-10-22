@@ -438,7 +438,7 @@ class GP3File(GPFileBase):
 
         - Chord diagram. See :meth:`readChord`.
 
-        - Text. See :meth:`readText`.
+        - Text: :ref:`int-byte-size-string`.
 
         - Beat effects. See :meth:`readBeatEffects`.
 
@@ -455,7 +455,7 @@ class GP3File(GPFileBase):
         if flags & 0x02:
             beat.effect.chord = self.readChord(len(voice.measure.track.strings))
         if flags & 0x04:
-            beat.text = self.readText()
+            beat.text = self.readIntByteSizeString()
         if flags & 0x08:
             chord = beat.effect.chord
             beat.effect = self.readBeatEffects(effect)
@@ -653,15 +653,6 @@ class GP3File(GPFileBase):
             chord.barres.append(barre)
         chord.omissions = self.readBool(7)
         self.skip(1)
-
-    def readText(self):
-        """Read beat text.
-
-        Text is stored in :ref:`int-byte-size-string`.
-        """
-        text = gp.BeatText()
-        text.value = self.readIntByteSizeString()
-        return text
 
     def readBeatEffects(self, effect):
         """Read beat effects.
@@ -1252,7 +1243,7 @@ class GP3File(GPFileBase):
         if flags & 0x02:
             self.writeChord(beat.effect.chord)
         if flags & 0x04:
-            self.writeText(beat.text)
+            self.writeIntByteSizeString(beat.text)
         if flags & 0x08:
             self.writeBeatEffects(beat)
         if flags & 0x10:
@@ -1312,9 +1303,6 @@ class GP3File(GPFileBase):
         for omission in clamp(chord.omissions, 7, fillvalue=True):
             self.writeBool(omission)
         self.placeholder(1)
-
-    def writeText(self, text):
-        self.writeIntByteSizeString(text.value)
 
     def writeBeatEffects(self, beat):
         flags1 = 0x00

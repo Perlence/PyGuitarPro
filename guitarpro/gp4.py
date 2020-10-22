@@ -531,7 +531,7 @@ class GP4File(gp3.GP3File):
         if flags & 0x02:
             self.writeChord(beat.effect.chord)
         if flags & 0x04:
-            self.writeText(beat.text)
+            self.writeIntByteSizeString(beat.text)
         if flags & 0x08:
             self.writeBeatEffects(beat)
         if flags & 0x10:

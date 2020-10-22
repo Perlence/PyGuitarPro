@@ -15,6 +15,7 @@ Version 0.8
 - Removed the ``MeasureHeader.tempo`` and ``Measure.tempo`` attributes.
 - Removed the ``Beat.index`` attribute.
 - Removed the ``Tempo`` class.
+- Changed the ``Beat.text`` type to ``str`` and removed the ``BeatText`` class.
 - Lenient handling of unknown ``Fingering``, ``NoteType``, ``ChordType``, ``ChordExtension`` values
   `#18 <https://github.com/Perlence/PyGuitarPro/issues/18>`_.
 
