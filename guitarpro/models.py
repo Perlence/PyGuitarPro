@@ -2,13 +2,14 @@ from enum import Enum, IntEnum
 from fractions import Fraction
 from functools import partial
 from math import log
+from typing import List, Optional, Tuple, Union
 
 import attr
 
 __all__ = [
     'GPException', 'RepeatGroup', 'Clipboard', 'KeySignature', 'Song',
     'LyricLine', 'Lyrics', 'Point', 'Padding', 'HeaderFooterElements',
-    'PageSetup', 'Tempo', 'MidiChannel', 'DirectionSign', 'Tuplet', 'Duration',
+    'PageSetup', 'MidiChannel', 'DirectionSign', 'Tuplet', 'Duration',
     'TimeSignature', 'TripletFeel', 'MeasureHeader', 'Color', 'Marker',
     'TrackSettings', 'Track', 'GuitarString', 'MeasureClef', 'LineBreak',
     'Measure', 'VoiceDirection', 'Voice', 'BeatStrokeDirection', 'BeatStroke',
@@ -63,7 +64,7 @@ def hashableAttrs(cls=None, repr=True):
                 obj = attr.evolve(obj, **{field.name: new_value})
         return hash(attr.astuple(obj, recurse=False, filter=lambda a, v: a.hash is not False))
 
-    decorated = attr.s(cls, hash=False, repr=repr)
+    decorated = attr.s(cls, hash=False, repr=repr, auto_attribs=True)
     decorated.__hash__ = hash_
     return decorated
 
@@ -74,10 +75,10 @@ class RepeatGroup(object):
     which are repeated.
     """
 
-    measureHeaders = attr.ib(default=attr.Factory(list))
-    closings = attr.ib(default=attr.Factory(list))
-    openings = attr.ib(default=attr.Factory(list))
-    isClosed = attr.ib(default=False)
+    measureHeaders: List['MeasureHeader'] = attr.Factory(list)
+    closings: List['MeasureHeader'] = attr.Factory(list)
+    openings: List['MeasureHeader'] = attr.Factory(list)
+    isClosed: bool = False
 
     def addMeasureHeader(self, h):
         if not len(self.openings):
@@ -98,13 +99,13 @@ class RepeatGroup(object):
 
 @hashableAttrs
 class Clipboard(object):
-    startMeasure = attr.ib(default=1)
-    stopMeasure = attr.ib(default=1)
-    startTrack = attr.ib(default=1)
-    stopTrack = attr.ib(default=1)
-    startBeat = attr.ib(default=1)
-    stopBeat = attr.ib(default=1)
-    subBarCopy = attr.ib(default=False)
+    startMeasure: int = 1
+    stopMeasure: int = 1
+    startTrack: int = 1
+    stopTrack: int = 1
+    startBeat: int = 1
+    stopBeat: int = 1
+    subBarCopy: bool = False
 
 
 class KeySignature(Enum):
@@ -149,16 +150,16 @@ class KeySignature(Enum):
 class LyricLine(object):
     """A lyrics line."""
 
-    startingMeasure = attr.ib(default=1)
-    lyrics = attr.ib(default='')
+    startingMeasure: int = 1
+    lyrics: str = ''
 
 
 @hashableAttrs(repr=False)
 class Lyrics(object):
     """A collection of lyrics lines for a track."""
 
-    trackChoice = attr.ib(default=0)
-    lines = attr.ib(default=None)
+    trackChoice: int = 0
+    lines: Optional[List[LyricLine]] = None
 
     maxLineCount = 5
 
@@ -181,20 +182,20 @@ class Lyrics(object):
 
 @hashableAttrs
 class Point(object):
-    """A point construct using floating point coordinates."""
+    """A point construct using integer coordinates."""
 
-    x = attr.ib()
-    y = attr.ib()
+    x: int
+    y: int
 
 
 @hashableAttrs
 class Padding(object):
     """A padding construct."""
 
-    right = attr.ib()
-    top = attr.ib()
-    left = attr.ib()
-    bottom = attr.ib()
+    right: int
+    top: int
+    left: int
+    bottom: int
 
 
 class HeaderFooterElements(IntEnum):
@@ -241,20 +242,19 @@ class PageSetup(object):
       by layout)
     """
 
-    pageSize = attr.ib(default=Point(210, 297))
-    pageMargin = attr.ib(default=Padding(10, 15, 10, 10))
-    scoreSizeProportion = attr.ib(default=1.0)
-    headerAndFooter = attr.ib(default=HeaderFooterElements.all)
-    title = attr.ib(default='%title%')
-    subtitle = attr.ib(default='%subtitle%')
-    artist = attr.ib(default='%artist%')
-    album = attr.ib(default='%album%')
-    words = attr.ib(default='Words by %words%')
-    music = attr.ib(default='Music by %music%')
-    wordsAndMusic = attr.ib(default='Words & Music by %WORDSMUSIC%')
-    copyright = attr.ib(default='Copyright %copyright%\n'
-                                'All Rights Reserved - International Copyright Secured')
-    pageNumber = attr.ib(default='Page %N%/%P%')
+    pageSize: Point = Point(210, 297)
+    pageMargin: Padding = Padding(10, 15, 10, 10)
+    scoreSizeProportion: float = 1.0
+    headerAndFooter: HeaderFooterElements = HeaderFooterElements.all
+    title: str = '%title%'
+    subtitle: str = '%subtitle%'
+    artist: str = '%artist%'
+    album: str = '%album%'
+    words: str = 'Words by %words%'
+    music: str = 'Music by %music%'
+    wordsAndMusic: str = 'Words & Music by %WORDSMUSIC%'
+    copyright: str = 'Copyright %copyright%\nAll Rights Reserved - International Copyright Secured'
+    pageNumber: str = 'Page %N%/%P%'
 
 
 @hashableAttrs
@@ -268,17 +268,17 @@ class RSEEqualizer(object):
     5.
     """
 
-    knobs = attr.ib(default=attr.Factory(list))
-    gain = attr.ib(default=0.0)
+    knobs: List[float] = attr.Factory(list)
+    gain: float = attr.ib(default=0.0)
 
 
 @hashableAttrs
 class RSEMasterEffect(object):
     """Master effect as seen in "Score information"."""
 
-    volume = attr.ib(default=0)
-    reverb = attr.ib(default=0)
-    equalizer = attr.ib(default=attr.Factory(RSEEqualizer))
+    volume: float = 0
+    reverb: float = 0
+    equalizer: RSEEqualizer = attr.Factory(RSEEqualizer)
 
     def __attrs_post_init__(self):
         if not self.equalizer.knobs:
@@ -293,29 +293,29 @@ class Song(object):
     """
 
     # TODO: Store file format version here
-    versionTuple = attr.ib(default=None, hash=False, eq=False)
-    clipboard = attr.ib(default=None)
-    title = attr.ib(default='')
-    subtitle = attr.ib(default='')
-    artist = attr.ib(default='')
-    album = attr.ib(default='')
-    words = attr.ib(default='')
-    music = attr.ib(default='')
-    copyright = attr.ib(default='')
-    tab = attr.ib(default='')
-    instructions = attr.ib(default='')
-    notice = attr.ib(default=attr.Factory(list))
-    lyrics = attr.ib(default=attr.Factory(Lyrics))
-    pageSetup = attr.ib(default=attr.Factory(PageSetup))
-    tempoName = attr.ib(default='Moderate')
-    tempo = attr.ib(default=120)
-    hideTempo = attr.ib(default=False)
-    key = attr.ib(default=KeySignature.CMajor)
-    measureHeaders = attr.ib(default=None)
-    tracks = attr.ib(default=None)
-    masterEffect = attr.ib(default=attr.Factory(RSEMasterEffect))
+    versionTuple: Optional[Tuple[int, int, int]] = attr.ib(default=None, hash=False, eq=False)
+    clipboard: Optional[Clipboard] = None
+    title: str = ''
+    subtitle: str = ''
+    artist: str = ''
+    album: str = ''
+    words: str = ''
+    music: str = ''
+    copyright: str = ''
+    tab: str = ''
+    instructions: str = ''
+    notice: List[str] = attr.Factory(list)
+    lyrics: Lyrics = attr.Factory(Lyrics)
+    pageSetup: PageSetup = attr.Factory(PageSetup)
+    tempoName: str = 'Moderate'
+    tempo: int = 120
+    hideTempo: bool = False
+    key: KeySignature = KeySignature.CMajor
+    measureHeaders: List['MeasureHeader'] = None
+    tracks: List['Track'] = None
+    masterEffect: RSEMasterEffect = attr.Factory(RSEMasterEffect)
 
-    _currentRepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, eq=False, repr=False)
+    _currentRepeatGroup: RepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, eq=False, repr=False)
 
     def __attrs_post_init__(self):
         if self.measureHeaders is None:
@@ -342,29 +342,19 @@ class Song(object):
 
 
 @hashableAttrs
-class Tempo(object):
-    """A song tempo in BPM."""
-
-    value = attr.ib(default=120)
-
-    def __str__(self):
-        return '{value}bpm'.format(**vars(self))
-
-
-@hashableAttrs
 class MidiChannel(object):
     """A MIDI channel describes playing data for a track."""
 
-    channel = attr.ib(default=0)
-    effectChannel = attr.ib(default=1)
-    instrument = attr.ib(default=25)
-    volume = attr.ib(default=104)
-    balance = attr.ib(default=64)
-    chorus = attr.ib(default=0)
-    reverb = attr.ib(default=0)
-    phaser = attr.ib(default=0)
-    tremolo = attr.ib(default=0)
-    bank = attr.ib(default=0)
+    channel: int = 0
+    effectChannel: int = 1
+    instrument: int = 25
+    volume: int = 104
+    balance: int = 64
+    chorus: int = 0
+    reverb: int = 0
+    phaser: int = 0
+    tremolo: int = 0
+    bank: int = 0
 
     DEFAULT_PERCUSSION_CHANNEL = 9
 
@@ -377,15 +367,16 @@ class MidiChannel(object):
 class DirectionSign(object):
     """A navigation sign like *Coda* or *Segno*."""
 
-    name = attr.ib(default='')
+    # TODO: Consider making DirectionSign an Enum.
+    name: str = ''
 
 
 @hashableAttrs
 class Tuplet(object):
     """A *n:m* tuplet."""
 
-    enters = attr.ib(default=1)
-    times = attr.ib(default=1)
+    enters: int = 1
+    times: int = 1
 
     supportedTuplets = [
         (1, 1),
@@ -432,9 +423,9 @@ class Duration(object):
     # The time resulting with a 64th note and a 3/2 tuplet
     minTime = int(int(quarterTime * (4 / sixtyFourth)) * 2 / 3)
 
-    value = attr.ib(default=quarter)
-    isDotted = attr.ib(default=False)
-    tuplet = attr.ib(default=attr.Factory(Tuplet))
+    value: int = quarter
+    isDotted: bool = False
+    tuplet: Tuplet = attr.Factory(Tuplet)
 
     @property
     def time(self):
@@ -478,9 +469,9 @@ class Duration(object):
 class TimeSignature(object):
     """A time signature."""
 
-    numerator = attr.ib(default=4)
-    denominator = attr.ib(default=attr.Factory(Duration))
-    beams = attr.ib(default=attr.Factory(list))
+    numerator: int = 4
+    denominator: Duration = attr.Factory(Duration)
+    beams: List[int] = attr.Factory(list)
 
     def __attrs_post_init__(self):
         if not self.beams:
@@ -506,18 +497,18 @@ class MeasureHeader(object):
     tracks.
     """
 
-    number = attr.ib(default=1, hash=False, eq=False)
-    start = attr.ib(default=Duration.quarterTime, hash=False, eq=False)
-    hasDoubleBar = attr.ib(default=False)
-    keySignature = attr.ib(default=KeySignature.CMajor)
-    timeSignature = attr.ib(default=attr.Factory(TimeSignature))
-    marker = attr.ib(default=None)
-    isRepeatOpen = attr.ib(default=False)
-    repeatAlternative = attr.ib(default=0)
-    repeatClose = attr.ib(default=-1)
-    tripletFeel = attr.ib(default=TripletFeel.none)
-    direction = attr.ib(default=None)
-    fromDirection = attr.ib(default=None)
+    number: int = attr.ib(default=1, hash=False, eq=False)
+    start: int = attr.ib(default=Duration.quarterTime, hash=False, eq=False)
+    hasDoubleBar: bool = False
+    keySignature: KeySignature = KeySignature.CMajor
+    timeSignature: TimeSignature = attr.Factory(TimeSignature)
+    marker: Optional['Marker'] = None
+    isRepeatOpen: bool = False
+    repeatAlternative: int = 0
+    repeatClose: int = -1
+    tripletFeel: TripletFeel = TripletFeel.none
+    direction: Optional[DirectionSign] = None
+    fromDirection: Optional[DirectionSign] = None
 
     @property
     def hasMarker(self):
@@ -532,10 +523,11 @@ class MeasureHeader(object):
 class Color(object):
     """An RGB Color."""
 
-    r = attr.ib()
-    g = attr.ib()
-    b = attr.ib()
-    a = attr.ib(default=1)
+    r: int
+    g: int
+    b: int
+    # TODO: Alpha attribute is not used. Consider removing.
+    a: float = 1
 
 
 Color.black = Color(0, 0, 0)
@@ -546,25 +538,25 @@ Color.red = Color(255, 0, 0)
 class Marker(object):
     """A marker annotation for beats."""
 
-    title = attr.ib(default='Section')
-    color = attr.ib(default=Color.red)
+    title: str = 'Section'
+    color: Color = Color.red
 
 
 @hashableAttrs
 class TrackSettings(object):
     """Settings of the track."""
 
-    tablature = attr.ib(default=True)
-    notation = attr.ib(default=True)
-    diagramsAreBelow = attr.ib(default=False)
-    showRhythm = attr.ib(default=False)
-    forceHorizontal = attr.ib(default=False)
-    forceChannels = attr.ib(default=False)
-    diagramList = attr.ib(default=True)
-    diagramsInScore = attr.ib(default=False)
-    autoLetRing = attr.ib(default=False)
-    autoBrush = attr.ib(default=False)
-    extendRhythmic = attr.ib(default=False)
+    tablature: bool = True
+    notation: bool = True
+    diagramsAreBelow: bool = False
+    showRhythm: bool = False
+    forceHorizontal: bool = False
+    forceChannels: bool = False
+    diagramList: bool = True
+    diagramsInScore: bool = False
+    autoLetRing: bool = False
+    autoBrush: bool = False
+    extendRhythmic: bool = False
 
 
 class Accentuation(Enum):
@@ -593,20 +585,20 @@ class Accentuation(Enum):
 
 @hashableAttrs
 class RSEInstrument(object):
-    instrument = attr.ib(default=-1)
-    unknown = attr.ib(default=1)
-    soundBank = attr.ib(default=-1)
-    effectNumber = attr.ib(default=-1)
-    effectCategory = attr.ib(default='')
-    effect = attr.ib(default='')
+    instrument: int = -1
+    unknown: int = -1
+    soundBank: int = -1
+    effectNumber: int = -1
+    effectCategory: str = ''
+    effect: str = ''
 
 
 @hashableAttrs(repr=False)
 class TrackRSE(object):
-    instrument = attr.ib(default=attr.Factory(RSEInstrument))
-    equalizer = attr.ib(default=attr.Factory(RSEEqualizer))
-    humanize = attr.ib(default=0)
-    autoAccentuation = attr.ib(default=Accentuation.none)
+    instrument: RSEInstrument = attr.Factory(RSEInstrument)
+    equalizer: RSEEqualizer = attr.Factory(RSEEqualizer)
+    humanize: int = 0
+    autoAccentuation: Accentuation = Accentuation.none
 
     def __attrs_post_init__(self):
         if not self.equalizer.knobs:
@@ -617,26 +609,26 @@ class TrackRSE(object):
 class Track(object):
     """A track contains multiple measures."""
 
-    song = attr.ib(hash=False, eq=False, repr=False)
-    number = attr.ib(default=1, hash=False, eq=False)
-    fretCount = attr.ib(default=24)
-    offset = attr.ib(default=0)
-    isPercussionTrack = attr.ib(default=False)
-    is12StringedGuitarTrack = attr.ib(default=False)
-    isBanjoTrack = attr.ib(default=False)
-    isVisible = attr.ib(default=True)
-    isSolo = attr.ib(default=False)
-    isMute = attr.ib(default=False)
-    indicateTuning = attr.ib(default=False)
-    name = attr.ib(default='Track 1')
-    measures = attr.ib(default=None)
-    strings = attr.ib(default=None)
-    port = attr.ib(default=1)
-    channel = attr.ib(default=attr.Factory(MidiChannel))
-    color = attr.ib(default=Color.red)
-    settings = attr.ib(default=attr.Factory(TrackSettings))
-    useRSE = attr.ib(default=False)
-    rse = attr.ib(default=attr.Factory(TrackRSE))
+    song: Song = attr.ib(hash=False, eq=False, repr=False)
+    number: int = attr.ib(default=1, hash=False, eq=False)
+    fretCount: int = 24
+    offset: int = 0
+    isPercussionTrack: bool = False
+    is12StringedGuitarTrack: bool = False
+    isBanjoTrack: bool = False
+    isVisible: bool = True
+    isSolo: bool = False
+    isMute: bool = False
+    indicateTuning: bool = False
+    name: str = 'Track 1'
+    measures: List['Measure'] = None
+    strings: List['GuitarString'] = None
+    port: int = 1
+    channel: MidiChannel = attr.Factory(MidiChannel)
+    color: Color = Color.red
+    settings: TrackSettings = attr.Factory(TrackSettings)
+    useRSE: bool = False
+    rse: TrackRSE = attr.Factory(TrackRSE)
 
     def __attrs_post_init__(self):
         if self.strings is None:
@@ -651,8 +643,8 @@ class Track(object):
 class GuitarString(object):
     """A guitar string with a special tuning."""
 
-    number = attr.ib()
-    value = attr.ib()
+    number: int
+    value: int
 
     def __str__(self):
         notes = 'C C# D D# E F F# G G# A A# B'.split()
@@ -684,11 +676,11 @@ class LineBreak(Enum):
 class Measure(object):
     """A measure contains multiple voices of beats."""
 
-    track = attr.ib(hash=False, eq=False, repr=False)
-    header = attr.ib(hash=False, eq=False, repr=False)
-    clef = attr.ib(default=MeasureClef.treble)
-    voices = attr.ib(default=None)
-    lineBreak = attr.ib(default=LineBreak.none)
+    track: Track = attr.ib(hash=False, eq=False, repr=False)
+    header: MeasureHeader = attr.ib(hash=False, eq=False, repr=False)
+    clef: MeasureClef = MeasureClef.treble
+    voices: List['Voice'] = None
+    lineBreak: LineBreak = LineBreak.none
 
     maxVoices = 2
 
@@ -742,9 +734,9 @@ class VoiceDirection(Enum):
 class Voice(object):
     """A voice contains multiple beats."""
 
-    measure = attr.ib(hash=False, eq=False, repr=False)
-    beats = attr.ib(default=attr.Factory(list))
-    direction = attr.ib(default=VoiceDirection.none)
+    measure: Measure = attr.ib(hash=False, eq=False, repr=False)
+    beats: List['Beat'] = attr.Factory(list)
+    direction: VoiceDirection = VoiceDirection.none
 
     @property
     def isEmpty(self):
@@ -763,8 +755,8 @@ class BeatStrokeDirection(Enum):
 class BeatStroke(object):
     """A stroke effect for beats."""
 
-    direction = attr.ib(default=BeatStrokeDirection.none)
-    value = attr.ib(default=0)
+    direction: BeatStrokeDirection = BeatStrokeDirection.none
+    value: int = 0
 
     def getIncrementTime(self, beat):
         duration = 0
@@ -808,15 +800,15 @@ class SlapEffect(Enum):
 class BeatEffect(object):
     """This class contains all beat effects."""
 
-    stroke = attr.ib(default=attr.Factory(BeatStroke))
-    hasRasgueado = attr.ib(default=False)
-    pickStroke = attr.ib(default=BeatStrokeDirection.none)
-    chord = attr.ib(default=None)
-    fadeIn = attr.ib(default=False)
-    tremoloBar = attr.ib(default=None)
-    mixTableChange = attr.ib(default=None)
-    slapEffect = attr.ib(default=SlapEffect.none)
-    vibrato = attr.ib(default=None)
+    stroke: BeatStroke = attr.Factory(BeatStroke)
+    hasRasgueado: bool = False
+    pickStroke: BeatStrokeDirection = BeatStrokeDirection.none
+    chord: Optional['Chord'] = None
+    fadeIn: bool = False
+    tremoloBar: Optional['BendEffect'] = None
+    mixTableChange: Optional['MixTableChange'] = None
+    slapEffect: SlapEffect = SlapEffect.none
+    vibrato: bool = False
 
     @property
     def isChord(self):
@@ -856,13 +848,13 @@ class TupletBracket(Enum):
 class BeatDisplay(object):
     """Parameters of beat display."""
 
-    breakBeam = attr.ib(default=False)
-    forceBeam = attr.ib(default=False)
-    beamDirection = attr.ib(default=VoiceDirection.none)
-    tupletBracket = attr.ib(default=TupletBracket.none)
-    breakSecondary = attr.ib(default=0)
-    breakSecondaryTuplet = attr.ib(default=False)
-    forceBracket = attr.ib(default=False)
+    breakBeam: bool = False
+    forceBeam: bool = False
+    beamDirection: VoiceDirection = VoiceDirection.none
+    tupletBracket: TupletBracket = TupletBracket.none
+    breakSecondary: int = 0
+    breakSecondaryTuplet: bool = False
+    forceBracket: bool = False
 
 
 class Octave(Enum):
@@ -885,16 +877,15 @@ class BeatStatus(Enum):
 class Beat(object):
     """A beat contains multiple notes."""
 
-    voice = attr.ib(hash=False, eq=False, repr=False)
-    notes = attr.ib(default=attr.Factory(list))
-    duration = attr.ib(default=attr.Factory(Duration))
-    text = attr.ib(default=None)
-    start = attr.ib(default=None, hash=False, eq=False)
-    effect = attr.ib(default=attr.Factory(BeatEffect))
-    index = attr.ib(default=None)
-    octave = attr.ib(default=Octave.none)
-    display = attr.ib(default=attr.Factory(BeatDisplay))
-    status = attr.ib(default=BeatStatus.empty)
+    voice: Voice = attr.ib(hash=False, eq=False, repr=False)
+    notes: List['Note'] = attr.Factory(list)
+    duration: Duration = attr.Factory(Duration)
+    text: Optional['BeatText'] = None
+    start: Optional[int] = attr.ib(default=None, hash=False, eq=False)
+    effect: BeatEffect = attr.Factory(BeatEffect)
+    octave: Octave = Octave.none
+    display: BeatDisplay = attr.Factory(BeatDisplay)
+    status: BeatStatus = BeatStatus.empty
 
     @property
     def startInMeasure(self):
@@ -919,7 +910,7 @@ class Beat(object):
 class HarmonicEffect(object):
     """A harmonic note effect."""
 
-    type = attr.ib(init=False)
+    type: int = attr.ib(init=False)
 
 
 @hashableAttrs
@@ -930,8 +921,8 @@ class NaturalHarmonic(HarmonicEffect):
 
 @hashableAttrs
 class ArtificialHarmonic(HarmonicEffect):
-    pitch = attr.ib(default=None)
-    octave = attr.ib(default=None)
+    pitch: Optional['PitchClass'] = None
+    octave: Optional[int] = None
 
     def __attrs_post_init__(self):
         self.type = 2
@@ -939,7 +930,7 @@ class ArtificialHarmonic(HarmonicEffect):
 
 @hashableAttrs
 class TappedHarmonic(HarmonicEffect):
-    fret = attr.ib(default=None)
+    fret: Optional[int] = None
 
     def __attrs_post_init__(self):
         self.type = 3
@@ -993,12 +984,12 @@ class Velocities(object):
 class GraceEffect(object):
     """A grace note effect."""
 
-    duration = attr.ib(default=1)
-    fret = attr.ib(default=0)
-    isDead = attr.ib(default=False)
-    isOnBeat = attr.ib(default=False)
-    transition = attr.ib(default=GraceEffectTransition.none)
-    velocity = attr.ib(default=Velocities.default)
+    duration: int = 1
+    fret: int = 0
+    isDead: bool = False
+    isOnBeat: bool = False
+    transition: GraceEffectTransition = GraceEffectTransition.none
+    velocity: int = Velocities.default
 
     @property
     def durationTime(self):
@@ -1010,15 +1001,15 @@ class GraceEffect(object):
 class TrillEffect(object):
     """A trill effect."""
 
-    fret = attr.ib(default=0)
-    duration = attr.ib(default=attr.Factory(Duration))
+    fret: int = 0
+    duration: Duration = attr.Factory(Duration)
 
 
 @hashableAttrs
 class TremoloPickingEffect(object):
     """A tremolo picking effect."""
 
-    duration = attr.ib(default=attr.Factory(Duration))
+    duration: Duration = attr.Factory(Duration)
 
 
 class SlideType(Enum):
@@ -1056,22 +1047,22 @@ class Fingering(LenientEnum):
 class NoteEffect(object):
     """Contains all effects which can be applied to one note."""
 
-    accentuatedNote = attr.ib(default=False)
-    bend = attr.ib(default=None)
-    ghostNote = attr.ib(default=False)
-    grace = attr.ib(default=None)
-    hammer = attr.ib(default=False)
-    harmonic = attr.ib(default=None)
-    heavyAccentuatedNote = attr.ib(default=False)
-    leftHandFinger = attr.ib(default=Fingering.open)
-    letRing = attr.ib(default=False)
-    palmMute = attr.ib(default=False)
-    rightHandFinger = attr.ib(default=Fingering.open)
-    slides = attr.ib(default=attr.Factory(list))
-    staccato = attr.ib(default=False)
-    tremoloPicking = attr.ib(default=None)
-    trill = attr.ib(default=None)
-    vibrato = attr.ib(default=False)
+    accentuatedNote: bool = False
+    bend: Optional['BendEffect'] = None
+    ghostNote: bool = False
+    grace: Optional[GraceEffect] = None
+    hammer: bool = False
+    harmonic: Optional[HarmonicEffect] = None
+    heavyAccentuatedNote: bool = False
+    leftHandFinger: Fingering = Fingering.open
+    letRing: bool = False
+    palmMute: bool = False
+    rightHandFinger: Fingering = Fingering.open
+    slides: List[SlideType] = attr.Factory(list)
+    staccato: bool = False
+    tremoloPicking: Optional[TremoloPickingEffect] = None
+    trill: Optional[TrillEffect] = None
+    vibrato: bool = False
 
     @property
     def isBend(self):
@@ -1127,14 +1118,14 @@ class NoteType(LenientEnum):
 class Note(object):
     """Describes a single note."""
 
-    beat = attr.ib(hash=False, eq=False, repr=False)
-    value = attr.ib(default=0)
-    velocity = attr.ib(default=Velocities.default)
-    string = attr.ib(default=0)
-    effect = attr.ib(default=attr.Factory(NoteEffect))
-    durationPercent = attr.ib(default=1.0)
-    swapAccidentals = attr.ib(default=False)
-    type = attr.ib(default=NoteType.rest)
+    beat: Beat = attr.ib(hash=False, eq=False, repr=False)
+    value: int = 0
+    velocity: int = Velocities.default
+    string: int = 0
+    effect: NoteEffect = attr.Factory(NoteEffect)
+    durationPercent: float = 1.0
+    swapAccidentals: bool = False
+    type: NoteType = NoteType.rest
 
     @property
     def realValue(self):
@@ -1145,25 +1136,25 @@ class Note(object):
 class Chord(object):
     """A chord annotation for beats."""
 
-    length = attr.ib()
-    sharp = attr.ib(default=None)
-    root = attr.ib(default=None)
-    type = attr.ib(default=None)
-    extension = attr.ib(default=None)
-    bass = attr.ib(default=None)
-    tonality = attr.ib(default=None)
-    add = attr.ib(default=None)
-    name = attr.ib(default='')
-    fifth = attr.ib(default=None)
-    ninth = attr.ib(default=None)
-    eleventh = attr.ib(default=None)
-    firstFret = attr.ib(default=None)
-    strings = attr.ib(default=attr.Factory(list))
-    barres = attr.ib(default=attr.Factory(list))
-    omissions = attr.ib(default=attr.Factory(list))
-    fingerings = attr.ib(default=attr.Factory(list))
-    show = attr.ib(default=None)
-    newFormat = attr.ib(default=None)
+    length: int
+    sharp: Optional[bool] = None
+    root: Optional['PitchClass'] = None
+    type: Optional['ChordType'] = None
+    extension: Optional['ChordExtension'] = None
+    bass: Optional['PitchClass'] = None
+    tonality: Optional['ChordAlteration'] = None
+    add: Optional[bool] = None
+    name: str = ''
+    fifth: Optional['ChordAlteration'] = None
+    ninth: Optional['ChordAlteration'] = None
+    eleventh: Optional['ChordAlteration'] = None
+    firstFret: Optional[int] = None
+    strings: List[int] = attr.Factory(list)
+    barres: List['Barre'] = attr.Factory(list)
+    omissions: List[bool] = attr.Factory(list)
+    fingerings: List[Fingering] = attr.Factory(list)
+    show: Optional[bool] = None
+    newFormat: Optional[bool] = None
 
     def __attrs_post_init__(self):
         self.strings = [-1] * self.length
@@ -1230,9 +1221,9 @@ class Barre(object):
     :param end: last string on the top of the barre.
     """
 
-    fret = attr.ib()
-    start = attr.ib(default=0)
-    end = attr.ib(default=0)
+    fret: int
+    start: int = 0
+    end: int = 0
 
     @property
     def range(self):
@@ -1311,10 +1302,10 @@ class PitchClass(object):
     D#
     """
 
-    just = attr.ib()
-    accidental = attr.ib(default=None)
-    value = attr.ib(default=None)
-    intonation = attr.ib(default=None)
+    just: Union[str, int]
+    accidental: Optional[int] = None
+    value: Optional[int] = None
+    intonation: Optional[str] = None
 
     _notes = {
         'sharp': 'C C# D D# E F F# G G# A A# B'.split(),
@@ -1362,8 +1353,9 @@ class PitchClass(object):
 @hashableAttrs
 class BeatText(object):
     """A text annotation for beats."""
+    # TODO: Remove this class and just put string in the Beat.
 
-    value = attr.ib(default='')
+    value: str = ''
 
 
 @hashableAttrs
@@ -1372,15 +1364,15 @@ class MixTableItem(object):
     reverb.
     """
 
-    value = attr.ib(default=0)
-    duration = attr.ib(default=0)
-    allTracks = attr.ib(default=False)
+    value: int = 0
+    duration: int = 0
+    allTracks: bool = False
 
 
 @hashableAttrs
 class WahEffect(object):
-    value = attr.ib(default=-1)
-    display = attr.ib(default=False)
+    value: int = attr.ib(default=-1)
+    display: bool = False
 
     @value.validator
     def checkValue(self, attrib, value):
@@ -1405,20 +1397,19 @@ WahEffect.none = WahEffect(-1)
 class MixTableChange(object):
     """A MixTableChange describes a change in mix parameters."""
 
-    instrument = attr.ib(default=None)
-    rse = attr.ib(default=None)
-    volume = attr.ib(default=None)
-    balance = attr.ib(default=None)
-    chorus = attr.ib(default=None)
-    reverb = attr.ib(default=None)
-    phaser = attr.ib(default=None)
-    tremolo = attr.ib(default=None)
-    tempoName = attr.ib(default='')
-    tempo = attr.ib(default=None)
-    hideTempo = attr.ib(default=True)
-    wah = attr.ib(default=None)
-    useRSE = attr.ib(default=False)
-    rse = attr.ib(default=attr.Factory(RSEInstrument))
+    instrument: Optional[MixTableItem] = None
+    rse: RSEInstrument = attr.Factory(RSEInstrument)
+    volume: Optional[MixTableItem] = None
+    balance: Optional[MixTableItem] = None
+    chorus: Optional[MixTableItem] = None
+    reverb: Optional[MixTableItem] = None
+    phaser: Optional[MixTableItem] = None
+    tremolo: Optional[MixTableItem] = None
+    tempoName: str = ''
+    tempo: Optional[MixTableItem] = None
+    hideTempo: bool = True
+    wah: Optional[WahEffect] = None
+    useRSE: bool = False
 
     @property
     def isJustWah(self):
@@ -1483,9 +1474,9 @@ class BendType(Enum):
 class BendPoint(object):
     """A single point within the BendEffect."""
 
-    position = attr.ib(default=0)
-    value = attr.ib(default=None)
-    vibrato = attr.ib(default=False)
+    position: int = 0
+    value: int = 0
+    vibrato: bool = False
 
     def getTime(self, duration):
         """Gets the exact time when the point need to be played (MIDI).
@@ -1500,9 +1491,9 @@ class BendPoint(object):
 class BendEffect(object):
     """This effect is used to describe string bends and tremolo bars."""
 
-    type = attr.ib(default=BendType.none)
-    value = attr.ib(default=0)
-    points = attr.ib(default=attr.Factory(list))
+    type: BendType = BendType.none
+    value: int = 0
+    points: List[BendPoint] = attr.Factory(list)
 
     #: The note offset per bend point offset.
     semitoneLength = 1
