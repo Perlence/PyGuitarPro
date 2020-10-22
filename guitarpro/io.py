@@ -47,7 +47,7 @@ _EXT_VERSIONS = {
 }
 
 
-def parse(stream, encoding='latin1'):
+def parse(stream, encoding='cp1252'):
     """Open a GP file and read its contents.
 
     :param stream: path to a GP file or file-like object.
@@ -60,7 +60,7 @@ def parse(stream, encoding='latin1'):
     return song
 
 
-def write(song, stream, version=None, encoding='latin1'):
+def write(song, stream, version=None, encoding='cp1252'):
     """Write a song into GP file.
 
     :param song: a song to write.
