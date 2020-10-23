@@ -8,16 +8,16 @@ Version 0.8
 
 **Backward-incompatible changes:**
 
-- Drop support for Python 2.7.
-- Drop support for Python 3.4.
-- Drop support for Python 3.5.
+- Dropped support for Python 2.7.
+- Dropped support for Python 3.4.
+- Dropped support for Python 3.5.
 - Removed the ``Fingering.unknown`` member.
-- Removed the ``MeasureHeader.tempo`` and ``Measure.tempo`` attributes.
-- Removed the ``Beat.index`` attribute.
-- Removed the ``Color.a`` attribute.
-- Removed the ``Tempo`` class.
+- Removed the misleading ``MeasureHeader.tempo`` and ``Measure.tempo`` attributes.
+- Removed the unused ``Beat.index`` attribute.
+- Removed the unused ``Color.a`` attribute.
+- Removed the unused ``Tempo`` class.
 - Changed the ``Beat.text`` type to ``str`` and removed the ``BeatText`` class.
-- Lenient handling of unknown ``Fingering``, ``NoteType``, ``ChordType``, ``ChordExtension`` values
+- Implemented lenient handling of unknown ``Fingering``, ``NoteType``, ``ChordType``, ``ChordExtension`` values
   `#18 <https://github.com/Perlence/PyGuitarPro/issues/18>`_.
 
 **Changes:**
