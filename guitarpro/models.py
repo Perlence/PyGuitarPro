@@ -756,20 +756,6 @@ class BeatStroke:
     direction: BeatStrokeDirection = BeatStrokeDirection.none
     value: int = 0
 
-    def getIncrementTime(self, beat):
-        duration = 0
-        if self.value > 0:
-            for voice in beat.voices:
-                if voice.isEmpty:
-                    continue
-                currentDuration = voice.duration.time()
-                if duration == 0 or currentDuration < duration:
-                    duration = (currentDuration if currentDuration <= Duration.quarterTime
-                                else Duration.quarterTime)
-            if duration > 0:
-                return round((duration / 8.0) * (4.0 / self.value))
-        return 0
-
     def swapDirection(self):
         if self.direction == BeatStrokeDirection.up:
             direction = BeatStrokeDirection.down

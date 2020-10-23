@@ -15,6 +15,7 @@ Version 0.8
 - Removed the misleading ``MeasureHeader.tempo`` and ``Measure.tempo`` attributes.
 - Removed the unused ``Beat.index`` attribute.
 - Removed the unused ``Color.a`` attribute.
+- Removed the unused ``BeatStroke.getIncrementTime`` method.
 - Removed the unused ``Tempo`` class.
 - Changed the ``Beat.text`` type to ``str`` and removed the ``BeatText`` class.
 - Implemented lenient handling of unknown ``Fingering``, ``NoteType``, ``ChordType``, ``ChordExtension`` values
