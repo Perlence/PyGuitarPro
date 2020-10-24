@@ -511,10 +511,6 @@ class MeasureHeader:
     fromDirection: Optional[DirectionSign] = None
 
     @property
-    def hasMarker(self):
-        return self.marker is not None
-
-    @property
     def length(self):
         return self.timeSignature.numerator * self.timeSignature.denominator.time
 
@@ -714,7 +710,6 @@ class Measure:
     timeSignature = _promote_header_attr('timeSignature')
     isRepeatOpen = _promote_header_attr('isRepeatOpen')
     tripletFeel = _promote_header_attr('tripletFeel')
-    hasMarker = _promote_header_attr('hasMarker')
     marker = _promote_header_attr('marker')
 
     del _promote_header_attr
