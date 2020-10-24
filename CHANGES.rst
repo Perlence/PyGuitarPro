@@ -25,6 +25,7 @@ Version 0.8
 **Changes:**
 
 - Annotated read and write errors with track, measure, voice, and beat numbers.
+- Moved the ``end`` property from ``Measure`` to ``MeasureHeader``.
 
 
 Version 0.7

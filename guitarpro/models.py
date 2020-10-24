@@ -514,6 +514,10 @@ class MeasureHeader:
     def length(self):
         return self.timeSignature.numerator * self.timeSignature.denominator.time
 
+    @property
+    def end(self):
+        return self.start + self.length
+
 
 @hashableAttrs
 class Color:
@@ -689,10 +693,6 @@ class Measure:
     def isEmpty(self):
         return all(voice.isEmpty for voice in self.voices)
 
-    @property
-    def end(self):
-        return self.start + self.length
-
     def _promote_header_attr(name):
         def fget(self):
             return getattr(self.header, name)
@@ -706,6 +706,7 @@ class Measure:
     keySignature = _promote_header_attr('keySignature')
     repeatClose = _promote_header_attr('repeatClose')
     start = _promote_header_attr('start')
+    end = _promote_header_attr('end')
     length = _promote_header_attr('length')
     timeSignature = _promote_header_attr('timeSignature')
     isRepeatOpen = _promote_header_attr('isRepeatOpen')
