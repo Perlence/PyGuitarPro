@@ -1,3 +1,4 @@
+import io
 import os
 from os import path
 
@@ -105,7 +106,37 @@ def testChord(tmpdir, caplog, filename):
     assert song == song2
 
 
-# TODO: testReadErrorAnnotation
+@pytest.mark.parametrize('version', ['gp3', 'gp4', 'gp5'])
+def testReadErrorAnnotation(version):
+    def writeToBytesIO(song):
+        stream = io.BytesIO()
+        stream.name = f'percusion.{version}'
+        gp.write(song, stream, encoding='cp1252')
+        stream.seek(0)
+        return stream
+
+    song = gp.Song()
+    song.tracks[0].name = "Percusión"
+    stream = writeToBytesIO(song)
+    # readMeasureHeader
+    with pytest.raises(gp.GPException, match="reading track 1, got UnicodeDecodeError: "):
+        gp.parse(stream, encoding='ascii')
+
+    song = gp.Song()
+    song.tracks[0].measures[0].marker = gp.Marker(title="Percusión")
+    stream = writeToBytesIO(song)
+    # readTracks
+    with pytest.raises(gp.GPException, match="reading measure 1, got UnicodeDecodeError: "):
+        gp.parse(stream, encoding='ascii')
+
+    song = gp.Song()
+    voice = song.tracks[0].measures[0].voices[0]
+    beat = gp.Beat(voice, text="Percusión")
+    voice.beats.append(beat)
+    stream = writeToBytesIO(song)
+    # readMeasures
+    with pytest.raises(gp.GPException, match="reading track 1, measure 1, voice 1, beat 1, got UnicodeDecodeError: "):
+        gp.parse(stream, encoding='ascii')
 
 
 @pytest.mark.parametrize('version', ['gp3', 'gp4', 'gp5'])
