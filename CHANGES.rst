@@ -21,6 +21,7 @@ Version 0.8
 - Changed the ``Beat.text`` type to ``str`` and removed the ``BeatText`` class.
 - Implemented lenient handling of unknown ``Fingering``, ``NoteType``, ``ChordType``, ``ChordExtension`` values
   `#18 <https://github.com/Perlence/PyGuitarPro/issues/18>`_.
+- Functions ``guitarpro.parse`` and ``guitarpro.write`` no longer close the passed file object.
 
 **Changes:**
 

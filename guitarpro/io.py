@@ -54,10 +54,12 @@ def parse(stream, encoding='cp1252'):
     :param encoding: decode strings in tablature using this charset.
         Given encoding must be an 8-bit charset.
     """
-    gpfile = _open(None, stream, 'rb', encoding=encoding)
-    song = gpfile.readSong()
-    gpfile.close()
-    return song
+    gpfile, shouldClose = _open(None, stream, 'rb', encoding=encoding)
+    try:
+        return gpfile.readSong()
+    finally:
+        if shouldClose:
+            gpfile.close()
 
 
 def write(song, stream, version=None, encoding='cp1252'):
@@ -71,9 +73,12 @@ def write(song, stream, version=None, encoding='cp1252'):
     :type version: tuple
     :param encoding: encode strings into given 8-bit charset.
     """
-    gpfile = _open(song, stream, 'wb', version=version, encoding=encoding)
-    gpfile.writeSong(song)
-    gpfile.close()
+    gpfile, shouldClose = _open(song, stream, 'wb', version=version, encoding=encoding)
+    try:
+        gpfile.writeSong(song)
+    finally:
+        if shouldClose:
+            gpfile.close()
 
 
 def _open(song, stream, mode='rb', version=None, encoding=None):
@@ -81,8 +86,10 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
     if mode not in ('rb', 'wb'):
         raise ValueError("cannot read or write unless in binary mode, not '%s'" % mode)
 
+    shouldClose = False
     if isinstance(stream, str):
         fp = open(stream, mode)
+        shouldClose = True
         filename = stream
     else:
         fp = stream
@@ -101,7 +108,7 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
 
     version, GPFile = getVersionAndGPFile(versionString)
     gpfile = GPFile(fp, encoding, version=versionString, versionTuple=version)
-    return gpfile
+    return gpfile, shouldClose
 
 
 def getVersionAndGPFile(versionString):
