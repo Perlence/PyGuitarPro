@@ -140,29 +140,29 @@ def testReadErrorAnnotation(version):
 
 
 @pytest.mark.parametrize('version', ['gp3', 'gp4', 'gp5'])
-def testWriteErrorAnnotation(tmpdir, version):
-    filename = str(tmpdir.join(f'beep.{version}'))
-    with open(filename, 'wb') as fp:
-        song = gp.Song()
-        song.tracks[0].measures[0].timeSignature.numerator = 'nooo'
-        # writeMeasureHeader
-        with pytest.raises(gp.GPException, match="writing measure 1, got ValueError: invalid"):
-            gp.write(song, fp)
+def testWriteErrorAnnotation(version):
+    fp = io.BytesIO()
+    fp.name = f'beep.{version}'
 
-        song = gp.Song()
-        song.tracks[0].fretCount = 'nooo'
-        # writeTracks
-        with pytest.raises(gp.GPException, match="writing track 1, got ValueError: invalid"):
-            gp.write(song, fp)
+    song = gp.Song()
+    song.tracks[0].measures[0].timeSignature.numerator = 'nooo'
+    # writeMeasureHeader
+    with pytest.raises(gp.GPException, match="writing measure 1, got ValueError: invalid"):
+        gp.write(song, fp)
 
-        song = gp.Song()
-        voice = song.tracks[0].measures[0].voices[0]
-        invalidBeat = gp.Beat(voice, status='nooo')
-        voice.beats.append(invalidBeat)
-        # writeMeasures
-        with pytest.raises(gp.GPException,
-                           match="writing track 1, measure 1, voice 1, beat 1, got AttributeError: 'str'"):
-            gp.write(song, fp)
+    song = gp.Song()
+    song.tracks[0].fretCount = 'nooo'
+    # writeTracks
+    with pytest.raises(gp.GPException, match="writing track 1, got ValueError: invalid"):
+        gp.write(song, fp)
+
+    song = gp.Song()
+    voice = song.tracks[0].measures[0].voices[0]
+    invalidBeat = gp.Beat(voice, status='nooo')
+    voice.beats.append(invalidBeat)
+    # writeMeasures
+    with pytest.raises(gp.GPException, match="writing track 1, measure 1, voice 1, beat 1, got AttributeError: 'str'"):
+        gp.write(song, fp)
 
 
 def bisect(test, song, destVersion=3):
