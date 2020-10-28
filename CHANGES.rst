@@ -28,6 +28,7 @@ Version 0.8
 - Annotated read and write errors with track, measure, voice, and beat numbers.
 - Moved the ``end`` property from ``Measure`` to ``MeasureHeader``.
 - Truncated the ``MeasureHeader.repeatAlternative`` to 8 bits when writing GP5 file.
+- Fixed the vibrato and harmonics when converting a GP3 file to the newer versions.
 
 
 Version 0.7

@@ -36,17 +36,33 @@ TESTS = [
     'Strokes.gp5',
     'Demo v5.gp5',
 ]
-CLIPBOARD_TESTS = [
-    '2 whole bars.tmp',
+CONVERSION_TESTS = [
+    # ('Effects.gp3', 'gp4'),
+    ('Duration.gp3', 'gp4'),
+
+    ('Slides.gp4', 'gp5'),
+    ('Vibrato.gp4', 'gp5'),
+
+    ('Repeat.gp4', 'gp5'),
 ]
 
 
 @pytest.mark.parametrize('filename', TESTS)
-def testConversion(tmpdir, filename):
-    __, ext = path.splitext(filename)
+def testReadWriteEquals(tmpdir, filename):
     filepath = path.join(LOCATION, filename)
     songA = gp.parse(filepath)
-    destpath = str(tmpdir.join(filename + ext))
+    destpath = str(tmpdir.join(filename))
+    gp.write(songA, destpath)
+    songB = gp.parse(destpath)
+    assert songA == songB
+
+
+@pytest.mark.parametrize('source, targetExt', CONVERSION_TESTS)
+def testConversion(tmpdir, source, targetExt):
+    sourcepath = path.join(LOCATION, source)
+    songA = gp.parse(sourcepath)
+    songA.versionTuple = None  # Remove the version so it's determined by the extension
+    destpath = str(tmpdir.join(f'{source}.{targetExt}'))
     gp.write(songA, destpath)
     songB = gp.parse(destpath)
     assert songA == songB

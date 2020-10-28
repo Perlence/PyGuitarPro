@@ -200,7 +200,7 @@ class GP4File(gp3.GP3File):
         chord.fingerings = list(map(gp.Fingering, self.readSignedByte(7)))
         chord.show = self.readBool()
 
-    def readBeatEffects(self, effect):
+    def readBeatEffects(self, noteEffect):
         """Read beat effects.
 
         Beat effects are read using two byte flags.

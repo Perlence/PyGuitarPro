@@ -451,19 +451,19 @@ class GP3File(GPFileBase):
         else:
             beat.status = gp.BeatStatus.normal
         duration = self.readDuration(flags)
-        effect = gp.NoteEffect()
+        noteEffect = gp.NoteEffect()
         if flags & 0x02:
             beat.effect.chord = self.readChord(len(voice.measure.track.strings))
         if flags & 0x04:
             beat.text = self.readIntByteSizeString()
         if flags & 0x08:
             chord = beat.effect.chord
-            beat.effect = self.readBeatEffects(effect)
+            beat.effect = self.readBeatEffects(noteEffect)
             beat.effect.chord = chord
         if flags & 0x10:
             mixTableChange = self.readMixTableChange(voice.measure)
             beat.effect.mixTableChange = mixTableChange
-        self.readNotes(voice.measure.track, beat, duration, effect)
+        self.readNotes(voice.measure.track, beat, duration, noteEffect)
         return duration.time if not beat.status == gp.BeatStatus.empty else 0
 
     def getBeat(self, voice, start):
@@ -654,7 +654,7 @@ class GP3File(GPFileBase):
         chord.omissions = self.readBool(7)
         self.skip(1)
 
-    def readBeatEffects(self, effect):
+    def readBeatEffects(self, noteEffect):
         """Read beat effects.
 
         The first byte is effects flags:
@@ -680,7 +680,7 @@ class GP3File(GPFileBase):
         """
         beatEffects = gp.BeatEffect()
         flags1 = self.readByte()
-        effect.vibrato = bool(flags1 & 0x01) or effect.vibrato
+        noteEffect.vibrato = bool(flags1 & 0x01) or noteEffect.vibrato
         beatEffects.vibrato = bool(flags1 & 0x02) or beatEffects.vibrato
         beatEffects.fadeIn = bool(flags1 & 0x10)
         if flags1 & 0x20:
@@ -693,9 +693,11 @@ class GP3File(GPFileBase):
         if flags1 & 0x40:
             beatEffects.stroke = self.readBeatStroke()
         if flags1 & 0x04:
-            effect.harmonic = gp.NaturalHarmonic()
+            # In GP3 harmonics apply to the whole beat, not the individual
+            # notes. Here we set the noteEffect for all the notes in the beat.
+            noteEffect.harmonic = gp.NaturalHarmonic()
         if flags1 & 0x08:
-            effect.harmonic = gp.ArtificialHarmonic()
+            noteEffect.harmonic = gp.ArtificialHarmonic()
         return beatEffects
 
     def readTremoloBar(self):
@@ -839,7 +841,7 @@ class GP3File(GPFileBase):
             tableChange.tempo.duration = self.readSignedByte()
             tableChange.hideTempo = False
 
-    def readNotes(self, track, beat, duration, effect=None):
+    def readNotes(self, track, beat, duration, noteEffect=None):
         """Read notes.
 
         First byte lists played strings:
@@ -856,7 +858,7 @@ class GP3File(GPFileBase):
         stringFlags = self.readByte()
         for string in track.strings:
             if stringFlags & 1 << (7 - string.number):
-                note = gp.Note(beat)
+                note = gp.Note(beat, effect=attr.evolve(noteEffect))
                 beat.notes.append(note)
                 self.readNote(note, string, track)
             beat.duration = duration
