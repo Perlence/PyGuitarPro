@@ -1034,7 +1034,7 @@ class GP5File(gp4.GP4File):
         self.writeByte(header.tripletFeel.value)
 
     def writeRepeatAlternative(self, repeatAlternative):
-        self.writeByte(repeatAlternative)
+        self.writeByte(repeatAlternative & 255)
 
     def writeTracks(self, tracks):
         super(GP5File, self).writeTracks(tracks)

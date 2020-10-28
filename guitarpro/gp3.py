@@ -1145,12 +1145,11 @@ class GP3File(GPFileBase):
             self.writeMarker(header.marker)
 
     def writeRepeatAlternative(self, value):
-        first_one = False
-        i = 0
+        firstOne = False
         for i in range(value.bit_length() + 1):
             if value & 1 << i:
-                first_one = True
-            elif first_one:
+                firstOne = True
+            elif firstOne:
                 break
         self.writeByte(i)
 
