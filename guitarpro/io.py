@@ -4,7 +4,7 @@ from .iobase import GPFileBase
 from .gp3 import GP3File
 from .gp4 import GP4File
 from .gp5 import GP5File
-from .models import GPException
+from .models import GPException, Song
 
 __all__ = ('parse', 'write')
 
@@ -47,7 +47,7 @@ _EXT_VERSIONS = {
 }
 
 
-def parse(stream, encoding='cp1252'):
+def parse(stream, encoding='cp1252') -> Song:
     """Open a GP file and read its contents.
 
     :param stream: path to a GP file or file-like object.
