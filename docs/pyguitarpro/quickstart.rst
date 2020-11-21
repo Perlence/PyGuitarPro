@@ -8,13 +8,13 @@ Reading ``.gp*`` files is as easy as:
 .. code-block:: python
 
    import guitarpro
-   curl = guitarpro.parse('Demo v5.gp5')
+   demo = guitarpro.parse('Demo v5.gp5')
 
 Writing ``.gp*`` files isn't that hard as well:
 
 .. code-block:: python
 
-   guitarpro.write(curl, 'Demo v5 2.gp5')
+   guitarpro.write(demo, 'Demo v5 2.gp5')
 
 All objects representing GP entities are hashable and comparable. This gives the great opportunity to apply *diff*
 algorithm to tabs, or even *diff3* algorithm to merge tablatures.
@@ -24,7 +24,7 @@ file according to your desired format:
 
 .. code-block:: python
 
-   guitarpro.write(curl, 'Demo v5.gp4')
+   guitarpro.write(demo, 'Demo v5.gp4')
 
 Functions :func:`guitarpro.parse` and :func:`guitarpro.write` support not only filenames, but also file-like object:
 
@@ -32,7 +32,7 @@ Functions :func:`guitarpro.parse` and :func:`guitarpro.write` support not only f
 
    from urllib.request import urlopen
    with urlopen('https://github.com/Perlence/PyGuitarPro/raw/master/tests/Demo%20v5.gp5') as stream:
-       curl = guitarpro.parse(stream)
+       demo = guitarpro.parse(stream)
 
 .. note::
 
