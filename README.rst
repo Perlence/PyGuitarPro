@@ -2,8 +2,8 @@ PyGuitarPro
 ===========
 
 .. image:: https://img.shields.io/pypi/v/pyguitarpro.svg?style=flat
-    :alt: PyPI Package latest release
-    :target: https://pypi.org/project/PyGuitarPro/
+   :alt: PyPI Package latest release
+   :target: https://pypi.org/project/PyGuitarPro/
 
 
 Introduction
@@ -70,9 +70,9 @@ To install development version of PyGuitarPro:
 
 .. code-block:: sh
 
-    git clone https://github.com/Perlence/PyGuitarPro.git
-    cd pyguitarpro
-    pip install -e .
+   git clone https://github.com/Perlence/PyGuitarPro.git
+   cd pyguitarpro
+   pip install -e .
 
 
 Documentation
