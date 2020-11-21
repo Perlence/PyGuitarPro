@@ -4,7 +4,7 @@ Changelog
 Version 0.8
 -----------
 
-*TBA*
+*2020-11-21*
 
 **Backward-incompatible changes:**
 
@@ -25,6 +25,7 @@ Version 0.8
 
 **Changes:**
 
+- Added type hints.
 - Annotated read and write errors with track, measure, voice, and beat numbers.
 - Moved the ``end`` property from ``Measure`` to ``MeasureHeader``.
 - Truncated the ``MeasureHeader.repeatAlternative`` to 8 bits when writing GP5 file.
