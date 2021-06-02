@@ -12,8 +12,6 @@ certifi==2020.12.5
     # via requests
 chardet==4.0.0
     # via requests
-colorama==0.4.4
-    # via sphinx
 docutils==0.16
     # via sphinx
 idna==2.10
@@ -37,10 +35,10 @@ requests==2.25.1
 snowballstemmer==2.1.0
     # via sphinx
 sphinx-rtd-theme==0.5.1
-    # via -r .\docs\requirements.in
+    # via -r requirements.in
 sphinx==3.5.2
     # via
-    #   -r .\docs\requirements.in
+    #   -r requirements.in
     #   sphinx-rtd-theme
 sphinxcontrib-applehelp==1.0.2
     # via sphinx
@@ -54,7 +52,7 @@ sphinxcontrib-qthelp==1.0.3
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.4
     # via sphinx
-urllib3==1.26.4
+urllib3==1.26.5
     # via requests
 
 # The following packages are considered to be unsafe in a requirements file:
