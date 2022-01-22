@@ -7,6 +7,10 @@ def testHashable():
     song = gp.Song()
     hash(song)
 
+    anotherSong = gp.Song()
+    assert song == anotherSong
+    assert hash(song) == hash(anotherSong)
+
     coda = gp.DirectionSign('Coda')
     segno = gp.DirectionSign('Segno')
     assert coda != segno

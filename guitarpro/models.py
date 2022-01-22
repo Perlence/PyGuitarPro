@@ -55,16 +55,19 @@ def hashableAttrs(cls=None, repr=True):
     if cls is None:
         return partial(hashableAttrs, repr=repr)
 
+    decorated = attr.s(cls, hash=True, repr=repr, auto_attribs=True)
+    origHash = decorated.__hash__
+
     def hash_(self):
-        obj = self
+        toEvolve = {}
         for field in attr.fields(self.__class__):
             value = getattr(self, field.name)
             if isinstance(value, (list, set)):
                 new_value = tuple(value)
-                obj = attr.evolve(obj, **{field.name: new_value})
-        return hash(attr.astuple(obj, recurse=False, filter=lambda a, v: a.hash is not False))
+                toEvolve[field.name] = new_value
+        newSelf = attr.evolve(self, **toEvolve)
+        return origHash(newSelf)
 
-    decorated = attr.s(cls, hash=False, repr=repr, auto_attribs=True)
     decorated.__hash__ = hash_
     return decorated
 
