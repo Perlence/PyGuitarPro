@@ -6,6 +6,10 @@ Version 0.9
 
 *TBA*
 
+**Backward-incompatible changes:**
+
+- Aligned the ``GuitarString`` representation with scientific pitch notation.
+
 
 Version 0.8
 -----------

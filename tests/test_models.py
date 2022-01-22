@@ -36,3 +36,9 @@ def testBeatStartInMeasure():
 
     with pytest.raises(AttributeError):
         beat2.realStart
+
+
+def testGuitarString():
+    assert str(gp.GuitarString(number=1, value=0)) == 'C-1'
+    assert str(gp.GuitarString(number=1, value=40)) == 'E2'
+    assert str(gp.GuitarString(number=1, value=64)) == 'E4'
