@@ -9,6 +9,7 @@ Version 0.9
 **Backward-incompatible changes:**
 
 - Aligned the ``GuitarString`` representation with scientific pitch notation.
+- Dropped support for Python 3.6.
 
 
 Version 0.8
