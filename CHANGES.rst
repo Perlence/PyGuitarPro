@@ -4,7 +4,7 @@ Changelog
 Version 0.9
 -----------
 
-*TBA*
+*2022-01-23*
 
 **Backward-incompatible changes:**
 
