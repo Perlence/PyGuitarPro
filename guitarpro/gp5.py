@@ -277,7 +277,7 @@ class GP5File(gp4.GP4File):
     def readMeasureHeader(self, number, song, previous=None):
         """Read measure header.
 
-        Measure header format in Guitar Pro 5 differs from one if Guitar
+        Measure header format in Guitar Pro 5 differs from one in Guitar
         Pro 3.
 
         First, there is a blank byte if measure is not first. Then
@@ -296,7 +296,35 @@ class GP5File(gp4.GP4File):
         if previous is not None:
             # Always 0
             self.skip(1)
-        header, flags = super(GP5File, self).readMeasureHeader(number, song, previous)
+
+        flags = self.readByte()
+        header = gp.MeasureHeader()
+        header.number = number
+        header.start = 0
+        header.tripletFeel = self._tripletFeel
+        if flags & 0x01:
+            header.timeSignature.numerator = self.readSignedByte()
+        else:
+            header.timeSignature.numerator = previous.timeSignature.numerator
+        if flags & 0x02:
+            header.timeSignature.denominator.value = self.readSignedByte()
+        else:
+            header.timeSignature.denominator.value = previous.timeSignature.denominator.value
+        header.isRepeatOpen = bool(flags & 0x04)
+        if flags & 0x08:
+            header.repeatClose = self.readSignedByte()
+        if flags & 0x20:
+            header.marker = self.readMarker(header)
+        if flags & 0x40:
+            root = self.readSignedByte()
+            type_ = self.readSignedByte()
+            header.keySignature = gp.KeySignature((root, type_))
+        elif header.number > 1:
+            header.keySignature = previous.keySignature
+        if flags & 0x10:
+            header.repeatAlternative = self.readRepeatAlternative(song.measureHeaders)
+        header.hasDoubleBar = bool(flags & 0x80)
+
         if header.repeatClose > -1:
             header.repeatClose -= 1
         if flags & 0x03:
@@ -1025,7 +1053,20 @@ class GP5File(gp4.GP4File):
 
     def writeMeasureHeaderValues(self, header, flags):
         header = attr.evolve(header, repeatClose=header.repeatClose+1)
-        super(GP5File, self).writeMeasureHeaderValues(header, flags)
+        self.writeByte(flags)
+        if flags & 0x01:
+            self.writeSignedByte(header.timeSignature.numerator)
+        if flags & 0x02:
+            self.writeSignedByte(header.timeSignature.denominator.value)
+        if flags & 0x08:
+            self.writeSignedByte(header.repeatClose)
+        if flags & 0x20:
+            self.writeMarker(header.marker)
+        if flags & 0x40:
+            self.writeSignedByte(header.keySignature.value[0])
+            self.writeSignedByte(header.keySignature.value[1])
+        if flags & 0x10:
+            self.writeRepeatAlternative(header.repeatAlternative)
         if flags & 0x03:
             for beam in header.timeSignature.beams:
                 self.writeByte(beam)

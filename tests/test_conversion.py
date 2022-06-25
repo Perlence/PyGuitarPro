@@ -13,6 +13,7 @@ TESTS = [
     'Chords.gp3',
     'Duration.gp3',
     'Harmonics.gp3',
+    'Measure Header.gp3',
 
     'Effects.gp4',
     'Vibrato.gp4',
@@ -22,6 +23,7 @@ TESTS = [
     'Key.gp4',
     'Repeat.gp4',
     'Strokes.gp4',
+    'Measure Header.gp4',
 
     'Effects.gp5',
     'Voices.gp5',
@@ -33,6 +35,7 @@ TESTS = [
     'RSE.gp5',
     'Repeat.gp5',
     'Strokes.gp5',
+    'Measure Header.gp5',
     'Demo v5.gp5',
 ]
 CONVERSION_TESTS = [
