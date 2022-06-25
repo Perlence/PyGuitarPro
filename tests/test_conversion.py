@@ -1,14 +1,13 @@
 import io
 import os
-from os import path
+from pathlib import Path
 
 import pytest
 
 import guitarpro as gp
 
 
-LOCATION = path.dirname(__file__)
-OUTPUT = path.join(LOCATION, 'output')
+LOCATION = Path(__file__).parent
 TESTS = [
     'Effects.gp3',
     'Chords.gp3',
@@ -49,7 +48,7 @@ CONVERSION_TESTS = [
 
 @pytest.mark.parametrize('filename', TESTS)
 def testReadWriteEquals(tmpdir, filename):
-    filepath = path.join(LOCATION, filename)
+    filepath = LOCATION / filename
     songA = gp.parse(filepath)
     destpath = str(tmpdir.join(filename))
     gp.write(songA, destpath)
@@ -59,7 +58,7 @@ def testReadWriteEquals(tmpdir, filename):
 
 @pytest.mark.parametrize('source, targetExt', CONVERSION_TESTS)
 def testConversion(tmpdir, source, targetExt):
-    sourcepath = path.join(LOCATION, source)
+    sourcepath = LOCATION / source
     songA = gp.parse(sourcepath)
     songA.versionTuple = None  # Remove the version so it's determined by the extension
     destpath = str(tmpdir.join(f'{source}.{targetExt}'))
@@ -69,7 +68,7 @@ def testConversion(tmpdir, source, targetExt):
 
 
 def testClipboard(tmpdir):
-    filepath = path.join(LOCATION, '2 whole bars.tmp')
+    filepath = LOCATION / '2 whole bars.tmp'
     songA = gp.parse(filepath)
     songA.clipboard = None
     destpath = str(tmpdir.join('2 whole bars.tmp.gp5'))
@@ -89,7 +88,7 @@ def testEmpty(tmpdir):
 
 def testGuessVersion(tmpdir):
     filename = 'Effects.gp5'
-    filepath = path.join(LOCATION, filename)
+    filepath = LOCATION / filename
     songA = gp.parse(filepath)
     songA.version = songA.versionTuple = None
 
@@ -108,7 +107,7 @@ def testGuessVersion(tmpdir):
     'Unknown Chord Extension.gp5',
 ])
 def testChord(tmpdir, caplog, filename):
-    filepath = path.join(LOCATION, filename)
+    filepath = LOCATION / filename
     song = gp.parse(filepath)
     assert song.tracks[0].measures[0].voices[0].beats[0].effect.chord is not None
 

@@ -87,7 +87,7 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
         raise ValueError("cannot read or write unless in binary mode, not '%s'" % mode)
 
     shouldClose = False
-    if isinstance(stream, str):
+    if isinstance(stream, (str, os.PathLike)):
         fp = open(stream, mode)
         shouldClose = True
         filename = stream
