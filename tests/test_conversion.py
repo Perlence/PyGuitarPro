@@ -1,5 +1,4 @@
 import io
-import os
 from pathlib import Path
 
 import pytest
@@ -181,5 +180,3 @@ def testWriteErrorAnnotation(version):
     # writeMeasures
     with pytest.raises(gp.GPException, match="writing track 1, measure 1, voice 1, beat 1, got AttributeError: 'str'"):
         gp.write(song, fp)
-
-
