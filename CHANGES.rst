@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Version 0.9.2
+-------------
+
+*2022-06-26*
+
+**Changes:**
+
+- Enabled passing ``bytes`` to the ``parse`` and ``write`` functions.
+
+
 Version 0.9.1
 -------------
 
