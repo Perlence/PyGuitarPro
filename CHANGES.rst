@@ -1,6 +1,18 @@
 Changelog
 =========
 
+Version 0.9.1
+-------------
+
+*2022-06-26*
+
+**Changes:**
+
+- Enabled passing `PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ objects to the ``parse`` and
+  ``write`` functions.
+- Fixed reading and writing measure headers in Guitar Pro 5.
+
+
 Version 0.9
 -----------
 
