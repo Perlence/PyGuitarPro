@@ -187,15 +187,9 @@ class Lyrics:
     """A collection of lyrics lines for a track."""
 
     trackChoice: int = 0
-    lines: Optional[List[LyricLine]] = None
+    lines: List[LyricLine] = attr.Factory(lambda: [LyricLine() for _ in range(Lyrics.maxLineCount)])
 
     maxLineCount = 5
-
-    def __attrs_post_init__(self):
-        if self.lines is None:
-            self.lines = []
-            for _ in range(Lyrics.maxLineCount):
-                self.lines.append(LyricLine())
 
     def __str__(self):
         full = ''
@@ -339,17 +333,11 @@ class Song:
     tempo: int = 120
     hideTempo: bool = False
     key: KeySignature = KeySignature.CMajor
-    measureHeaders: List['MeasureHeader'] = None
-    tracks: List['Track'] = None
+    measureHeaders: List['MeasureHeader'] = attr.Factory(lambda: [MeasureHeader()])
+    tracks: List['Track'] = attr.Factory(lambda self: [Track(self)], takes_self=True)
     masterEffect: RSEMasterEffect = attr.Factory(RSEMasterEffect)
 
     _currentRepeatGroup: RepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, eq=False, repr=False)
-
-    def __attrs_post_init__(self):
-        if self.measureHeaders is None:
-            self.measureHeaders = [MeasureHeader()]
-        if self.tracks is None:
-            self.tracks = [Track(self)]
 
     def addMeasureHeader(self, header):
         header.song = self
@@ -647,22 +635,18 @@ class Track:
     isMute: bool = False
     indicateTuning: bool = False
     name: str = 'Track 1'
-    measures: List['Measure'] = None
-    strings: List['GuitarString'] = None
+    measures: List['Measure'] = attr.Factory(lambda self: [Measure(self, header)
+                                                           for header in self.song.measureHeaders],
+                                             takes_self=True)
+    strings: List['GuitarString'] = attr.Factory(lambda: [GuitarString(n, v)
+                                                          for n, v in [(1, 64), (2, 59), (3, 55),
+                                                                       (4, 50), (5, 45), (6, 40)]])
     port: int = 1
     channel: MidiChannel = attr.Factory(MidiChannel)
     color: Color = Color.red
     settings: TrackSettings = attr.Factory(TrackSettings)
     useRSE: bool = False
     rse: TrackRSE = attr.Factory(TrackRSE)
-
-    def __attrs_post_init__(self):
-        if self.strings is None:
-            self.strings = [GuitarString(n, v)
-                            for n, v in [(1, 64), (2, 59), (3, 55),
-                                         (4, 50), (5, 45), (6, 40)]]
-        if self.measures is None:
-            self.measures = [Measure(self, header) for header in self.song.measureHeaders]
 
 
 @hashableAttrs
@@ -705,17 +689,10 @@ class Measure:
     track: Track = attr.ib(hash=False, eq=False, repr=False)
     header: MeasureHeader = attr.ib(hash=False, eq=False, repr=False)
     clef: MeasureClef = MeasureClef.treble
-    voices: List['Voice'] = None
+    voices: List['Voice'] = attr.Factory(lambda self: [Voice(self) for _ in range(self.maxVoices)], takes_self=True)
     lineBreak: LineBreak = LineBreak.none
 
     maxVoices = 2
-
-    def __attrs_post_init__(self):
-        if self.voices is None:
-            self.voices = []
-            for _ in range(self.maxVoices):
-                voice = Voice(self)
-                self.voices.append(voice)
 
     @property
     def isEmpty(self):
