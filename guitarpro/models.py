@@ -2,7 +2,7 @@ from enum import Enum, IntEnum
 from fractions import Fraction
 from functools import partial
 from math import log
-from typing import List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union, overload
 
 import attr
 
@@ -51,7 +51,27 @@ class LenientEnum(Enum):
         return hash(self._name_)
 
 
-def hashableAttrs(cls=None, repr=True):
+_T = TypeVar('_T')
+_C = TypeVar('_C', bound=type)
+
+
+def __dataclass_transform__(
+    *,
+    eq_default: bool = True,
+    order_default: bool = False,
+    kw_only_default: bool = False,
+    field_descriptors: Tuple[Union[type, Callable[..., Any]], ...] = (()),
+) -> Callable[[_T], _T]:
+    return lambda a: a
+
+
+@overload
+@__dataclass_transform__(order_default=True, field_descriptors=(attr.attrib, attr.field))
+def hashableAttrs(cls: _C, *, repr: bool = ...) -> _C: ...
+@overload
+@__dataclass_transform__(order_default=True, field_descriptors=(attr.attrib, attr.field))
+def hashableAttrs(cls: None = ..., *, repr: bool = ...) -> Callable[[_C], _C]: ...
+def hashableAttrs(cls=None, *, repr=True):  # noqa: E302
     """A fully hashable attrs decorator.
 
     Converts unhashable attributes, e.g. lists, to hashable ones, e.g.
