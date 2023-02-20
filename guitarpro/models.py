@@ -352,8 +352,10 @@ class Song:
         self._currentRepeatGroup.addMeasureHeader(header)
 
     def newMeasure(self):
+        header = MeasureHeader()
+        self.measureHeaders.append(header)
         for track in self.tracks:
-            measure = Measure(track)
+            measure = Measure(track, header)
             track.measures.append(measure)
 
 

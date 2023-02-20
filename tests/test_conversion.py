@@ -181,3 +181,14 @@ def testWriteErrorAnnotation(version):
     # writeMeasures
     with pytest.raises(gp.GPException, match="writing track 1, measure 1, voice 1, beat 1, got AttributeError: 'str'"):
         gp.write(song, fp)
+
+
+def testSongNewMeasure(tmpdir):
+    song = gp.Song()
+    song.newMeasure()
+    filename = str(tmpdir.join('songNewMeasure.gp5'))
+    gp.write(song, filename)
+    song2 = gp.parse(filename)
+    assert len(song2.measureHeaders) == 2
+    assert len(song2.tracks[0].measures) == 2
+    assert song == song2
