@@ -20,8 +20,8 @@ jobs:
           - {name: PyPy3, python: 'pypy-3.9', tox: pypy39}
           - {name: Style, python: '3.11', tox: flake8}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
       - name: Update pip
