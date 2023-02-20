@@ -56,6 +56,7 @@ def testReadWriteEquals(tmpdir, filename):
     gp.write(songA, destpath)
     songB = gp.parse(destpath)
     assert songA == songB
+    assert hash(songA) == hash(songB)
 
 
 @pytest.mark.parametrize('source, targetExt', CONVERSION_TESTS)

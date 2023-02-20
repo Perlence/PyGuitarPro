@@ -13,6 +13,7 @@ Version 0.10
 **Changes:**
 
 - Fixed ``GraceEffect.durationTime`` `#34 <https://github.com/Perlence/PyGuitarPro/issues/34>`_.
+- Fixed hashing `#31 <https://github.com/Perlence/PyGuitarPro/issues/31>`_.
 
 
 Version 0.9.2

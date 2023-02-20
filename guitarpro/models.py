@@ -45,6 +45,11 @@ class LenientEnum(Enum):
             return self._value_ == other._value_
         return super().__eq__(other)
 
+    def __hash__(self):
+        if self._name_ == 'unknown':
+            return hash(self._value_)
+        return hash(self._name_)
+
 
 def hashableAttrs(cls=None, repr=True):
     """A fully hashable attrs decorator.
@@ -1132,15 +1137,12 @@ class Chord:
     ninth: Optional['ChordAlteration'] = None
     eleventh: Optional['ChordAlteration'] = None
     firstFret: Optional[int] = None
-    strings: List[int] = attr.Factory(list)
+    strings: List[int] = attr.Factory(lambda self: [-1] * self.length, takes_self=True)
     barres: List['Barre'] = attr.Factory(list)
     omissions: List[bool] = attr.Factory(list)
     fingerings: List[Fingering] = attr.Factory(list)
     show: Optional[bool] = None
     newFormat: Optional[bool] = None
-
-    def __attrs_post_init__(self):
-        self.strings = [-1] * self.length
 
     @property
     def notes(self):
