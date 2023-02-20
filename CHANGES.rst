@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Version 0.9.3
+-------------
+
+*TBA*
+
+**Changes:**
+
+- Fixed ``GraceEffect.durationTime`` `#34 <https://github.com/Perlence/PyGuitarPro/issues/34>`_.
+
+
 Version 0.9.2
 -------------
 

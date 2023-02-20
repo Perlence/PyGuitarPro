@@ -977,7 +977,7 @@ class GraceEffect:
     @property
     def durationTime(self):
         """Get the duration of the effect."""
-        return int(Duration.quarterTime / 16 * self.duration)
+        return Duration.quarterTime * 4 // self.duration
 
 
 @hashableAttrs

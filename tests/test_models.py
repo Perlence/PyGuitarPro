@@ -28,6 +28,15 @@ def testDuration(value, isDotted, tuplet):
     assert time == newDur.time
 
 
+def testGraceDuration():
+    g16 = gp.GraceEffect(duration=16)
+    assert g16.durationTime == 240
+    g32 = gp.GraceEffect(duration=32)
+    assert g32.durationTime == 120
+    g64 = gp.GraceEffect(duration=64)
+    assert g64.durationTime == 60
+
+
 def testBeatStartInMeasure():
     song = gp.Song()
     measure = song.tracks[0].measures[0]
