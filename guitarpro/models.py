@@ -759,10 +759,10 @@ class BeatStroke:
 
     def swapDirection(self):
         if self.direction == BeatStrokeDirection.up:
-            direction = BeatStrokeDirection.down
+            return attr.evolve(self, direction=BeatStrokeDirection.down)
         elif self.direction == BeatStrokeDirection.down:
-            direction = BeatStrokeDirection.up
-        return BeatStroke(direction, self.value)
+            return attr.evolve(self, direction=BeatStrokeDirection.up)
+        return self
 
 
 class SlapEffect(Enum):
