@@ -424,7 +424,7 @@ class Duration:
     hundredTwentyEighth = 128
 
     # The time resulting with a 64th note and a 3/2 tuplet
-    minTime = int(int(quarterTime * (4 / sixtyFourth)) * 2 / 3)
+    minTime = quarterTime * 4 // sixtyFourth * 2 // 3
 
     value: int = quarter
     isDotted: bool = False
@@ -432,9 +432,9 @@ class Duration:
 
     @property
     def time(self):
-        result = int(self.quarterTime * (4.0 / self.value))
+        result = self.quarterTime * 4 // self.value
         if self.isDotted:
-            result += int(result / 2)
+            result += result // 2
         return self.tuplet.convertTime(result)
 
     @property
