@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 @attr.s
-class GPFileBase(object):
+class GPFileBase:
     data = attr.ib()
     encoding = attr.ib()
     version = attr.ib(default=None)

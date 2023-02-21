@@ -95,7 +95,7 @@ class GP4File(gp3.GP3File):
         return lyrics
 
     def packMeasureHeaderFlags(self, header, previous=None):
-        flags = super(GP4File, self).packMeasureHeaderFlags(header, previous)
+        flags = super().packMeasureHeaderFlags(header, previous)
         if previous is None or header.keySignature != previous.keySignature:
             flags |= 0x40
         if header.hasDoubleBar:
@@ -103,7 +103,7 @@ class GP4File(gp3.GP3File):
         return flags
 
     def writeMeasureHeaderValues(self, header, flags):
-        super(GP4File, self).writeMeasureHeaderValues(header, flags)
+        super().writeMeasureHeaderValues(header, flags)
         if flags & 0x40:
             self.writeSignedByte(header.keySignature.value[0])
             self.writeSignedByte(header.keySignature.value[1])
@@ -270,7 +270,7 @@ class GP4File(gp3.GP3File):
         <guitarpro.gp3.GP3File.readMixTableChangeDurations>`, and, new
         to GP3, :meth:`flags <readMixTableChangeFlags>`.
         """
-        tableChange = super(GP4File, self).readMixTableChange(measure)
+        tableChange = super().readMixTableChange(measure)
         self.readMixTableChangeFlags(tableChange)
         return tableChange
 
@@ -614,7 +614,7 @@ class GP4File(gp3.GP3File):
         self.writeBend(tremoloBar)
 
     def writeMixTableChange(self, tableChange):
-        super(GP4File, self).writeMixTableChange(tableChange)
+        super().writeMixTableChange(tableChange)
         self.writeMixTableChangeFlags(tableChange)
 
     def writeMixTableChangeFlags(self, tableChange):
@@ -654,7 +654,7 @@ class GP4File(gp3.GP3File):
             self.writeNoteEffects(note)
 
     def packNoteFlags(self, note):
-        flags = super(GP4File, self).packNoteFlags(note)
+        flags = super().packNoteFlags(note)
         if note.effect.accentuatedNote:
             flags |= 0x40
         if note.effect.isFingering:

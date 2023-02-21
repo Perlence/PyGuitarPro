@@ -479,7 +479,7 @@ class Duration:
             tuplet = Tuplet.fromFraction(timeFrac * value)
             isDotted = True
         if not tuplet.isSupported():
-            raise ValueError('cannot represent time {} as a Guitar Pro duration'.format(time))
+            raise ValueError(f'cannot represent time {time} as a Guitar Pro duration')
         return Duration(value, isDotted, tuplet)
 
 
@@ -661,7 +661,7 @@ class GuitarString:
     def __str__(self):
         notes = 'C C# D D# E F F# G G# A A# B'.split()
         octave, semitone = divmod(self.value, 12)
-        return '{note}{octave}'.format(note=notes[semitone], octave=octave-1)
+        return f'{notes[semitone]}{octave-1}'
 
 
 class MeasureClef(Enum):

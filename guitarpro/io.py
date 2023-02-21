@@ -84,7 +84,7 @@ def write(song, stream, version=None, encoding='cp1252'):
 def _open(song, stream, mode='rb', version=None, encoding=None):
     """Open a GP file path for reading or writing."""
     if mode not in ('rb', 'wb'):
-        raise ValueError("cannot read or write unless in binary mode, not '%s'" % mode)
+        raise ValueError(f"cannot read or write unless in binary mode, not '{mode}'")
 
     shouldClose = False
     if isinstance(stream, (str, bytes, os.PathLike)):
@@ -115,7 +115,7 @@ def getVersionAndGPFile(versionString):
     try:
         return _GPFILES[versionString]
     except KeyError:
-        raise GPException("unsupported version '%s'" % versionString)
+        raise GPException(f"unsupported version '{versionString}'")
 
 
 def guessVersionByExtension(filename):

@@ -81,7 +81,7 @@ class GP5File(gp4.GP4File):
         return song
 
     def readClipboard(self):
-        clipboard = super(GP5File, self).readClipboard()
+        clipboard = super().readClipboard()
         if clipboard is None:
             return
         clipboard.startBeat = self.readInt()
@@ -265,7 +265,7 @@ class GP5File(gp4.GP4File):
         return signs, fromSigns
 
     def readMeasureHeaders(self, song, measureCount, directions):
-        super(GP5File, self).readMeasureHeaders(song, measureCount)
+        super().readMeasureHeaders(song, measureCount)
         signs, fromSigns = directions
         for sign, number in signs.items():
             if number > -1:
@@ -348,7 +348,7 @@ class GP5File(gp4.GP4File):
         :meth:`guitarpro.gp3.readTracks`. If format version is higher
         than 5.0, 1 blank byte is read.
         """
-        super(GP5File, self).readTracks(song, trackCount, channels)
+        super().readTracks(song, trackCount, channels)
         self.skip(2 if self.versionTuple == (5, 0, 0) else 1)  # Always 0
 
     def readTrack(self, track, channels):
@@ -568,7 +568,7 @@ class GP5File(gp4.GP4File):
         - Break secondary beams: :ref:`byte`. Appears if flag at
           *0x0800* is set. Signifies how much beams should be broken.
         """
-        duration = super(GP5File, self).readBeat(start, voice)
+        duration = super().readBeat(start, voice)
         beat = self.getBeat(voice, start)
         flags2 = self.readShort()
         if flags2 & 0x0010:
@@ -604,7 +604,7 @@ class GP5File(gp4.GP4File):
         to stroke down and stroke up speed. See
         :class:`guitarpro.models.BeatStroke` for value mapping.
         """
-        stroke = super(GP5File, self).readBeatStroke()
+        stroke = super().readBeatStroke()
         return stroke.swapDirection()
 
     def readMixTableChange(self, measure):
@@ -717,7 +717,7 @@ class GP5File(gp4.GP4File):
         - *0x40*: use RSE
         - *0x80*: show wah-wah
         """
-        flags = super(GP5File, self).readMixTableChangeFlags(tableChange)
+        flags = super().readMixTableChangeFlags(tableChange)
         tableChange.useRSE = bool(flags & 0x40)
         return flags
 
@@ -935,7 +935,7 @@ class GP5File(gp4.GP4File):
     def writeClipboard(self, clipboard):
         if clipboard is None:
             return
-        super(GP5File, self).writeClipboard(clipboard)
+        super().writeClipboard(clipboard)
         self.writeInt(clipboard.startBeat)
         self.writeInt(clipboard.stopBeat)
         self.writeInt(int(clipboard.subBarCopy))
@@ -1045,7 +1045,7 @@ class GP5File(gp4.GP4File):
         self.writeMeasureHeaderValues(header, flags)
 
     def packMeasureHeaderFlags(self, header, previous=None):
-        flags = super(GP5File, self).packMeasureHeaderFlags(header, previous)
+        flags = super().packMeasureHeaderFlags(header, previous)
         if previous is not None:
             if header.timeSignature.beams != previous.timeSignature.beams:
                 flags |= 0x03
@@ -1078,7 +1078,7 @@ class GP5File(gp4.GP4File):
         self.writeByte(repeatAlternative & 255)
 
     def writeTracks(self, tracks):
-        super(GP5File, self).writeTracks(tracks)
+        super().writeTracks(tracks)
         self.placeholder(2 if self.versionTuple == (5, 0, 0) else 1)
 
     def writeTrack(self, track, number):
@@ -1186,7 +1186,7 @@ class GP5File(gp4.GP4File):
         self.writeByte(measure.lineBreak.value)
 
     def writeBeat(self, beat):
-        super(GP5File, self).writeBeat(beat)
+        super().writeBeat(beat)
         flags2 = 0x0000
         if beat.display.breakBeam:
             flags2 |= 0x0001
@@ -1219,7 +1219,7 @@ class GP5File(gp4.GP4File):
             self.writeByte(beat.display.breakSecondary)
 
     def writeBeatStroke(self, stroke):
-        super(GP5File, self).writeBeatStroke(stroke.swapDirection())
+        super().writeBeatStroke(stroke.swapDirection())
 
     def writeMixTableChange(self, tableChange):
         super(gp4.GP4File, self).writeMixTableChange(tableChange)
@@ -1317,7 +1317,7 @@ class GP5File(gp4.GP4File):
             self.writeNoteEffects(note)
 
     def packNoteFlags(self, note):
-        flags = super(GP5File, self).packNoteFlags(note)
+        flags = super().packNoteFlags(note)
         if abs(note.durationPercent - 1.0) >= 1e-3:
             flags |= 0x01
         return flags
