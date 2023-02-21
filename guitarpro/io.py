@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 from .iobase import GPFileBase
 from .gp3 import GP3File
@@ -62,15 +63,13 @@ def parse(stream, encoding='cp1252') -> Song:
             gpfile.close()
 
 
-def write(song, stream, version=None, encoding='cp1252'):
+def write(song: Song, stream, version: Optional[tuple] = None, encoding='cp1252'):
     """Write a song into GP file.
 
     :param song: a song to write.
-    :type song: guitarpro.models.Song
     :param stream: path to save GP file or file-like object.
     :param version: explicitly set version of GP file to save, e.g.
         ``(5, 1, 0)``.
-    :type version: tuple
     :param encoding: encode strings into given 8-bit charset.
     """
     gpfile, shouldClose = _open(song, stream, 'wb', version=version, encoding=encoding)
