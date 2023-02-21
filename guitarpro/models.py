@@ -971,7 +971,7 @@ class Velocities:
 class GraceEffect:
     """A grace note effect."""
 
-    duration: int = 1
+    duration: int = 32
     fret: int = 0
     isDead: bool = False
     isOnBeat: bool = False
