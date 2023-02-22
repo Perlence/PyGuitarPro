@@ -4,7 +4,7 @@ Changelog
 Version 0.9.3
 -------------
 
-*TBA*
+*2023-02-22*
 
 **Changes:**
 
