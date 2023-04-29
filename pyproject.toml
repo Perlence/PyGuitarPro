@@ -27,7 +27,7 @@ dynamic = ["version"]
 
 [project.urls]
 Documentation = "https://pyguitarpro.readthedocs.io/"
-Code = "https://github.com/Perlence/PyGuitarPro"
+"Source code" = "https://github.com/Perlence/PyGuitarPro"
 "Issue tracker" = "https://github.com/Perlence/PyGuitarPro/issues"
 
 [build-system]
