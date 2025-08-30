@@ -33,7 +33,7 @@ class GPFileBase:
     def __enter__(self):
         return self
 
-    def __exit__(self, *exc_info):
+    def __exit__(self, *excInfo):
         self.close()
 
     # Reading

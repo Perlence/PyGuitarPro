@@ -35,10 +35,10 @@ class LenientEnum(Enum):
 
     @classmethod
     def _missing_(cls, value):
-        pseudo_member = object.__new__(cls)
-        pseudo_member._name_ = 'unknown'
-        pseudo_member._value_ = value
-        return pseudo_member
+        pseudoMember = object.__new__(cls)
+        pseudoMember._name_ = 'unknown'
+        pseudoMember._value_ = value
+        return pseudoMember
 
     def __eq__(self, other):
         if (self.__class__ is other.__class__ and
@@ -89,8 +89,8 @@ def hashableAttrs(cls=None, *, repr=True):  # noqa: E302
         for field in attr.fields(self.__class__):
             value = getattr(self, field.name)
             if isinstance(value, (list, set)):
-                new_value = tuple(value)
-                toEvolve[field.name] = new_value
+                newValue = tuple(value)
+                toEvolve[field.name] = newValue
         newSelf = attr.evolve(self, **toEvolve)
         return origHash(newSelf)
 
@@ -701,7 +701,7 @@ class Measure:
     def isEmpty(self):
         return all(voice.isEmpty for voice in self.voices)
 
-    def _promote_header_attr(name):
+    def _promoteHeaderAttr(name):
         def fget(self):
             return getattr(self.header, name)
 
@@ -710,18 +710,18 @@ class Measure:
 
         return property(fget, fset)
 
-    number = _promote_header_attr('number')
-    keySignature = _promote_header_attr('keySignature')
-    repeatClose = _promote_header_attr('repeatClose')
-    start = _promote_header_attr('start')
-    end = _promote_header_attr('end')
-    length = _promote_header_attr('length')
-    timeSignature = _promote_header_attr('timeSignature')
-    isRepeatOpen = _promote_header_attr('isRepeatOpen')
-    tripletFeel = _promote_header_attr('tripletFeel')
-    marker = _promote_header_attr('marker')
+    number = _promoteHeaderAttr('number')
+    keySignature = _promoteHeaderAttr('keySignature')
+    repeatClose = _promoteHeaderAttr('repeatClose')
+    start = _promoteHeaderAttr('start')
+    end = _promoteHeaderAttr('end')
+    length = _promoteHeaderAttr('length')
+    timeSignature = _promoteHeaderAttr('timeSignature')
+    isRepeatOpen = _promoteHeaderAttr('isRepeatOpen')
+    tripletFeel = _promoteHeaderAttr('tripletFeel')
+    marker = _promoteHeaderAttr('marker')
 
-    del _promote_header_attr
+    del _promoteHeaderAttr
 
 
 class VoiceDirection(Enum):
