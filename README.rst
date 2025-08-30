@@ -15,11 +15,9 @@ of `AlphaTab <https://www.alphatab.net/>`_ which originally was a Haxe port of
 
 This package helps you achieve several goals you might find yourself yearning to do in a day-to-day tabber life:
 
-- transpose a track without messing the fingering.
-
-- add first string to the track without messing the fingering.
-
-- map percussion notes to different values.
+- Transpose a track without messing the fingering
+- Add the first string to the track without messing the fingering
+- Map percussion notes to different values
 
 Reading ``.gp*`` files is as easy as:
 
@@ -28,31 +26,29 @@ Reading ``.gp*`` files is as easy as:
    import guitarpro
    curl = guitarpro.parse('Mastodon - Curl of the Burl.gp5')
 
-Writing ``.gp*`` files isn't that hard as well:
+Writing ``.gp*`` files isn't that hard either:
 
 .. code-block:: python
 
    guitarpro.write(curl, 'Mastodon - Curl of the Burl 2.gp5')
 
-All objects representing GP entities are hashable and comparable. This gives the great opportunity to apply *diff*
-algorithm to tabs, or even *diff3* algorithm to merge tablatures.
+All objects representing GP entities are hashable and comparable. This gives a great opportunity to apply the *diff*
+algorithm to tabs, or even the *diff3* algorithm to merge tablatures.
 
-To anyone wanting to create their the best guitar tablature editor in Python this package will be the good thing to
-start with.
-
+For those looking to create the best guitar tablature editor in Python, this package is a good place to start.
 
 Examples
 --------
 
-Several usage examples are included in the ``/examples`` folder. Please feel free to add your own examples, or improve
-on some of the existing ones, and then submit them via pull request.
+Several usage examples are included in the ``/examples`` folder. Feel free to add your own examples or improve existing
+ones. Then, submit them via pull request.
 
 To run one of the examples in your local environment, simply:
 
 .. code-block:: sh
 
    cd pyguitarpro
-   python examples/transpose.py --help
+   uv run examples/transpose.py --help
 
 
 Installation
