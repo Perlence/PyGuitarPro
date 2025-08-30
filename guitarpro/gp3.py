@@ -147,8 +147,7 @@ class GP3File(GPFileBase):
         return channels
 
     def toChannelShort(self, data):
-        value = max(-32768, min(32767, (data << 3) - 1))
-        return max(value, -1) + 1
+        return min(max((data << 3) - 1, -1), 32767) + 1
 
     def readMeasureHeaders(self, song, measureCount):
         """Read measure headers.
@@ -913,7 +912,7 @@ class GP3File(GPFileBase):
                 value = self.getTiedNoteValue(note)
             else:
                 value = fret
-            note.value = max(0, min(99, value))
+            note.value = min(max(value, 0), 99)
         if flags & 0x80:
             note.effect.leftHandFinger = gp.Fingering(self.readSignedByte())
             note.effect.rightHandFinger = gp.Fingering(self.readSignedByte())
@@ -1101,8 +1100,7 @@ class GP3File(GPFileBase):
             self.placeholder(2)
 
     def fromChannelShort(self, data):
-        value = max(-128, min(127, (data >> 3) - 1))
-        return value + 1
+        return min(max((data >> 3) - 1, -128), 127) + 1
 
     def writeMeasureHeaders(self, measures):
         previous = None
