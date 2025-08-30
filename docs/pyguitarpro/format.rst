@@ -2,7 +2,7 @@ Guitar Pro File Format
 ======================
 
 
-Basic Guitar Pro 3—5 types
+Basic Guitar Pro 3–5 types
 --------------------------
 
 .. _byte:
