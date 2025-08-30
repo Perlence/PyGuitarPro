@@ -1,8 +1,9 @@
+from collections.abc import Callable
 from enum import Enum, IntEnum
 from fractions import Fraction
 from functools import partial
 from math import log
-from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union, overload
+from typing import Any, Optional, TypeVar, Union, overload
 
 import attr
 
@@ -60,7 +61,7 @@ def __dataclass_transform__(
     eq_default: bool = True,
     order_default: bool = False,
     kw_only_default: bool = False,
-    field_descriptors: Tuple[Union[type, Callable[..., Any]], ...] = (()),
+    field_descriptors: tuple[Union[type, Callable[..., Any]], ...] = (()),
 ) -> Callable[[_T], _T]:
     return lambda a: a
 
@@ -103,9 +104,9 @@ class RepeatGroup:
     which are repeated.
     """
 
-    measureHeaders: List['MeasureHeader'] = attr.Factory(list)
-    closings: List['MeasureHeader'] = attr.Factory(list)
-    openings: List['MeasureHeader'] = attr.Factory(list)
+    measureHeaders: list['MeasureHeader'] = attr.Factory(list)
+    closings: list['MeasureHeader'] = attr.Factory(list)
+    openings: list['MeasureHeader'] = attr.Factory(list)
     isClosed: bool = False
 
     def addMeasureHeader(self, h):
@@ -187,7 +188,7 @@ class Lyrics:
     """A collection of lyrics lines for a track."""
 
     trackChoice: int = 0
-    lines: List[LyricLine] = attr.Factory(lambda: [LyricLine() for _ in range(Lyrics.maxLineCount)])
+    lines: list[LyricLine] = attr.Factory(lambda: [LyricLine() for _ in range(Lyrics.maxLineCount)])
 
     maxLineCount = 5
 
@@ -290,7 +291,7 @@ class RSEEqualizer:
     5.
     """
 
-    knobs: List[float] = attr.Factory(list)
+    knobs: list[float] = attr.Factory(list)
     gain: float = attr.ib(default=0.0)
 
 
@@ -315,7 +316,7 @@ class Song:
     """
 
     # TODO: Store file format version here
-    versionTuple: Optional[Tuple[int, int, int]] = attr.ib(default=None, hash=False, eq=False)
+    versionTuple: Optional[tuple[int, int, int]] = attr.ib(default=None, hash=False, eq=False)
     clipboard: Optional[Clipboard] = None
     title: str = ''
     subtitle: str = ''
@@ -326,15 +327,15 @@ class Song:
     copyright: str = ''
     tab: str = ''
     instructions: str = ''
-    notice: List[str] = attr.Factory(list)
+    notice: list[str] = attr.Factory(list)
     lyrics: Lyrics = attr.Factory(Lyrics)
     pageSetup: PageSetup = attr.Factory(PageSetup)
     tempoName: str = 'Moderate'
     tempo: int = 120
     hideTempo: bool = False
     key: KeySignature = KeySignature.CMajor
-    measureHeaders: List['MeasureHeader'] = attr.Factory(lambda: [MeasureHeader()])
-    tracks: List['Track'] = attr.Factory(lambda self: [Track(self)], takes_self=True)
+    measureHeaders: list['MeasureHeader'] = attr.Factory(lambda: [MeasureHeader()])
+    tracks: list['Track'] = attr.Factory(lambda self: [Track(self)], takes_self=True)
     masterEffect: RSEMasterEffect = attr.Factory(RSEMasterEffect)
 
     _currentRepeatGroup: RepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, eq=False, repr=False)
@@ -489,7 +490,7 @@ class TimeSignature:
 
     numerator: int = 4
     denominator: Duration = attr.Factory(Duration)
-    beams: List[int] = attr.Factory(list)
+    beams: list[int] = attr.Factory(list)
 
     def __attrs_post_init__(self):
         if not self.beams:
@@ -637,10 +638,10 @@ class Track:
     isMute: bool = False
     indicateTuning: bool = False
     name: str = 'Track 1'
-    measures: List['Measure'] = attr.Factory(lambda self: [Measure(self, header)
+    measures: list['Measure'] = attr.Factory(lambda self: [Measure(self, header)
                                                            for header in self.song.measureHeaders],
                                              takes_self=True)
-    strings: List['GuitarString'] = attr.Factory(lambda: [GuitarString(n, v)
+    strings: list['GuitarString'] = attr.Factory(lambda: [GuitarString(n, v)
                                                           for n, v in [(1, 64), (2, 59), (3, 55),
                                                                        (4, 50), (5, 45), (6, 40)]])
     port: int = 1
@@ -691,7 +692,7 @@ class Measure:
     track: Track = attr.ib(hash=False, eq=False, repr=False)
     header: MeasureHeader = attr.ib(hash=False, eq=False, repr=False)
     clef: MeasureClef = MeasureClef.treble
-    voices: List['Voice'] = attr.Factory(lambda self: [Voice(self) for _ in range(self.maxVoices)], takes_self=True)
+    voices: list['Voice'] = attr.Factory(lambda self: [Voice(self) for _ in range(self.maxVoices)], takes_self=True)
     lineBreak: LineBreak = LineBreak.none
 
     maxVoices = 2
@@ -736,7 +737,7 @@ class Voice:
     """A voice contains multiple beats."""
 
     measure: Measure = attr.ib(hash=False, eq=False, repr=False)
-    beats: List['Beat'] = attr.Factory(list)
+    beats: list['Beat'] = attr.Factory(list)
     direction: VoiceDirection = VoiceDirection.none
 
     @property
@@ -865,7 +866,7 @@ class Beat:
     """A beat contains multiple notes."""
 
     voice: Voice = attr.ib(hash=False, eq=False, repr=False)
-    notes: List['Note'] = attr.Factory(list)
+    notes: list['Note'] = attr.Factory(list)
     duration: Duration = attr.Factory(Duration)
     text: Optional[str] = None
     start: Optional[int] = attr.ib(default=None, hash=False, eq=False)
@@ -1045,7 +1046,7 @@ class NoteEffect:
     letRing: bool = False
     palmMute: bool = False
     rightHandFinger: Fingering = Fingering.open
-    slides: List[SlideType] = attr.Factory(list)
+    slides: list[SlideType] = attr.Factory(list)
     staccato: bool = False
     tremoloPicking: Optional[TremoloPickingEffect] = None
     trill: Optional[TrillEffect] = None
@@ -1136,10 +1137,10 @@ class Chord:
     ninth: Optional['ChordAlteration'] = None
     eleventh: Optional['ChordAlteration'] = None
     firstFret: Optional[int] = None
-    strings: List[int] = attr.Factory(lambda self: [-1] * self.length, takes_self=True)
-    barres: List['Barre'] = attr.Factory(list)
-    omissions: List[bool] = attr.Factory(list)
-    fingerings: List[Fingering] = attr.Factory(list)
+    strings: list[int] = attr.Factory(lambda self: [-1] * self.length, takes_self=True)
+    barres: list['Barre'] = attr.Factory(list)
+    omissions: list[bool] = attr.Factory(list)
+    fingerings: list[Fingering] = attr.Factory(list)
     show: Optional[bool] = None
     newFormat: Optional[bool] = None
 
@@ -1469,7 +1470,7 @@ class BendEffect:
 
     type: BendType = BendType.none
     value: int = 0
-    points: List[BendPoint] = attr.Factory(list)
+    points: list[BendPoint] = attr.Factory(list)
 
     #: The note offset per bend point offset.
     semitoneLength = 1
