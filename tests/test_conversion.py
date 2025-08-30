@@ -34,6 +34,7 @@ TESTS = [
     'RSE.gp5',
     'Repeat.gp5',
     'Strokes.gp5',
+    'Tie.gp5',
     'Measure Header.gp5',
     'Demo v5.gp5',
 ]
