@@ -47,6 +47,9 @@ testpaths = ["tests"]
 [dependency-groups]
 dev = [
     "pytest>=8.4.1",
+    {include-group = "docs"}
+]
+docs = [
     "sphinx>=7.4.7",
     "sphinx-rtd-theme>=3.0.2",
 ]
