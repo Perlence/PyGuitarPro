@@ -1,10 +1,15 @@
 Changelog
 =========
 
-Version 0.9.4
+Version 0.10
 -------------
 
 *TBA*
+
+**Backward-incompatible changes:**
+
+- Dropped support for Python 3.7.
+- Dropped support for Python 3.8.
 
 **Changes:**
 
