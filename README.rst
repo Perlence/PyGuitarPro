@@ -47,7 +47,7 @@ To run one of the examples in your local environment, simply:
 
 .. code-block:: sh
 
-   cd pyguitarpro
+   cd PyGuitarPro
    uv run examples/transpose.py --help
 
 
