@@ -312,6 +312,7 @@ wheels = [
 
 [[package]]
 name = "pyguitarpro"
+version = "0.10"
 source = { editable = "." }
 dependencies = [
     { name = "attrs" },

@@ -10,6 +10,7 @@ Version 0.10
 
 - Dropped support for Python 3.7.
 - Dropped support for Python 3.8.
+- Removed the ``guitarpro.__version__`` attribute.
 
 **Changes:**
 
