@@ -27,6 +27,16 @@ dependencies = [
     "attrs>=19.2",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    {include-group = "docs"}
+]
+docs = [
+    "sphinx>=7.4.7",
+    "sphinx-rtd-theme>=3.0.2",
+]
+
 [project.urls]
 Documentation = "https://pyguitarpro.readthedocs.io/"
 "Source code" = "https://github.com/Perlence/PyGuitarPro"
@@ -49,16 +59,5 @@ source-exclude = [
     "docs/_build",
 ]
 
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
-[dependency-groups]
-dev = [
-    "pytest>=8.4.1",
-    {include-group = "docs"}
-]
-docs = [
-    "sphinx>=7.4.7",
-    "sphinx-rtd-theme>=3.0.2",
-]
