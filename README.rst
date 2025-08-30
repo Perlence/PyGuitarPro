@@ -64,13 +64,26 @@ Install PyGuitarPro from PyPI:
 
    pip install PyGuitarPro
 
-To install development version of PyGuitarPro:
+Install the development version of PyGuitarPro with `uv <https://docs.astral.sh/uv/>`_:
 
 .. code-block:: sh
 
    git clone https://github.com/Perlence/PyGuitarPro.git
-   cd pyguitarpro
-   pip install -e .
+   cd PyGuitarPro
+   uv sync
+
+Run the tests:
+
+.. code-block:: sh
+
+   uv run pytest
+
+Install the `pre-commit hook <https://adamj.eu/tech/2025/05/07/pre-commit-install-uv/>`_:
+
+.. code-block:: sh
+
+   uv tool install pre-commit --with pre-commit-uv
+   uvx pre-commit install
 
 
 Documentation
