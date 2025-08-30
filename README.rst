@@ -88,8 +88,7 @@ Install the `pre-commit hook <https://adamj.eu/tech/2025/05/07/pre-commit-instal
 
 .. code-block:: sh
 
-   uv tool install pre-commit --with pre-commit-uv
-   uvx pre-commit install
+   uv run pre-commit install
 
 
 Licensing

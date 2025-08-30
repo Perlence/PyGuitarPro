@@ -19,8 +19,8 @@ jobs:
           - {name: '3.10', tox: py310}
           - {name: '3.9', tox: py39}
           - {name: PyPy3, tox: pypy311}
-          - {name: Style, tox: flake8}
+          - {name: Style, tox: style}
     steps:
       - uses: actions/checkout@v3
       - uses: astral-sh/setup-uv@v6
-      - run: uvx --with tox-uv tox -v -e ${{ matrix.tox }}
+      - run: uv run tox -v -e ${{ matrix.tox }}
