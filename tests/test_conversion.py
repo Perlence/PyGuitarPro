@@ -192,3 +192,20 @@ def testSongNewMeasure(tmpdir):
     assert len(song2.measureHeaders) == 2
     assert len(song2.tracks[0].measures) == 2
     assert song == song2
+
+
+def testTie():
+    filepath = LOCATION / 'Tie.gp5'
+    song = gp.parse(filepath)
+    track = song.tracks[0]
+
+    assert track.measures[0].voices[0].beats[2].notes[0].value == 2
+
+    assert track.measures[1].voices[0].beats[0].notes[0].value == 4
+    assert track.measures[1].voices[0].beats[2].notes[0].value == 1
+    assert track.measures[1].voices[1].beats[2].notes[0].value == 2
+
+    assert track.measures[2].voices[0].beats[2].notes[0].value == 1
+
+    assert track.measures[3].voices[0].beats[1].notes[0].value == 1
+    assert track.measures[3].voices[0].beats[2].notes[0].value == 1

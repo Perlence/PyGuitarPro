@@ -910,7 +910,7 @@ class GP3File(GPFileBase):
         if flags & 0x20:
             fret = self.readSignedByte()
             if note.type == gp.NoteType.tie:
-                value = self.getTiedNoteValue(guitarString.number, track)
+                value = self.getTiedNoteValue(note)
             else:
                 value = fret
             note.value = max(0, min(99, value))
@@ -929,15 +929,18 @@ class GP3File(GPFileBase):
                 gp.Velocities.velocityIncrement * dyn -
                 gp.Velocities.velocityIncrement)
 
-    def getTiedNoteValue(self, stringIndex, track):
+    def getTiedNoteValue(self, note: gp.Note) -> int:
         """Get note value of tied note."""
-        for measure in reversed(track.measures):
-            for voice in reversed(measure.voices):
-                for beat in voice.beats:
-                    if beat.status != gp.BeatStatus.empty:
-                        for note in beat.notes:
-                            if note.string == stringIndex:
-                                return note.value
+        measure = note.beat.voice.measure
+        voiceIndex = measure.voices.index(note.beat.voice)
+        for i, measure in enumerate(reversed(measure.track.measures)):
+            voice = measure.voices[voiceIndex]
+            beats = voice.beats[:voice.beats.index(note.beat)] if i == 0 else voice.beats
+            for beat in reversed(beats):
+                if beat.status != gp.BeatStatus.empty:
+                    for prevNote in beat.notes:
+                        if prevNote.string == note.string:
+                            return prevNote.value
         return -1
 
     def readNoteEffects(self, note):

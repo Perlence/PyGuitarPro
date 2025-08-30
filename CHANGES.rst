@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Version 0.9.4
+-------------
+
+*TBA*
+
+**Changes:**
+
+- Fixed ``GP3File.getTiedNoteValue`` `#46 <https://github.com/Perlence/PyGuitarPro/issues/46>`_.
+
+
 Version 0.9.3
 -------------
 

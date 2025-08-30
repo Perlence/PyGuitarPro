@@ -779,7 +779,7 @@ class GP5File(gp4.GP4File):
         if flags & 0x20:
             fret = self.readSignedByte()
             if note.type == gp.NoteType.tie:
-                value = self.getTiedNoteValue(guitarString.number, track)
+                value = self.getTiedNoteValue(note)
             else:
                 value = fret
             note.value = value if 0 <= value < 100 else 0
