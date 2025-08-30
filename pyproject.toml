@@ -3,7 +3,8 @@ name = "PyGuitarPro"
 version = "0.10"
 description = "Read, write, and manipulate GP3, GP4 and GP5 files."
 readme = "README.rst"
-license = {text = "LGPL-3.0-only"}
+license = "LGPL-3.0-only"
+license-files = ["LICENSE"]
 authors = [{name = "Sviatoslav Abakumov", email = "dust.harvesting@gmail.com"}]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -32,11 +33,22 @@ Documentation = "https://pyguitarpro.readthedocs.io/"
 "Issue tracker" = "https://github.com/Perlence/PyGuitarPro/issues"
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+build-backend = "uv_build"
+requires = ["uv_build>=0.8.14,<0.9.0"]
 
-[tool.setuptools]
-packages = ["guitarpro"]
+[tool.uv.build-backend]
+module-name = "guitarpro"
+source-include = [
+    "docs/**",
+    "examples/**",
+    "tests/**",
+    "CHANGES.rst",
+    "uv.lock",
+]
+source-exclude = [
+    "docs/_build",
+]
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

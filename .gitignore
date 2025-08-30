@@ -38,10 +38,7 @@ nosetests.xml
 docs/_build
 
 # Virtual environment
-env
-
-# Testing output
-tests/output
+.venv
 
 # Sublime Text files
 *.sublime-*
