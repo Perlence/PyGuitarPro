@@ -25,4 +25,4 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - env:
           UV_PYTHON: ${{ matrix.python }}
-        run: uvx --from rust-just just {{ matrix.just }}
+        run: uvx --from rust-just just ${{ matrix.just }}
