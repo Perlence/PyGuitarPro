@@ -28,10 +28,6 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "tox>=4.29.0",
-    "tox-uv>=1.28.0",
-]
 docs = [
     "sphinx>=7.4.7",
     "sphinx-rtd-theme>=3.0.2",
@@ -45,7 +41,7 @@ tests = [
 ]
 
 [tool.uv]
-default-groups = ["dev", "pre-commit", "tests"]
+default-groups = ["pre-commit", "tests"]
 
 [project.urls]
 Documentation = "https://pyguitarpro.readthedocs.io/"
@@ -74,24 +70,3 @@ testpaths = ["tests"]
 
 [tool.flake8]
 max-line-length = 120
-
-[tool.tox]
-envlist = [
-    "style",
-]
-
-[tool.tox.env_run_base]
-runner = "uv-venv-lock-runner"
-use_frozen_constraints = true
-dependency_groups = [
-    "tests",
-]
-commands = [["pytest"]]
-
-[tool.tox.env.style]
-runner = "uv-venv-lock-runner"
-dependency_groups = [
-    "pre-commit",
-]
-skip_install = true
-commands = [["pre-commit", "run", "--all-files"]]

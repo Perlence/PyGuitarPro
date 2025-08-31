@@ -12,15 +12,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {name: '3.14-dev', tox: py314}
-          - {name: '3.13', tox: py313}
-          - {name: '3.12', tox: py312}
-          - {name: '3.11', tox: py311}
-          - {name: '3.10', tox: py310}
-          - {name: '3.9', tox: py39}
-          - {name: PyPy3, tox: pypy311}
-          - {name: Style, tox: style}
+          - {name: '3.14-dev', python: '3.14', just: test}
+          - {name: '3.13', python: '3.13', just: test}
+          - {name: '3.12', python: '3.12', just: test}
+          - {name: '3.11', python: '3.11', just: test}
+          - {name: '3.10', python: '3.10', just: test}
+          - {name: '3.9', python: '3.9', just: test}
+          - {name: PyPy3, python: 'pypy3.11', just: test}
+          - {name: Lint, python: '3.13', just: lint}
     steps:
       - uses: actions/checkout@v3
       - uses: astral-sh/setup-uv@v6
-      - run: uv run tox -v -e ${{ matrix.tox }}
+      - env:
+          UV_PYTHON: ${{ matrix.python }}
+        run: uvx --from rust-just just {{ matrix.just }}
