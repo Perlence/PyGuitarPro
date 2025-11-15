@@ -209,6 +209,9 @@ class GPFileBase:
     def writeByteSizeString(self, data, size=None):
         if size is None:
             size = len(data)
+        elif len(data) > size:
+            # We need to truncate long strings like track names to avoid data corruption
+            data = data[:size]
         self.writeByte(len(data))
         return self.writeString(data, size)
 
