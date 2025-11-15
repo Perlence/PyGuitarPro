@@ -95,33 +95,28 @@ class GPFileBase:
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
-    def readString(self, size, length=None):
-        if length is None:
-            length = size
-        count = size if size > 0 else length
-        s = self.data.read(count)
-        ss = s[:(length if length >= 0 else size)]
-        return ss.decode(self.encoding)
+    def readByteSizeString(self, count: int):
+        """Read the string length (1 byte) followed by *count* character bytes.
 
-    def readByteSizeString(self, size):
-        """Read length of the string stored in 1 byte and followed by character
-        bytes.
+        Returns the decoded string sliced to the length specified by the first
+        byte.
         """
-        return self.readString(size, self.readByte())
+        if count > 255:
+            raise ValueError("count must be less than or equal to 255")
+        size = self.readByte()
+        s = self.data.read(count)[:size]
+        return s.decode(self.encoding)
 
     def readIntSizeString(self):
-        """Read length of the string stored in 1 integer and followed by
-        character bytes.
-        """
-        return self.readString(self.readInt())
+        """Read the string length (1 integer) followed by the character bytes."""
+        count = self.readInt()
+        s = self.data.read(count)
+        return s.decode(self.encoding)
 
     def readIntByteSizeString(self):
-        """Read length of the string increased by 1 and stored in 1 integer
-        followed by length of the string in 1 byte and finally followed by
-        character bytes.
-        """
-        d = self.readInt() - 1
-        return self.readByteSizeString(d)
+        """Read the byte count (1 integer) followed by a byte-size string."""
+        count = self.readInt()
+        return self.readByteSizeString(count-1)
 
     def readVersion(self):
         if self.version is None:
@@ -169,8 +164,8 @@ class GPFileBase:
     # Writing
     # =======
 
-    def placeholder(self, count, byte=b'\x00'):
-        self.data.write(byte * count)
+    def placeholder(self, count):
+        self.data.write(b'\x00' * count)
 
     def writeByte(self, data):
         packed = struct.pack('B', int(data))
@@ -200,28 +195,23 @@ class GPFileBase:
         packed = struct.pack('<d', float(data))
         self.data.write(packed)
 
-    def writeString(self, data, size=None):
-        if size is None:
-            size = len(data)
-        self.data.write(data.encode(self.encoding))
-        self.placeholder(size - len(data))
+    def writeByteSizeString(self, data: str, count: int):
+        if count > 255:
+            raise ValueError("count must be less than or equal to 255")
+        encoded = data.encode(self.encoding)[:count]
+        self.writeByte(len(encoded))
+        self.data.write(encoded.ljust(count, b'\x00'))
 
-    def writeByteSizeString(self, data, size=None):
-        if size is None:
-            size = len(data)
-        elif len(data) > size:
-            # We need to truncate long strings like track names to avoid data corruption
-            data = data[:size]
-        self.writeByte(len(data))
-        return self.writeString(data, size)
+    def writeIntSizeString(self, data: str):
+        encoded = data.encode(self.encoding)[:0x7FFFFFFF]
+        self.writeInt(len(encoded))
+        self.data.write(encoded)
 
-    def writeIntSizeString(self, data):
-        self.writeInt(len(data))
-        return self.writeString(data)
-
-    def writeIntByteSizeString(self, data):
-        self.writeInt(len(data) + 1)
-        return self.writeByteSizeString(data)
+    def writeIntByteSizeString(self, data: str):
+        encoded = data.encode(self.encoding)[:0xFF]
+        self.writeInt(len(encoded) + 1)
+        self.writeByte(len(encoded))
+        self.data.write(encoded)
 
     def writeVersion(self):
         self.writeByteSizeString(self.version, 30)

@@ -189,6 +189,7 @@ def testSongNewMeasure(tmpdir):
     song.newMeasure()
     filename = str(tmpdir.join('songNewMeasure.gp5'))
     gp.write(song, filename)
+
     song2 = gp.parse(filename)
     assert len(song2.measureHeaders) == 2
     assert len(song2.tracks[0].measures) == 2
@@ -210,3 +211,14 @@ def testTie():
 
     assert track.measures[3].voices[0].beats[1].notes[0].value == 1
     assert track.measures[3].voices[0].beats[2].notes[0].value == 1
+
+
+def testLongStrings(tmpdir):
+    song = gp.Song()
+    song.tracks[0].name = 'A' * 500
+    destpath = str(tmpdir.join('long_strings.gp5'))
+    gp.write(song, destpath)
+
+    song2 = gp.parse(destpath)
+    assert song != song2
+    assert song2.tracks[0].name == 'A' * 40
