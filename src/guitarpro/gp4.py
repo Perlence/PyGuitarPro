@@ -189,15 +189,15 @@ class GP4File(gp3.GP3File):
                 chord.strings[i] = fret
         chord.barres = []
         barresCount = self.readU8()
-        barreFrets = self.readU8(5)
-        barreStarts = self.readU8(5)
-        barreEnds = self.readU8(5)
+        barreFrets = [self.readU8() for _ in range(5)]
+        barreStarts = [self.readU8() for _ in range(5)]
+        barreEnds = [self.readU8() for _ in range(5)]
         for fret, start, end, _ in zip(barreFrets, barreStarts, barreEnds, range(barresCount)):
             barre = gp.Barre(fret, start, end)
             chord.barres.append(barre)
-        chord.omissions = self.readBool(7)
+        chord.omissions = [self.readBool() for _ in range(7)]
         self.skip(1)
-        chord.fingerings = list(map(gp.Fingering, self.readI8(7)))
+        chord.fingerings = [gp.Fingering(self.readI8()) for _ in range(7)]
         chord.show = self.readBool()
 
     def readBeatEffects(self, noteEffect):

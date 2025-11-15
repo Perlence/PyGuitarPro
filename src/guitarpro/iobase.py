@@ -53,41 +53,29 @@ class GPFileBase:
             else:
                 raise
 
-    def readI8(self, count=1, default=None):
-        """Read *count* signed 8-bit integers."""
-        args = ('b', 1)
-        return (self.read(*args, default=default) if count == 1 else
-                [self.read(*args, default=default) for i in range(count)])
+    def readI8(self, default=None) -> int:
+        """Read a signed 8-bit integer."""
+        return self.read('b', 1, default=default)
 
-    def readU8(self, count=1, default=None):
-        """Read *count* unsigned 8-bit integers."""
-        args = ('B', 1)
-        return (self.read(*args, default=default) if count == 1 else
-                [self.read(*args, default=default) for i in range(count)])
+    def readU8(self, default=None) -> int:
+        """Read an unsigned 8-bit integer."""
+        return self.read('B', 1, default=default)
 
-    def readBool(self, count=1, default=None):
-        """Read *count* 8-bit booleans."""
-        args = ('?', 1)
-        return (self.read(*args, default=default) if count == 1 else
-                [self.read(*args, default=default) for i in range(count)])
+    def readBool(self, default=None) -> bool:
+        """Read an 8-bit boolean."""
+        return self.read('?', 1, default=default)
 
-    def readI16(self, count=1, default=None):
-        """Read *count* signed 16-bit integers."""
-        args = ('<h', 2)
-        return (self.read(*args, default=default) if count == 1 else
-                [self.read(*args, default=default) for i in range(count)])
+    def readI16(self, default=None) -> int:
+        """Read a signed 16-bit integer."""
+        return self.read('<h', 2, default=default)
 
-    def readI32(self, count=1, default=None):
-        """Read *count* signed 32-bit integers."""
-        args = ('<i', 4)
-        return (self.read(*args, default=default) if count == 1 else
-                [self.read(*args, default=default) for i in range(count)])
+    def readI32(self, default=None) -> int:
+        """Read a signed 32-bit integer."""
+        return self.read('<i', 4, default=default)
 
-    def readF64(self, count=1, default=None):
-        """Read *count* 64-bit floats."""
-        args = ('<d', 8)
-        return (self.read(*args, default=default) if count == 1 else
-                [self.read(*args, default=default) for i in range(count)])
+    def readF64(self, default=None) -> float:
+        """Read a 64-bit float."""
+        return self.read('<d', 8, default=default)
 
     def readByteSizeString(self, count: int):
         """Read the string length (1 byte) followed by *count* character bytes.

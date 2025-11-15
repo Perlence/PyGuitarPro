@@ -150,7 +150,7 @@ class GP5File(gp4.GP4File):
         Volume values are stored as opposite to actual value. See
         :meth:`unpackVolumeValue`.
         """
-        knobs = list(map(self.unpackVolumeValue, self.readI8(count=knobsNumber)))
+        knobs = [self.unpackVolumeValue(self.readI8()) for _ in range(knobsNumber)]
         return gp.RSEEqualizer(knobs=knobs[:-1], gain=knobs[-1])
 
     def unpackVolumeValue(self, value):
@@ -328,7 +328,7 @@ class GP5File(gp4.GP4File):
         if header.repeatClose > -1:
             header.repeatClose -= 1
         if flags & 0x03:
-            header.timeSignature.beams = self.readU8(4)
+            header.timeSignature.beams = [self.readU8() for _ in range(4)]
         else:
             header.timeSignature.beams = previous.timeSignature.beams
         if flags & 0x10 == 0:
@@ -480,7 +480,8 @@ class GP5File(gp4.GP4File):
         - RSE instrument effect. See :meth:`readRSEInstrumentEffect`.
         """
         trackRSE.humanize = self.readU8()
-        self.readI32(3)  # ???
+        for _ in range(3):
+            self.readI32()  # ???
         self.skip(12)  # ???
         trackRSE.instrument = self.readRSEInstrument()
         if self.versionTuple > (5, 0, 0):

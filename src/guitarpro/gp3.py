@@ -646,13 +646,13 @@ class GP3File(GPFileBase):
                 chord.strings[i] = fret
         chord.barres = []
         barresCount = self.readI32()
-        barreFrets = self.readI32(2)
-        barreStarts = self.readI32(2)
-        barreEnds = self.readI32(2)
+        barreFrets = [self.readI32() for _ in range(2)]
+        barreStarts = [self.readI32() for _ in range(2)]
+        barreEnds = [self.readI32() for _ in range(2)]
         for fret, start, end, _ in zip(barreFrets, barreStarts, barreEnds, range(barresCount)):
             barre = gp.Barre(fret, start, end)
             chord.barres.append(barre)
-        chord.omissions = self.readBool(7)
+        chord.omissions = [self.readBool() for _ in range(7)]
         self.skip(1)
 
     def readBeatEffects(self, noteEffect):
