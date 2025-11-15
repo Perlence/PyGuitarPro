@@ -50,11 +50,11 @@ class GP3File(GPFileBase):
         song.versionTuple = self.versionTuple
         self.readInfo(song)
         self._tripletFeel = gp.TripletFeel.eighth if self.readBool() else gp.TripletFeel.none
-        song.tempo = self.readInt()
-        song.key = gp.KeySignature((self.readInt(), 0))
+        song.tempo = self.readI32()
+        song.key = gp.KeySignature((self.readI32(), 0))
         channels = self.readMidiChannels()
-        measureCount = self.readInt()
-        trackCount = self.readInt()
+        measureCount = self.readI32()
+        trackCount = self.readI32()
         with self.annotateErrors('reading'):
             self.readMeasureHeaders(song, measureCount)
             self.readTracks(song, trackCount, channels)
@@ -89,7 +89,7 @@ class GP3File(GPFileBase):
         song.copyright = self.readIntByteSizeString()
         song.tab = self.readIntByteSizeString()
         song.instructions = self.readIntByteSizeString()
-        notesCount = self.readInt()
+        notesCount = self.readI32()
         song.notice = []
         for _ in range(notesCount):
             song.notice.append(self.readIntByteSizeString())
@@ -133,16 +133,16 @@ class GP3File(GPFileBase):
             newChannel = gp.MidiChannel()
             newChannel.channel = i
             newChannel.effectChannel = i
-            instrument = self.readInt()
+            instrument = self.readI32()
             if newChannel.isPercussionChannel and instrument == -1:
                 instrument = 0
             newChannel.instrument = instrument
-            newChannel.volume = self.toChannelShort(self.readSignedByte())
-            newChannel.balance = self.toChannelShort(self.readSignedByte())
-            newChannel.chorus = self.toChannelShort(self.readSignedByte())
-            newChannel.reverb = self.toChannelShort(self.readSignedByte())
-            newChannel.phaser = self.toChannelShort(self.readSignedByte())
-            newChannel.tremolo = self.toChannelShort(self.readSignedByte())
+            newChannel.volume = self.toChannelShort(self.readI8())
+            newChannel.balance = self.toChannelShort(self.readI8())
+            newChannel.chorus = self.toChannelShort(self.readI8())
+            newChannel.reverb = self.toChannelShort(self.readI8())
+            newChannel.phaser = self.toChannelShort(self.readI8())
+            newChannel.tremolo = self.toChannelShort(self.readI8())
             channels.append(newChannel)
             # Backward compatibility with version 3.0
             self.skip(2)
@@ -207,29 +207,29 @@ class GP3File(GPFileBase):
           encode a key signature change on the current piece. First byte
           is key signature root, second is key signature type.
         """
-        flags = self.readByte()
+        flags = self.readU8()
         header = gp.MeasureHeader()
         header.number = number
         header.start = 0
         header.tripletFeel = self._tripletFeel
         if flags & 0x01:
-            header.timeSignature.numerator = self.readSignedByte()
+            header.timeSignature.numerator = self.readI8()
         else:
             header.timeSignature.numerator = previous.timeSignature.numerator
         if flags & 0x02:
-            header.timeSignature.denominator.value = self.readSignedByte()
+            header.timeSignature.denominator.value = self.readI8()
         else:
             header.timeSignature.denominator.value = previous.timeSignature.denominator.value
         header.isRepeatOpen = bool(flags & 0x04)
         if flags & 0x08:
-            header.repeatClose = self.readSignedByte()
+            header.repeatClose = self.readI8()
         if flags & 0x10:
             header.repeatAlternative = self.readRepeatAlternative(song.measureHeaders)
         if flags & 0x20:
             header.marker = self.readMarker(header)
         if flags & 0x40:
-            root = self.readSignedByte()
-            type_ = self.readSignedByte()
+            root = self.readI8()
+            type_ = self.readI8()
             header.keySignature = gp.KeySignature((root, type_))
         elif header.number > 1:
             header.keySignature = previous.keySignature
@@ -237,7 +237,7 @@ class GP3File(GPFileBase):
         return header, flags
 
     def readRepeatAlternative(self, measureHeaders):
-        value = self.readByte()
+        value = self.readU8()
         existingAlternatives = 0
         for header in reversed(measureHeaders):
             if header.isRepeatOpen:
@@ -265,9 +265,9 @@ class GP3File(GPFileBase):
         :class:`guitarpro.models.Track`. They consist of 3 consecutive
         bytes and one blank byte.
         """
-        r = self.readByte()
-        g = self.readByte()
-        b = self.readByte()
+        r = self.readU8()
+        g = self.readU8()
+        b = self.readU8()
         self.skip(1)
         return gp.Color(r, g, b)
 
@@ -326,23 +326,23 @@ class GP3File(GPFileBase):
 
         - Track's color. The track's displayed color in Guitar Pro.
         """
-        flags = self.readByte()
+        flags = self.readU8()
         track.isPercussionTrack = bool(flags & 0x01)
         track.is12StringedGuitarTrack = bool(flags & 0x02)
         track.isBanjoTrack = bool(flags & 0x04)
         track.name = self.readByteSizeString(40)
-        stringCount = self.readInt()
+        stringCount = self.readI32()
         for i in range(7):
-            iTuning = self.readInt()
+            iTuning = self.readI32()
             if stringCount > i:
                 oString = gp.GuitarString(i + 1, iTuning)
                 track.strings.append(oString)
-        track.port = self.readInt()
+        track.port = self.readI32()
         track.channel = self.readChannel(channels)
         if track.channel.channel == 9:
             track.isPercussionTrack = True
-        track.fretCount = self.readInt()
-        track.offset = self.readInt()
+        track.fretCount = self.readI32()
+        track.offset = self.readI32()
         track.color = self.readColor()
 
     def readChannel(self, channels):
@@ -352,8 +352,8 @@ class GP3File(GPFileBase):
         is zero-based number of channel, second is zero-based number of
         channel used for effects.
         """
-        index = self.readInt() - 1
-        effectChannel = self.readInt() - 1
+        index = self.readI32() - 1
+        effectChannel = self.readI32() - 1
         if 0 <= index < len(channels):
             trackChannel = channels[index]
             if trackChannel.instrument < 0:
@@ -408,7 +408,7 @@ class GP3File(GPFileBase):
         self._currentVoiceNumber = None
 
     def readVoice(self, start, voice):
-        beats = self.readInt()
+        beats = self.readI32()
         for beat in range(beats):
             self._currentBeatNumber = beat + 1
             start += self.readBeat(start, voice)
@@ -445,10 +445,10 @@ class GP3File(GPFileBase):
 
         - Mix table change effect. See :meth:`readMixTableChange`.
         """
-        flags = self.readByte()
+        flags = self.readU8()
         beat = self.getBeat(voice, start)
         if flags & 0x40:
-            beat.status = gp.BeatStatus(self.readByte())
+            beat.status = gp.BeatStatus(self.readU8())
         else:
             beat.status = gp.BeatStatus.normal
         duration = self.readDuration(flags)
@@ -495,10 +495,10 @@ class GP3File(GPFileBase):
         If flag at *0x20* is true, the tuplet is read.
         """
         duration = gp.Duration()
-        duration.value = 1 << (self.readSignedByte() + 2)
+        duration.value = 1 << (self.readI8() + 2)
         duration.isDotted = bool(flags & 0x01)
         if flags & 0x20:
-            iTuplet = self.readInt()
+            iTuplet = self.readI32()
             if iTuplet == 3:
                 duration.tuplet.enters = 3
                 duration.tuplet.times = 2
@@ -561,10 +561,10 @@ class GP3File(GPFileBase):
           *-1*.
         """
         chord.name = self.readIntByteSizeString()
-        chord.firstFret = self.readInt()
+        chord.firstFret = self.readI32()
         if chord.firstFret:
             for i in range(6):
-                fret = self.readInt()
+                fret = self.readI32()
                 if i < len(chord.strings):
                     chord.strings[i] = fret
 
@@ -629,26 +629,26 @@ class GP3File(GPFileBase):
         chord.sharp = self.readBool()
         intonation = 'sharp' if chord.sharp else 'flat'
         self.skip(3)
-        chord.root = gp.PitchClass(self.readInt(), intonation=intonation)
-        chord.type = gp.ChordType(self.readInt())
-        chord.extension = gp.ChordExtension(self.readInt())
-        chord.bass = gp.PitchClass(self.readInt(), intonation=intonation)
-        chord.tonality = gp.ChordAlteration(self.readInt())
+        chord.root = gp.PitchClass(self.readI32(), intonation=intonation)
+        chord.type = gp.ChordType(self.readI32())
+        chord.extension = gp.ChordExtension(self.readI32())
+        chord.bass = gp.PitchClass(self.readI32(), intonation=intonation)
+        chord.tonality = gp.ChordAlteration(self.readI32())
         chord.add = self.readBool()
         chord.name = self.readByteSizeString(22)
-        chord.fifth = gp.ChordAlteration(self.readInt())
-        chord.ninth = gp.ChordAlteration(self.readInt())
-        chord.eleventh = gp.ChordAlteration(self.readInt())
-        chord.firstFret = self.readInt()
+        chord.fifth = gp.ChordAlteration(self.readI32())
+        chord.ninth = gp.ChordAlteration(self.readI32())
+        chord.eleventh = gp.ChordAlteration(self.readI32())
+        chord.firstFret = self.readI32()
         for i in range(6):
-            fret = self.readInt()
+            fret = self.readI32()
             if i < len(chord.strings):
                 chord.strings[i] = fret
         chord.barres = []
-        barresCount = self.readInt()
-        barreFrets = self.readInt(2)
-        barreStarts = self.readInt(2)
-        barreEnds = self.readInt(2)
+        barresCount = self.readI32()
+        barreFrets = self.readI32(2)
+        barreStarts = self.readI32(2)
+        barreEnds = self.readI32(2)
         for fret, start, end, _ in zip(barreFrets, barreStarts, barreEnds, range(barresCount)):
             barre = gp.Barre(fret, start, end)
             chord.barres.append(barre)
@@ -680,17 +680,17 @@ class GP3File(GPFileBase):
         - Beat stroke direction. See :meth:`readBeatStroke`.
         """
         beatEffects = gp.BeatEffect()
-        flags1 = self.readByte()
+        flags1 = self.readU8()
         noteEffect.vibrato = bool(flags1 & 0x01) or noteEffect.vibrato
         beatEffects.vibrato = bool(flags1 & 0x02) or beatEffects.vibrato
         beatEffects.fadeIn = bool(flags1 & 0x10)
         if flags1 & 0x20:
-            flags2 = self.readByte()
+            flags2 = self.readU8()
             beatEffects.slapEffect = gp.SlapEffect(flags2)
             if beatEffects.slapEffect == gp.SlapEffect.none:
                 beatEffects.tremoloBar = self.readTremoloBar()
             else:
-                self.readInt()
+                self.readI32()
         if flags1 & 0x40:
             beatEffects.stroke = self.readBeatStroke()
         if flags1 & 0x04:
@@ -711,7 +711,7 @@ class GP3File(GPFileBase):
         """
         barEffect = gp.BendEffect()
         barEffect.type = gp.BendType.dip
-        barEffect.value = self.readInt()
+        barEffect.value = self.readI32()
         barEffect.points = [
             gp.BendPoint(0, 0),
             gp.BendPoint(round(gp.BendEffect.maxPosition / 2),
@@ -727,8 +727,8 @@ class GP3File(GPFileBase):
         to stroke up and stroke down speed. See
         :class:`guitarpro.models.BeatStrokeDirection` for value mapping.
         """
-        strokeDown = self.readSignedByte()
-        strokeUp = self.readSignedByte()
+        strokeDown = self.readI8()
+        strokeUp = self.readI8()
         if strokeUp > 0:
             return gp.BeatStroke(gp.BeatStrokeDirection.up, self.toStrokeValue(strokeUp))
         elif strokeDown > 0:
@@ -794,14 +794,14 @@ class GP3File(GPFileBase):
         If signed byte is *-1* then corresponding parameter hasn't
         changed.
         """
-        instrument = self.readSignedByte()
-        volume = self.readSignedByte()
-        balance = self.readSignedByte()
-        chorus = self.readSignedByte()
-        reverb = self.readSignedByte()
-        phaser = self.readSignedByte()
-        tremolo = self.readSignedByte()
-        tempo = self.readInt()
+        instrument = self.readI8()
+        volume = self.readI8()
+        balance = self.readI8()
+        chorus = self.readI8()
+        reverb = self.readI8()
+        phaser = self.readI8()
+        tremolo = self.readI8()
+        tempo = self.readI32()
         if instrument >= 0:
             tableChange.instrument = gp.MixTableItem(instrument)
         if volume >= 0:
@@ -827,19 +827,19 @@ class GP3File(GPFileBase):
         in :ref:`signed-byte`.
         """
         if tableChange.volume is not None:
-            tableChange.volume.duration = self.readSignedByte()
+            tableChange.volume.duration = self.readI8()
         if tableChange.balance is not None:
-            tableChange.balance.duration = self.readSignedByte()
+            tableChange.balance.duration = self.readI8()
         if tableChange.chorus is not None:
-            tableChange.chorus.duration = self.readSignedByte()
+            tableChange.chorus.duration = self.readI8()
         if tableChange.reverb is not None:
-            tableChange.reverb.duration = self.readSignedByte()
+            tableChange.reverb.duration = self.readI8()
         if tableChange.phaser is not None:
-            tableChange.phaser.duration = self.readSignedByte()
+            tableChange.phaser.duration = self.readI8()
         if tableChange.tremolo is not None:
-            tableChange.tremolo.duration = self.readSignedByte()
+            tableChange.tremolo.duration = self.readI8()
         if tableChange.tempo is not None:
-            tableChange.tempo.duration = self.readSignedByte()
+            tableChange.tempo.duration = self.readI8()
             tableChange.hideTempo = False
 
     def readNotes(self, track, beat, duration, noteEffect=None):
@@ -856,7 +856,7 @@ class GP3File(GPFileBase):
         - *0x40*: 1th string
         - *0x80*: *blank*
         """
-        stringFlags = self.readByte()
+        stringFlags = self.readU8()
         for string in track.strings:
             if stringFlags & 1 << (7 - string.number):
                 note = gp.Note(beat, effect=attr.evolve(noteEffect))
@@ -897,27 +897,27 @@ class GP3File(GPFileBase):
 
         - Note effects. See :meth:`readNoteEffects`.
         """
-        flags = self.readByte()
+        flags = self.readU8()
         note.string = guitarString.number
         note.effect.ghostNote = bool(flags & 0x04)
         if flags & 0x20:
-            note.type = gp.NoteType(self.readByte())
+            note.type = gp.NoteType(self.readU8())
         if flags & 0x01:
-            note.duration = self.readSignedByte()
-            note.tuplet = self.readSignedByte()
+            note.duration = self.readI8()
+            note.tuplet = self.readI8()
         if flags & 0x10:
-            dyn = self.readSignedByte()
+            dyn = self.readI8()
             note.velocity = self.unpackVelocity(dyn)
         if flags & 0x20:
-            fret = self.readSignedByte()
+            fret = self.readI8()
             if note.type == gp.NoteType.tie:
                 value = self.getTiedNoteValue(note)
             else:
                 value = fret
             note.value = min(max(value, 0), 99)
         if flags & 0x80:
-            note.effect.leftHandFinger = gp.Fingering(self.readSignedByte())
-            note.effect.rightHandFinger = gp.Fingering(self.readSignedByte())
+            note.effect.leftHandFinger = gp.Fingering(self.readI8())
+            note.effect.rightHandFinger = gp.Fingering(self.readI8())
         if flags & 0x08:
             note.effect = self.readNoteEffects(note)
             if note.effect.isHarmonic and isinstance(note.effect.harmonic, gp.TappedHarmonic):
@@ -962,7 +962,7 @@ class GP3File(GPFileBase):
         - Grace note. See :meth:`readGrace`.
         """
         noteEffect = note.effect or gp.NoteEffect()
-        flags = self.readByte()
+        flags = self.readU8()
         noteEffect.hammer = bool(flags & 0x02)
         noteEffect.letRing = bool(flags & 0x08)
         if flags & 0x01:
@@ -995,12 +995,12 @@ class GP3File(GPFileBase):
           * Vibrato: :ref:`bool`.
         """
         bendEffect = gp.BendEffect()
-        bendEffect.type = gp.BendType(self.readSignedByte())
-        bendEffect.value = self.readInt()
-        pointCount = self.readInt()
+        bendEffect.type = gp.BendType(self.readI8())
+        bendEffect.value = self.readI32()
+        pointCount = self.readI32()
         for _ in range(pointCount):
-            position = round(self.readInt() * gp.BendEffect.maxPosition / GPFileBase.bendPosition)
-            value = round(self.readInt() * gp.BendEffect.semitoneLength / GPFileBase.bendSemitone)
+            position = round(self.readI32() * gp.BendEffect.maxPosition / GPFileBase.bendPosition)
+            value = round(self.readI32() * gp.BendEffect.semitoneLength / GPFileBase.bendSemitone)
             vibrato = self.readBool()
             bendEffect.points.append(gp.BendPoint(position, value, vibrato))
         if pointCount > 0:
@@ -1024,12 +1024,12 @@ class GP3File(GPFileBase):
           - *3*: Sixteenth note.
         """
         grace = gp.GraceEffect()
-        grace.fret = self.readSignedByte()
-        grace.velocity = self.unpackVelocity(self.readByte())
-        grace.duration = 1 << (7 - self.readByte())
+        grace.fret = self.readI8()
+        grace.velocity = self.unpackVelocity(self.readU8())
+        grace.duration = 1 << (7 - self.readU8())
         grace.isDead = grace.fret == -1
         grace.isOnBeat = False
-        grace.transition = gp.GraceEffectTransition(self.readSignedByte())
+        grace.transition = gp.GraceEffectTransition(self.readI8())
         return grace
 
     def readSlides(self):
@@ -1043,16 +1043,16 @@ class GP3File(GPFileBase):
         self.writeInfo(song)
         self._tripletFeel = song.tracks[0].measures[0].tripletFeel.value
         self.writeBool(self._tripletFeel)
-        self.writeInt(song.tempo)
-        self.writeInt(song.key.value[0])
+        self.writeI32(song.tempo)
+        self.writeI32(song.key.value[0])
         self.writeMidiChannels(song.tracks)
-        self.writeInt(len(song.tracks[0].measures))
-        self.writeInt(len(song.tracks))
+        self.writeI32(len(song.tracks[0].measures))
+        self.writeI32(len(song.tracks))
         with self.annotateErrors('writing'):
             self.writeMeasureHeaders(song.tracks[0].measures)
             self.writeTracks(song.tracks)
             self.writeMeasures(song.tracks)
-        self.writeInt(0)
+        self.writeI32(0)
 
     def writeInfo(self, song):
         self.writeIntByteSizeString(song.title)
@@ -1080,7 +1080,7 @@ class GP3File(GPFileBase):
             for line in notice
             for wl in textwrap.wrap(line, 255, expand_tabs=False, replace_whitespace=False, drop_whitespace=False)
         ]
-        self.writeInt(len(notice))
+        self.writeI32(len(notice))
         for line in notice:
             self.writeIntByteSizeString(line)
 
@@ -1097,15 +1097,15 @@ class GP3File(GPFileBase):
             return default
         for channel in map(getTrackChannelByChannel, range(64)):
             if channel.isPercussionChannel and channel.instrument == 0:
-                self.writeInt(-1)
+                self.writeI32(-1)
             else:
-                self.writeInt(channel.instrument)
-            self.writeSignedByte(self.fromChannelShort(channel.volume))
-            self.writeSignedByte(self.fromChannelShort(channel.balance))
-            self.writeSignedByte(self.fromChannelShort(channel.chorus))
-            self.writeSignedByte(self.fromChannelShort(channel.reverb))
-            self.writeSignedByte(self.fromChannelShort(channel.phaser))
-            self.writeSignedByte(self.fromChannelShort(channel.tremolo))
+                self.writeI32(channel.instrument)
+            self.writeI8(self.fromChannelShort(channel.volume))
+            self.writeI8(self.fromChannelShort(channel.balance))
+            self.writeI8(self.fromChannelShort(channel.chorus))
+            self.writeI8(self.fromChannelShort(channel.reverb))
+            self.writeI8(self.fromChannelShort(channel.phaser))
+            self.writeI8(self.fromChannelShort(channel.tremolo))
             # Backward compatibility with version 3.0
             self.placeholder(2)
 
@@ -1145,13 +1145,13 @@ class GP3File(GPFileBase):
         return flags
 
     def writeMeasureHeaderValues(self, header, flags):
-        self.writeByte(flags)
+        self.writeU8(flags)
         if flags & 0x01:
-            self.writeSignedByte(header.timeSignature.numerator)
+            self.writeI8(header.timeSignature.numerator)
         if flags & 0x02:
-            self.writeSignedByte(header.timeSignature.denominator.value)
+            self.writeI8(header.timeSignature.denominator.value)
         if flags & 0x08:
-            self.writeSignedByte(header.repeatClose)
+            self.writeI8(header.repeatClose)
         if flags & 0x10:
             self.writeRepeatAlternative(header.repeatAlternative)
         if flags & 0x20:
@@ -1164,16 +1164,16 @@ class GP3File(GPFileBase):
                 firstOne = True
             elif firstOne:
                 break
-        self.writeByte(i)
+        self.writeU8(i)
 
     def writeMarker(self, marker):
         self.writeIntByteSizeString(marker.title)
         self.writeColor(marker.color)
 
     def writeColor(self, color):
-        self.writeByte(color.r)
-        self.writeByte(color.g)
-        self.writeByte(color.b)
+        self.writeU8(color.r)
+        self.writeU8(color.g)
+        self.writeU8(color.b)
         self.placeholder(1)
 
     def writeTracks(self, tracks):
@@ -1190,24 +1190,24 @@ class GP3File(GPFileBase):
             flags |= 0x02
         if track.isBanjoTrack:
             flags |= 0x04
-        self.writeByte(flags)
+        self.writeU8(flags)
         self.writeByteSizeString(track.name, 40)
-        self.writeInt(len(track.strings))
+        self.writeI32(len(track.strings))
         for i in range(7):
             if i < len(track.strings):
                 tuning = track.strings[i].value
             else:
                 tuning = 0
-            self.writeInt(tuning)
-        self.writeInt(track.port)
+            self.writeI32(tuning)
+        self.writeI32(track.port)
         self.writeChannel(track)
-        self.writeInt(track.fretCount)
-        self.writeInt(track.offset)
+        self.writeI32(track.fretCount)
+        self.writeI32(track.offset)
         self.writeColor(track.color)
 
     def writeChannel(self, track):
-        self.writeInt(track.channel.channel + 1)
-        self.writeInt(track.channel.effectChannel + 1)
+        self.writeI32(track.channel.channel + 1)
+        self.writeI32(track.channel.effectChannel + 1)
 
     def writeMeasures(self, tracks):
         partwiseMeasures = [track.measures for track in tracks]
@@ -1226,7 +1226,7 @@ class GP3File(GPFileBase):
         self._currentVoiceNumber = None
 
     def writeVoice(self, voice):
-        self.writeInt(len(voice.beats))
+        self.writeI32(len(voice.beats))
         for number, beat in enumerate(voice.beats):
             self._currentBeatNumber = number + 1
             self.writeBeat(beat)
@@ -1248,9 +1248,9 @@ class GP3File(GPFileBase):
             flags |= 0x20
         if beat.status != gp.BeatStatus.normal:
             flags |= 0x40
-        self.writeByte(flags)
+        self.writeU8(flags)
         if flags & 0x40:
-            self.writeByte(beat.status.value)
+            self.writeU8(beat.status.value)
         self.writeDuration(beat.duration, flags)
         if flags & 0x02:
             self.writeChord(beat.effect.chord)
@@ -1264,12 +1264,12 @@ class GP3File(GPFileBase):
 
     def writeDuration(self, duration, flags):
         value = duration.value.bit_length() - 3
-        self.writeSignedByte(value)
+        self.writeI8(value)
         if flags & 0x20:
             if not duration.tuplet.isSupported():
                 return
             iTuplet = duration.tuplet.enters
-            self.writeInt(iTuplet)
+            self.writeI32(iTuplet)
 
     def writeChord(self, chord):
         self.writeBool(chord.newFormat)
@@ -1280,38 +1280,38 @@ class GP3File(GPFileBase):
 
     def writeOldChord(self, chord):
         self.writeIntByteSizeString(chord.name)
-        self.writeInt(chord.firstFret)
+        self.writeI32(chord.firstFret)
         for fret in clamp(chord.strings, 6, fillvalue=-1):
-            self.writeInt(fret)
+            self.writeI32(fret)
 
     def writeNewChord(self, chord):
         self.writeBool(chord.sharp)
         self.placeholder(3)
-        self.writeInt(chord.root.value if chord.root else 0)
-        self.writeInt(self.getEnumValue(chord.type) if chord.type else 0)
-        self.writeInt(self.getEnumValue(chord.extension) if chord.extension else 0)
-        self.writeInt(chord.bass.value if chord.bass else 0)
-        self.writeInt(chord.tonality.value if chord.tonality else 0)
+        self.writeI32(chord.root.value if chord.root else 0)
+        self.writeI32(self.getEnumValue(chord.type) if chord.type else 0)
+        self.writeI32(self.getEnumValue(chord.extension) if chord.extension else 0)
+        self.writeI32(chord.bass.value if chord.bass else 0)
+        self.writeI32(chord.tonality.value if chord.tonality else 0)
         self.writeBool(chord.add)
         self.writeByteSizeString(chord.name, 22)
-        self.writeInt(chord.fifth.value if chord.fifth else 0)
-        self.writeInt(chord.ninth.value if chord.ninth else 0)
-        self.writeInt(chord.eleventh.value if chord.eleventh else 0)
-        self.writeInt(chord.firstFret)
+        self.writeI32(chord.fifth.value if chord.fifth else 0)
+        self.writeI32(chord.ninth.value if chord.ninth else 0)
+        self.writeI32(chord.eleventh.value if chord.eleventh else 0)
+        self.writeI32(chord.firstFret)
         for fret in clamp(chord.strings, 6, fillvalue=-1):
-            self.writeInt(fret)
+            self.writeI32(fret)
         barres = chord.barres[:2]
-        self.writeInt(len(barres))
+        self.writeI32(len(barres))
         if barres:
             barreFrets, barreStarts, barreEnds = zip(*map(attr.astuple, barres))
         else:
             barreFrets, barreStarts, barreEnds = [], [], []
         for fret in clamp(barreFrets, 2, fillvalue=0):
-            self.writeInt(fret)
+            self.writeI32(fret)
         for start in clamp(barreStarts, 2, fillvalue=0):
-            self.writeInt(start)
+            self.writeI32(start)
         for end in clamp(barreEnds, 2, fillvalue=0):
-            self.writeInt(end)
+            self.writeI32(end)
         for omission in clamp(chord.omissions, 7, fillvalue=True):
             self.writeBool(omission)
         self.placeholder(1)
@@ -1332,18 +1332,18 @@ class GP3File(GPFileBase):
             flags1 |= 0x20
         if beat.effect.stroke != gp.BeatStroke():
             flags1 |= 0x40
-        self.writeByte(flags1)
+        self.writeU8(flags1)
         if flags1 & 0x20:
-            self.writeByte(beat.effect.slapEffect.value)
+            self.writeU8(beat.effect.slapEffect.value)
             self.writeTremoloBar(beat.effect.tremoloBar)
         if flags1 & 0x40:
             self.writeBeatStroke(beat.effect.stroke)
 
     def writeTremoloBar(self, tremoloBar):
         if tremoloBar is not None:
-            self.writeInt(tremoloBar.value)
+            self.writeI32(tremoloBar.value)
         else:
-            self.writeInt(0)
+            self.writeI32(0)
 
     def writeBeatStroke(self, stroke):
         if stroke.direction == gp.BeatStrokeDirection.up:
@@ -1352,8 +1352,8 @@ class GP3File(GPFileBase):
         elif stroke.direction == gp.BeatStrokeDirection.down:
             strokeUp = 0
             strokeDown = self.fromStrokeValue(stroke.value)
-        self.writeSignedByte(strokeDown)
-        self.writeSignedByte(strokeUp)
+        self.writeI8(strokeDown)
+        self.writeI8(strokeUp)
 
     def fromStrokeValue(self, value):
         if value == gp.Duration.hundredTwentyEighth:
@@ -1376,53 +1376,53 @@ class GP3File(GPFileBase):
         self.writeMixTableChangeDurations(tableChange)
 
     def writeMixTableChangeValues(self, tableChange):
-        self.writeSignedByte(tableChange.instrument.value if tableChange.instrument is not None else -1)
-        self.writeSignedByte(tableChange.volume.value if tableChange.volume is not None else -1)
-        self.writeSignedByte(tableChange.balance.value if tableChange.balance is not None else -1)
-        self.writeSignedByte(tableChange.chorus.value if tableChange.chorus is not None else -1)
-        self.writeSignedByte(tableChange.reverb.value if tableChange.reverb is not None else -1)
-        self.writeSignedByte(tableChange.phaser.value if tableChange.phaser is not None else -1)
-        self.writeSignedByte(tableChange.tremolo.value if tableChange.tremolo is not None else -1)
-        self.writeInt(tableChange.tempo.value if tableChange.tempo is not None else -1)
+        self.writeI8(tableChange.instrument.value if tableChange.instrument is not None else -1)
+        self.writeI8(tableChange.volume.value if tableChange.volume is not None else -1)
+        self.writeI8(tableChange.balance.value if tableChange.balance is not None else -1)
+        self.writeI8(tableChange.chorus.value if tableChange.chorus is not None else -1)
+        self.writeI8(tableChange.reverb.value if tableChange.reverb is not None else -1)
+        self.writeI8(tableChange.phaser.value if tableChange.phaser is not None else -1)
+        self.writeI8(tableChange.tremolo.value if tableChange.tremolo is not None else -1)
+        self.writeI32(tableChange.tempo.value if tableChange.tempo is not None else -1)
 
     def writeMixTableChangeDurations(self, tableChange):
         if tableChange.volume is not None:
-            self.writeSignedByte(tableChange.volume.duration)
+            self.writeI8(tableChange.volume.duration)
         if tableChange.balance is not None:
-            self.writeSignedByte(tableChange.balance.duration)
+            self.writeI8(tableChange.balance.duration)
         if tableChange.chorus is not None:
-            self.writeSignedByte(tableChange.chorus.duration)
+            self.writeI8(tableChange.chorus.duration)
         if tableChange.reverb is not None:
-            self.writeSignedByte(tableChange.reverb.duration)
+            self.writeI8(tableChange.reverb.duration)
         if tableChange.phaser is not None:
-            self.writeSignedByte(tableChange.phaser.duration)
+            self.writeI8(tableChange.phaser.duration)
         if tableChange.tremolo is not None:
-            self.writeSignedByte(tableChange.tremolo.duration)
+            self.writeI8(tableChange.tremolo.duration)
         if tableChange.tempo is not None:
-            self.writeSignedByte(tableChange.tempo.duration)
+            self.writeI8(tableChange.tempo.duration)
 
     def writeNotes(self, beat):
         stringFlags = 0x00
         for note in beat.notes:
             stringFlags |= 1 << (7 - note.string)
-        self.writeByte(stringFlags)
+        self.writeU8(stringFlags)
         for note in sorted(beat.notes, key=lambda note: note.string):
             self.writeNote(note)
 
     def writeNote(self, note):
         flags = self.packNoteFlags(note)
-        self.writeByte(flags)
+        self.writeU8(flags)
         if flags & 0x20:
-            self.writeByte(self.getEnumValue(note.type))
+            self.writeU8(self.getEnumValue(note.type))
         if flags & 0x01:
-            self.writeSignedByte(note.duration)
-            self.writeSignedByte(note.tuplet)
+            self.writeI8(note.duration)
+            self.writeI8(note.tuplet)
         if flags & 0x10:
             value = self.packVelocity(note.velocity)
-            self.writeSignedByte(value)
+            self.writeI8(value)
         if flags & 0x20:
             fret = note.value if note.type != gp.NoteType.tie else 0
-            self.writeSignedByte(fret)
+            self.writeI8(fret)
         if flags & 0x08:
             self.writeNoteEffects(note)
 
@@ -1457,26 +1457,26 @@ class GP3File(GPFileBase):
             flags1 |= 0x08
         if noteEffect.isGrace:
             flags1 |= 0x10
-        self.writeByte(flags1)
+        self.writeU8(flags1)
         if flags1 & 0x01:
             self.writeBend(noteEffect.bend)
         if flags1 & 0x10:
             self.writeGrace(noteEffect.grace)
 
     def writeBend(self, bend):
-        self.writeSignedByte(bend.type.value)
-        self.writeInt(bend.value)
-        self.writeInt(len(bend.points))
+        self.writeI8(bend.type.value)
+        self.writeI32(bend.value)
+        self.writeI32(len(bend.points))
         for point in bend.points:
-            self.writeInt(round(point.position * self.bendPosition / gp.BendEffect.maxPosition))
-            self.writeInt(round(point.value * self.bendSemitone / gp.BendEffect.semitoneLength))
+            self.writeI32(round(point.position * self.bendPosition / gp.BendEffect.maxPosition))
+            self.writeI32(round(point.value * self.bendSemitone / gp.BendEffect.semitoneLength))
             self.writeBool(point.vibrato)
 
     def writeGrace(self, grace):
-        self.writeSignedByte(grace.fret)
-        self.writeByte(self.packVelocity(grace.velocity))
-        self.writeByte(8 - grace.duration.bit_length())
-        self.writeSignedByte(grace.transition.value)
+        self.writeI8(grace.fret)
+        self.writeU8(self.packVelocity(grace.velocity))
+        self.writeU8(8 - grace.duration.bit_length())
+        self.writeI8(grace.transition.value)
 
     def packVelocity(self, velocity):
         velocityIncrement = gp.Velocities.velocityIncrement

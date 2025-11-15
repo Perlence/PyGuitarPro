@@ -53,38 +53,38 @@ class GPFileBase:
             else:
                 raise
 
-    def readByte(self, count=1, default=None):
-        """Read 1 byte *count* times."""
-        args = ('B', 1)
-        return (self.read(*args, default=default) if count == 1 else
-                [self.read(*args, default=default) for i in range(count)])
-
-    def readSignedByte(self, count=1, default=None):
-        """Read 1 signed byte *count* times."""
+    def readI8(self, count=1, default=None):
+        """Read *count* signed 8-bit integers."""
         args = ('b', 1)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
+    def readU8(self, count=1, default=None):
+        """Read *count* unsigned 8-bit integers."""
+        args = ('B', 1)
+        return (self.read(*args, default=default) if count == 1 else
+                [self.read(*args, default=default) for i in range(count)])
+
     def readBool(self, count=1, default=None):
-        """Read 1 byte *count* times as a boolean."""
+        """Read *count* 8-bit booleans."""
         args = ('?', 1)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
-    def readShort(self, count=1, default=None):
-        """Read 2 little-endian bytes *count* times as a short integer."""
+    def readI16(self, count=1, default=None):
+        """Read *count* signed 16-bit integers."""
         args = ('<h', 2)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
-    def readInt(self, count=1, default=None):
-        """Read 4 little-endian bytes *count* times as an integer."""
+    def readI32(self, count=1, default=None):
+        """Read *count* signed 32-bit integers."""
         args = ('<i', 4)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
-    def readDouble(self, count=1, default=None):
-        """Read 8 little-endian bytes *count* times as a double."""
+    def readF64(self, count=1, default=None):
+        """Read *count* 64-bit floats."""
         args = ('<d', 8)
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
@@ -97,19 +97,19 @@ class GPFileBase:
         """
         if count > 255:
             raise ValueError("count must be less than or equal to 255")
-        size = self.readByte()
+        size = self.readU8()
         s = self.data.read(count)[:size]
         return s.decode(self.encoding)
 
     def readIntSizeString(self):
         """Read the string length (1 integer) followed by the character bytes."""
-        count = self.readInt()
+        count = self.readI32()
         s = self.data.read(count)
         return s.decode(self.encoding)
 
     def readIntByteSizeString(self):
         """Read the byte count (1 integer) followed by a byte-size string."""
-        count = self.readInt()
+        count = self.readI32()
         return self.readByteSizeString(count-1)
 
     def readVersion(self):
@@ -161,27 +161,27 @@ class GPFileBase:
     def placeholder(self, count):
         self.data.write(b'\x00' * count)
 
-    def writeByte(self, data):
-        packed = struct.pack('B', int(data))
+    def writeI8(self, data):
+        packed = struct.pack('b', int(data))
         self.data.write(packed)
 
-    def writeSignedByte(self, data):
-        packed = struct.pack('b', int(data))
+    def writeU8(self, data):
+        packed = struct.pack('B', int(data))
         self.data.write(packed)
 
     def writeBool(self, data):
         packed = struct.pack('?', bool(data))
         self.data.write(packed)
 
-    def writeShort(self, data):
+    def writeI16(self, data):
         packed = struct.pack('<h', int(data))
         self.data.write(packed)
 
-    def writeInt(self, data):
+    def writeI32(self, data):
         packed = struct.pack('<i', int(data))
         self.data.write(packed)
 
-    def writeDouble(self, data):
+    def writeF64(self, data):
         packed = struct.pack('<d', float(data))
         self.data.write(packed)
 
@@ -189,18 +189,18 @@ class GPFileBase:
         if count > 255:
             raise ValueError("count must be less than or equal to 255")
         encoded = data.encode(self.encoding)[:count]
-        self.writeByte(len(encoded))
+        self.writeU8(len(encoded))
         self.data.write(encoded.ljust(count, b'\x00'))
 
     def writeIntSizeString(self, data: str):
         encoded = data.encode(self.encoding)[:0x7FFFFFFF]
-        self.writeInt(len(encoded))
+        self.writeI32(len(encoded))
         self.data.write(encoded)
 
     def writeIntByteSizeString(self, data: str):
         encoded = data.encode(self.encoding)[:0xFF]
-        self.writeInt(len(encoded) + 1)
-        self.writeByte(len(encoded))
+        self.writeI32(len(encoded) + 1)
+        self.writeU8(len(encoded))
         self.data.write(encoded)
 
     def writeVersion(self):

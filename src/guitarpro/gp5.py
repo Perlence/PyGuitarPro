@@ -65,15 +65,15 @@ class GP5File(gp4.GP4File):
         song.masterEffect = self.readRSEMasterEffect()
         song.pageSetup = self.readPageSetup()
         song.tempoName = self.readIntByteSizeString()
-        song.tempo = self.readInt()
+        song.tempo = self.readI32()
         song.hideTempo = self.readBool() if self.versionTuple > (5, 0, 0) else False
-        song.key = gp.KeySignature((self.readSignedByte(), 0))
-        self.readInt()  # octave
+        song.key = gp.KeySignature((self.readI8(), 0))
+        self.readI32()  # octave
         channels = self.readMidiChannels()
         directions = self.readDirections()
-        song.masterEffect.reverb = self.readInt()
-        measureCount = self.readInt()
-        trackCount = self.readInt()
+        song.masterEffect.reverb = self.readI32()
+        measureCount = self.readI32()
+        trackCount = self.readI32()
         with self.annotateErrors('reading'):
             self.readMeasureHeaders(song, measureCount, directions)
             self.readTracks(song, trackCount, channels)
@@ -84,9 +84,9 @@ class GP5File(gp4.GP4File):
         clipboard = super().readClipboard()
         if clipboard is None:
             return
-        clipboard.startBeat = self.readInt()
-        clipboard.stopBeat = self.readInt()
-        clipboard.subBarCopy = bool(self.readInt())
+        clipboard.startBeat = self.readI32()
+        clipboard.stopBeat = self.readI32()
+        clipboard.subBarCopy = bool(self.readI32())
         return clipboard
 
     def readInfo(self, song):
@@ -118,7 +118,7 @@ class GP5File(gp4.GP4File):
         song.copyright = self.readIntByteSizeString()
         song.tab = self.readIntByteSizeString()
         song.instructions = self.readIntByteSizeString()
-        notesCount = self.readInt()
+        notesCount = self.readI32()
         song.notice = []
         for _ in range(notesCount):
             song.notice.append(self.readIntByteSizeString())
@@ -135,8 +135,8 @@ class GP5File(gp4.GP4File):
         """
         masterEffect = gp.RSEMasterEffect()
         if self.versionTuple > (5, 0, 0):
-            masterEffect.volume = self.readInt()
-            self.readInt()  # ???
+            masterEffect.volume = self.readI32()
+            self.readI32()  # ???
             masterEffect.equalizer = self.readEqualizer(11)
         return masterEffect
 
@@ -150,7 +150,7 @@ class GP5File(gp4.GP4File):
         Volume values are stored as opposite to actual value. See
         :meth:`unpackVolumeValue`.
         """
-        knobs = list(map(self.unpackVolumeValue, self.readSignedByte(count=knobsNumber)))
+        knobs = list(map(self.unpackVolumeValue, self.readI8(count=knobsNumber)))
         return gp.RSEEqualizer(knobs=knobs[:-1], gain=knobs[-1])
 
     def unpackVolumeValue(self, value):
@@ -192,14 +192,14 @@ class GP5File(gp4.GP4File):
           * pageNumber
         """
         setup = gp.PageSetup()
-        setup.pageSize = gp.Point(self.readInt(), self.readInt())
-        left = self.readInt()
-        right = self.readInt()
-        top = self.readInt()
-        bottom = self.readInt()
+        setup.pageSize = gp.Point(self.readI32(), self.readI32())
+        left = self.readI32()
+        right = self.readI32()
+        top = self.readI32()
+        bottom = self.readI32()
         setup.pageMargin = gp.Padding(left, top, right, bottom)
-        setup.scoreSizeProportion = self.readInt() / 100
-        setup.headerAndFooter = self.readShort()
+        setup.scoreSizeProportion = self.readI32() / 100
+        setup.headerAndFooter = self.readI16()
         setup.title = self.readIntByteSizeString()
         setup.subtitle = self.readIntByteSizeString()
         setup.artist = self.readIntByteSizeString()
@@ -240,27 +240,27 @@ class GP5File(gp4.GP4File):
         - Da Double Coda
         """
         signs = {
-            gp.DirectionSign('Coda'): self.readShort(),
-            gp.DirectionSign('Double Coda'): self.readShort(),
-            gp.DirectionSign('Segno'): self.readShort(),
-            gp.DirectionSign('Segno Segno'): self.readShort(),
-            gp.DirectionSign('Fine'): self.readShort()
+            gp.DirectionSign('Coda'): self.readI16(),
+            gp.DirectionSign('Double Coda'): self.readI16(),
+            gp.DirectionSign('Segno'): self.readI16(),
+            gp.DirectionSign('Segno Segno'): self.readI16(),
+            gp.DirectionSign('Fine'): self.readI16()
         }
         fromSigns = {
-            gp.DirectionSign('Da Capo'): self.readShort(),
-            gp.DirectionSign('Da Capo al Coda'): self.readShort(),
-            gp.DirectionSign('Da Capo al Double Coda'): self.readShort(),
-            gp.DirectionSign('Da Capo al Fine'): self.readShort(),
-            gp.DirectionSign('Da Segno'): self.readShort(),
-            gp.DirectionSign('Da Segno al Coda'): self.readShort(),
-            gp.DirectionSign('Da Segno al Double Coda'): self.readShort(),
-            gp.DirectionSign('Da Segno al Fine'): self.readShort(),
-            gp.DirectionSign('Da Segno Segno'): self.readShort(),
-            gp.DirectionSign('Da Segno Segno al Coda'): self.readShort(),
-            gp.DirectionSign('Da Segno Segno al Double Coda'): self.readShort(),
-            gp.DirectionSign('Da Segno Segno al Fine'): self.readShort(),
-            gp.DirectionSign('Da Coda'): self.readShort(),
-            gp.DirectionSign('Da Double Coda'): self.readShort()
+            gp.DirectionSign('Da Capo'): self.readI16(),
+            gp.DirectionSign('Da Capo al Coda'): self.readI16(),
+            gp.DirectionSign('Da Capo al Double Coda'): self.readI16(),
+            gp.DirectionSign('Da Capo al Fine'): self.readI16(),
+            gp.DirectionSign('Da Segno'): self.readI16(),
+            gp.DirectionSign('Da Segno al Coda'): self.readI16(),
+            gp.DirectionSign('Da Segno al Double Coda'): self.readI16(),
+            gp.DirectionSign('Da Segno al Fine'): self.readI16(),
+            gp.DirectionSign('Da Segno Segno'): self.readI16(),
+            gp.DirectionSign('Da Segno Segno al Coda'): self.readI16(),
+            gp.DirectionSign('Da Segno Segno al Double Coda'): self.readI16(),
+            gp.DirectionSign('Da Segno Segno al Fine'): self.readI16(),
+            gp.DirectionSign('Da Coda'): self.readI16(),
+            gp.DirectionSign('Da Double Coda'): self.readI16()
         }
         return signs, fromSigns
 
@@ -297,27 +297,27 @@ class GP5File(gp4.GP4File):
             # Always 0
             self.skip(1)
 
-        flags = self.readByte()
+        flags = self.readU8()
         header = gp.MeasureHeader()
         header.number = number
         header.start = 0
         header.tripletFeel = self._tripletFeel
         if flags & 0x01:
-            header.timeSignature.numerator = self.readSignedByte()
+            header.timeSignature.numerator = self.readI8()
         else:
             header.timeSignature.numerator = previous.timeSignature.numerator
         if flags & 0x02:
-            header.timeSignature.denominator.value = self.readSignedByte()
+            header.timeSignature.denominator.value = self.readI8()
         else:
             header.timeSignature.denominator.value = previous.timeSignature.denominator.value
         header.isRepeatOpen = bool(flags & 0x04)
         if flags & 0x08:
-            header.repeatClose = self.readSignedByte()
+            header.repeatClose = self.readI8()
         if flags & 0x20:
             header.marker = self.readMarker(header)
         if flags & 0x40:
-            root = self.readSignedByte()
-            type_ = self.readSignedByte()
+            root = self.readI8()
+            type_ = self.readI8()
             header.keySignature = gp.KeySignature((root, type_))
         elif header.number > 1:
             header.keySignature = previous.keySignature
@@ -328,17 +328,17 @@ class GP5File(gp4.GP4File):
         if header.repeatClose > -1:
             header.repeatClose -= 1
         if flags & 0x03:
-            header.timeSignature.beams = self.readByte(4)
+            header.timeSignature.beams = self.readU8(4)
         else:
             header.timeSignature.beams = previous.timeSignature.beams
         if flags & 0x10 == 0:
             # Always 0
             self.skip(1)
-        header.tripletFeel = gp.TripletFeel(self.readByte())
+        header.tripletFeel = gp.TripletFeel(self.readU8())
         return header, flags
 
     def readRepeatAlternative(self, measureHeaders):
-        return self.readByte()
+        return self.readU8()
 
     def readTracks(self, song, trackCount, channels):
         """Read tracks.
@@ -420,7 +420,7 @@ class GP5File(gp4.GP4File):
         if track.number == 1 or self.versionTuple == (5, 0, 0):
             # Always 0
             self.skip(1)
-        flags1 = self.readByte()
+        flags1 = self.readU8()
         track.isPercussionTrack = bool(flags1 & 0x01)
         track.is12StringedGuitarTrack = bool(flags1 & 0x02)
         track.isBanjoTrack = bool(flags1 & 0x04)
@@ -430,21 +430,21 @@ class GP5File(gp4.GP4File):
         track.useRSE = bool(flags1 & 0x40)
         track.indicateTuning = bool(flags1 & 0x80)
         track.name = self.readByteSizeString(40)
-        stringCount = self.readInt()
+        stringCount = self.readI32()
         for i in range(7):
-            iTuning = self.readInt()
+            iTuning = self.readI32()
             if stringCount > i:
                 oString = gp.GuitarString(i + 1, iTuning)
                 track.strings.append(oString)
-        track.port = self.readInt()
+        track.port = self.readI32()
         track.channel = self.readChannel(channels)
         if track.channel.channel == 9:
             track.isPercussionTrack = True
-        track.fretCount = self.readInt()
-        track.offset = self.readInt()
+        track.fretCount = self.readI32()
+        track.offset = self.readI32()
         track.color = self.readColor()
 
-        flags2 = self.readShort()
+        flags2 = self.readI16()
         track.settings = gp.TrackSettings()
         track.settings.tablature = bool(flags2 & 0x0001)
         track.settings.notation = bool(flags2 & 0x0002)
@@ -460,8 +460,8 @@ class GP5File(gp4.GP4File):
         track.settings.extendRhythmic = bool(flags2 & 0x0800)
 
         track.rse = gp.TrackRSE()
-        track.rse.autoAccentuation = gp.Accentuation(self.readByte())
-        track.channel.bank = self.readByte()
+        track.rse.autoAccentuation = gp.Accentuation(self.readU8())
+        track.channel.bank = self.readU8()
         self.readTrackRSE(track.rse)
 
     def readTrackRSE(self, trackRSE):
@@ -479,8 +479,8 @@ class GP5File(gp4.GP4File):
 
         - RSE instrument effect. See :meth:`readRSEInstrumentEffect`.
         """
-        trackRSE.humanize = self.readByte()
-        self.readInt(3)  # ???
+        trackRSE.humanize = self.readU8()
+        self.readI32(3)  # ???
         self.skip(12)  # ???
         trackRSE.instrument = self.readRSEInstrument()
         if self.versionTuple > (5, 0, 0):
@@ -500,14 +500,14 @@ class GP5File(gp4.GP4File):
         - Effect number: :ref:`int`. Vestige of Guitar Pro 5.0 format.
         """
         instrument = gp.RSEInstrument()
-        instrument.instrument = self.readInt()
-        instrument.unknown = self.readInt()  # ??? mostly 1
-        instrument.soundBank = self.readInt()
+        instrument.instrument = self.readI32()
+        instrument.unknown = self.readI32()  # ??? mostly 1
+        instrument.soundBank = self.readI32()
         if self.versionTuple == (5, 0, 0):
-            instrument.effectNumber = self.readShort()
+            instrument.effectNumber = self.readI16()
             self.skip(1)
         else:
-            instrument.effectNumber = self.readInt()
+            instrument.effectNumber = self.readI32()
         return instrument
 
     def readRSEInstrumentEffect(self, rseInstrument):
@@ -542,7 +542,7 @@ class GP5File(gp4.GP4File):
             self._currentVoiceNumber = number + 1
             self.readVoice(start, voice)
         self._currentVoiceNumber = None
-        measure.lineBreak = gp.LineBreak(self.readByte(default=0))
+        measure.lineBreak = gp.LineBreak(self.readU8(default=0))
 
     def readBeat(self, start, voice):
         """Read beat.
@@ -570,7 +570,7 @@ class GP5File(gp4.GP4File):
         """
         duration = super().readBeat(start, voice)
         beat = self.getBeat(voice, start)
-        flags2 = self.readShort()
+        flags2 = self.readI16()
         if flags2 & 0x0010:
             beat.octave = gp.Octave.ottava
         if flags2 & 0x0020:
@@ -593,7 +593,7 @@ class GP5File(gp4.GP4File):
         if flags2 & 0x0400:
             display.tupletBracket = gp.TupletBracket.end
         if flags2 & 0x0800:
-            display.breakSecondary = self.readByte()
+            display.breakSecondary = self.readU8()
         beat.display = display
         return duration
 
@@ -650,18 +650,18 @@ class GP5File(gp4.GP4File):
 
         If the value is -1 then corresponding parameter hasn't changed.
         """
-        instrument = self.readSignedByte()
+        instrument = self.readI8()
         rse = self.readRSEInstrument()
         if self.versionTuple == (5, 0, 0):
             self.skip(1)
-        volume = self.readSignedByte()
-        balance = self.readSignedByte()
-        chorus = self.readSignedByte()
-        reverb = self.readSignedByte()
-        phaser = self.readSignedByte()
-        tremolo = self.readSignedByte()
+        volume = self.readI8()
+        balance = self.readI8()
+        chorus = self.readI8()
+        reverb = self.readI8()
+        phaser = self.readI8()
+        tremolo = self.readI8()
         tempoName = self.readIntByteSizeString()
-        tempo = self.readInt()
+        tempo = self.readI32()
         if instrument >= 0:
             tableChange.instrument = gp.MixTableItem(instrument)
             tableChange.rse = rse
@@ -692,19 +692,19 @@ class GP5File(gp4.GP4File):
         then tempo change won't be displayed on the score.
         """
         if tableChange.volume is not None:
-            tableChange.volume.duration = self.readSignedByte()
+            tableChange.volume.duration = self.readI8()
         if tableChange.balance is not None:
-            tableChange.balance.duration = self.readSignedByte()
+            tableChange.balance.duration = self.readI8()
         if tableChange.chorus is not None:
-            tableChange.chorus.duration = self.readSignedByte()
+            tableChange.chorus.duration = self.readI8()
         if tableChange.reverb is not None:
-            tableChange.reverb.duration = self.readSignedByte()
+            tableChange.reverb.duration = self.readI8()
         if tableChange.phaser is not None:
-            tableChange.phaser.duration = self.readSignedByte()
+            tableChange.phaser.duration = self.readI8()
         if tableChange.tremolo is not None:
-            tableChange.tremolo.duration = self.readSignedByte()
+            tableChange.tremolo.duration = self.readI8()
         if tableChange.tempo is not None:
-            tableChange.tempo.duration = self.readSignedByte()
+            tableChange.tempo.duration = self.readI8()
             tableChange.hideTempo = self.versionTuple > (5, 0, 0) and self.readBool()
 
     def readMixTableChangeFlags(self, tableChange):
@@ -727,7 +727,7 @@ class GP5File(gp4.GP4File):
         - Wah value: :ref:`signed-byte`. See
           :class:`guitarpro.models.WahEffect` for value mapping.
         """
-        return gp.WahEffect(value=self.readSignedByte(),
+        return gp.WahEffect(value=self.readI8(),
                             display=bool(flags & 0x80))
 
     def readNote(self, note, guitarString, track):
@@ -766,29 +766,29 @@ class GP5File(gp4.GP4File):
 
         - Note effects. See :meth:`guitarpro.gp4.readNoteEffects`.
         """
-        flags = self.readByte()
+        flags = self.readU8()
         note.string = guitarString.number
         note.effect.heavyAccentuatedNote = bool(flags & 0x02)
         note.effect.ghostNote = bool(flags & 0x04)
         note.effect.accentuatedNote = bool(flags & 0x40)
         if flags & 0x20:
-            note.type = gp.NoteType(self.readByte())
+            note.type = gp.NoteType(self.readU8())
         if flags & 0x10:
-            dyn = self.readSignedByte()
+            dyn = self.readI8()
             note.velocity = self.unpackVelocity(dyn)
         if flags & 0x20:
-            fret = self.readSignedByte()
+            fret = self.readI8()
             if note.type == gp.NoteType.tie:
                 value = self.getTiedNoteValue(note)
             else:
                 value = fret
             note.value = value if 0 <= value < 100 else 0
         if flags & 0x80:
-            note.effect.leftHandFinger = gp.Fingering(self.readSignedByte())
-            note.effect.rightHandFinger = gp.Fingering(self.readSignedByte())
+            note.effect.leftHandFinger = gp.Fingering(self.readI8())
+            note.effect.rightHandFinger = gp.Fingering(self.readI8())
         if flags & 0x01:
-            note.durationPercent = self.readDouble()
-        flags2 = self.readByte()
+            note.durationPercent = self.readF64()
+        flags2 = self.readU8()
         note.swapAccidentals = bool(flags2 & 0x02)
         if flags & 0x08:
             note.effect = self.readNoteEffects(note)
@@ -817,11 +817,11 @@ class GP5File(gp4.GP4File):
           - *0x02*: grace note is on beat
         """
         grace = gp.GraceEffect()
-        grace.fret = self.readByte()
-        grace.velocity = self.unpackVelocity(self.readByte())
-        grace.transition = gp.GraceEffectTransition(self.readByte())
-        grace.duration = 1 << (7 - self.readByte())
-        flags = self.readByte()
+        grace.fret = self.readU8()
+        grace.velocity = self.unpackVelocity(self.readU8())
+        grace.transition = gp.GraceEffectTransition(self.readU8())
+        grace.duration = 1 << (7 - self.readU8())
+        flags = self.readU8()
         grace.isDead = bool(flags & 0x01)
         grace.isOnBeat = bool(flags & 0x02)
         return grace
@@ -838,7 +838,7 @@ class GP5File(gp4.GP4File):
         - *0x10*: slide into from below
         - *0x20*: slide into from above
         """
-        slideType = self.readByte()
+        slideType = self.readU8()
         slides = []
         if slideType & 0x01:
             slides.append(gp.SlideType.shiftSlideTo)
@@ -875,20 +875,20 @@ class GP5File(gp4.GP4File):
 
         - Fret: :ref:`byte`.
         """
-        harmonicType = self.readSignedByte()
+        harmonicType = self.readI8()
         if harmonicType == 1:
             harmonic = gp.NaturalHarmonic()
         elif harmonicType == 2:
             # C = 0, D = 2, E = 4, F = 5...
             # b = -1, # = 1
             # loco = 0, 8va = 1, 15ma = 2
-            semitone = self.readByte()
-            accidental = self.readSignedByte()
+            semitone = self.readU8()
+            accidental = self.readI8()
             pitchClass = gp.PitchClass(semitone, accidental)
-            octave = gp.Octave(self.readByte())
+            octave = gp.Octave(self.readU8())
             harmonic = gp.ArtificialHarmonic(pitchClass, octave)
         elif harmonicType == 3:
-            fret = self.readByte()
+            fret = self.readU8()
             harmonic = gp.TappedHarmonic(fret)
         elif harmonicType == 4:
             harmonic = gp.PinchHarmonic()
@@ -909,13 +909,13 @@ class GP5File(gp4.GP4File):
         self.writePageSetup(song.pageSetup)
 
         self.writeIntByteSizeString(song.tempoName)
-        self.writeInt(song.tempo)
+        self.writeI32(song.tempo)
 
         if self.versionTuple > (5, 0, 0):
             self.writeBool(song.hideTempo)
 
-        self.writeSignedByte(song.key.value[0])
-        self.writeInt(0)  # octave
+        self.writeI8(song.key.value[0])
+        self.writeI32(0)  # octave
 
         self.writeMidiChannels(song.tracks)
 
@@ -924,8 +924,8 @@ class GP5File(gp4.GP4File):
 
         measureCount = len(song.tracks[0].measures)
         trackCount = len(song.tracks)
-        self.writeInt(measureCount)
-        self.writeInt(trackCount)
+        self.writeI32(measureCount)
+        self.writeI32(trackCount)
 
         with self.annotateErrors('writing'):
             self.writeMeasureHeaders(song.tracks[0].measures)
@@ -936,9 +936,9 @@ class GP5File(gp4.GP4File):
         if clipboard is None:
             return
         super().writeClipboard(clipboard)
-        self.writeInt(clipboard.startBeat)
-        self.writeInt(clipboard.stopBeat)
-        self.writeInt(int(clipboard.subBarCopy))
+        self.writeI32(clipboard.startBeat)
+        self.writeI32(clipboard.stopBeat)
+        self.writeI32(int(clipboard.subBarCopy))
 
     def writeInfo(self, song):
         self.writeIntByteSizeString(song.title)
@@ -957,34 +957,34 @@ class GP5File(gp4.GP4File):
             masterEffect.volume = masterEffect.volume or 100
             masterEffect.reverb = masterEffect.reverb or 0
             masterEffect.equalizer = masterEffect.equalizer or gp.RSEEqualizer(knobs=[0] * 10, gain=0)
-            self.writeInt(masterEffect.volume)
-            self.writeInt(0)
+            self.writeI32(masterEffect.volume)
+            self.writeI32(0)
             self.writeEqualizer(masterEffect.equalizer)
 
     def writeEqualizer(self, equalizer):
         for knob in equalizer.knobs:
-            self.writeSignedByte(self.packVolumeValue(knob))
-        self.writeSignedByte(self.packVolumeValue(equalizer.gain))
+            self.writeI8(self.packVolumeValue(knob))
+        self.writeI8(self.packVolumeValue(equalizer.gain))
 
     def packVolumeValue(self, value):
         return int(-round(value, 1) * 10)
 
     def writePageSetup(self, setup):
-        self.writeInt(setup.pageSize.x)
-        self.writeInt(setup.pageSize.y)
+        self.writeI32(setup.pageSize.x)
+        self.writeI32(setup.pageSize.y)
 
-        self.writeInt(setup.pageMargin.left)
-        self.writeInt(setup.pageMargin.right)
-        self.writeInt(setup.pageMargin.top)
-        self.writeInt(setup.pageMargin.bottom)
-        self.writeInt(int(setup.scoreSizeProportion * 100))
+        self.writeI32(setup.pageMargin.left)
+        self.writeI32(setup.pageMargin.right)
+        self.writeI32(setup.pageMargin.top)
+        self.writeI32(setup.pageMargin.bottom)
+        self.writeI32(int(setup.scoreSizeProportion * 100))
 
-        self.writeByte(setup.headerAndFooter & 0xff)
+        self.writeU8(setup.headerAndFooter & 0xff)
 
         flags2 = 0x00
         if setup.headerAndFooter and gp.HeaderFooterElements.pageNumber != 0:
             flags2 |= 0x01
-        self.writeByte(flags2)
+        self.writeU8(flags2)
 
         self.writeIntByteSizeString(setup.title)
         self.writeIntByteSizeString(setup.subtitle)
@@ -1027,13 +1027,13 @@ class GP5File(gp4.GP4File):
                 signs[header.fromDirection.name] = number
 
         for name in order:
-            self.writeShort(signs.get(name, -1))
+            self.writeI16(signs.get(name, -1))
 
     def writeMasterReverb(self, masterEffect):
         if masterEffect is not None:
-            self.writeInt(masterEffect.reverb)
+            self.writeI32(masterEffect.reverb)
         else:
-            self.writeInt(0)
+            self.writeI32(0)
 
     def writeMeasureHeader(self, header, previous=None):
         flags = self.packMeasureHeaderFlags(header, previous)
@@ -1050,29 +1050,29 @@ class GP5File(gp4.GP4File):
 
     def writeMeasureHeaderValues(self, header, flags):
         header = attr.evolve(header, repeatClose=header.repeatClose+1)
-        self.writeByte(flags)
+        self.writeU8(flags)
         if flags & 0x01:
-            self.writeSignedByte(header.timeSignature.numerator)
+            self.writeI8(header.timeSignature.numerator)
         if flags & 0x02:
-            self.writeSignedByte(header.timeSignature.denominator.value)
+            self.writeI8(header.timeSignature.denominator.value)
         if flags & 0x08:
-            self.writeSignedByte(header.repeatClose)
+            self.writeI8(header.repeatClose)
         if flags & 0x20:
             self.writeMarker(header.marker)
         if flags & 0x40:
-            self.writeSignedByte(header.keySignature.value[0])
-            self.writeSignedByte(header.keySignature.value[1])
+            self.writeI8(header.keySignature.value[0])
+            self.writeI8(header.keySignature.value[1])
         if flags & 0x10:
             self.writeRepeatAlternative(header.repeatAlternative)
         if flags & 0x03:
             for beam in header.timeSignature.beams:
-                self.writeByte(beam)
+                self.writeU8(beam)
         if flags & 0x10 == 0:
             self.placeholder(1)
-        self.writeByte(header.tripletFeel.value)
+        self.writeU8(header.tripletFeel.value)
 
     def writeRepeatAlternative(self, repeatAlternative):
-        self.writeByte(repeatAlternative & 255)
+        self.writeU8(repeatAlternative & 255)
 
     def writeTracks(self, tracks):
         super().writeTracks(tracks)
@@ -1100,20 +1100,20 @@ class GP5File(gp4.GP4File):
         if track.indicateTuning:
             flags1 |= 0x80
 
-        self.writeByte(flags1)
+        self.writeU8(flags1)
 
         self.writeByteSizeString(track.name, 40)
-        self.writeInt(len(track.strings))
+        self.writeI32(len(track.strings))
         for i in range(7):
             if i < len(track.strings):
                 tuning = track.strings[i].value
             else:
                 tuning = 0
-            self.writeInt(tuning)
-        self.writeInt(track.port)
+            self.writeI32(tuning)
+        self.writeI32(track.port)
         self.writeChannel(track)
-        self.writeInt(track.fretCount)
-        self.writeInt(track.offset)
+        self.writeI32(track.fretCount)
+        self.writeI32(track.offset)
         self.writeColor(track.color)
 
         flags2 = 0x0000
@@ -1139,21 +1139,21 @@ class GP5File(gp4.GP4File):
             flags2 |= 0x0400
         if track.settings.extendRhythmic:
             flags2 |= 0x0800
-        self.writeShort(flags2)
+        self.writeI16(flags2)
 
         if track.rse is not None and track.rse.autoAccentuation is not None:
-            self.writeByte(track.rse.autoAccentuation.value)
+            self.writeU8(track.rse.autoAccentuation.value)
         else:
-            self.writeByte(0)
-        self.writeByte(track.channel.bank)
+            self.writeU8(0)
+        self.writeU8(track.channel.bank)
 
         self.writeTrackRSE(track.rse)
 
     def writeTrackRSE(self, trackRSE):
-        self.writeByte(trackRSE.humanize)
-        self.writeInt(0)
-        self.writeInt(0)
-        self.writeInt(100)
+        self.writeU8(trackRSE.humanize)
+        self.writeI32(0)
+        self.writeI32(0)
+        self.writeI32(100)
         self.placeholder(12)
         self.writeRSEInstrument(trackRSE.instrument)
         if self.versionTuple > (5, 0, 0):
@@ -1161,14 +1161,14 @@ class GP5File(gp4.GP4File):
             self.writeRSEInstrumentEffect(trackRSE.instrument)
 
     def writeRSEInstrument(self, instrument):
-        self.writeInt(instrument.instrument)
-        self.writeInt(instrument.unknown)
-        self.writeInt(instrument.soundBank)
+        self.writeI32(instrument.instrument)
+        self.writeI32(instrument.unknown)
+        self.writeI32(instrument.soundBank)
         if self.versionTuple == (5, 0, 0):
-            self.writeShort(instrument.effectNumber)
+            self.writeI16(instrument.effectNumber)
             self.placeholder(1)
         else:
-            self.writeInt(instrument.effectNumber)
+            self.writeI32(instrument.effectNumber)
 
     def writeRSEInstrumentEffect(self, instrument):
         if self.versionTuple > (5, 0, 0):
@@ -1180,7 +1180,7 @@ class GP5File(gp4.GP4File):
             self._currentVoiceNumber = number + 1
             self.writeVoice(voice)
         self._currentVoiceNumber = None
-        self.writeByte(measure.lineBreak.value)
+        self.writeU8(measure.lineBreak.value)
 
     def writeBeat(self, beat):
         super().writeBeat(beat)
@@ -1211,9 +1211,9 @@ class GP5File(gp4.GP4File):
             flags2 |= 0x1000
         if beat.display.forceBracket:
             flags2 |= 0x2000
-        self.writeShort(flags2)
+        self.writeI16(flags2)
         if flags2 & 0x0800:
-            self.writeByte(beat.display.breakSecondary)
+            self.writeU8(beat.display.breakSecondary)
 
     def writeBeatStroke(self, stroke):
         super().writeBeatStroke(stroke.swapDirection())
@@ -1225,42 +1225,34 @@ class GP5File(gp4.GP4File):
         self.writeRSEInstrumentEffect(tableChange.rse)
 
     def writeMixTableChangeValues(self, tableChange):
-        self.writeSignedByte(tableChange.instrument.value
-                             if tableChange.instrument is not None else -1)
+        self.writeI8(tableChange.instrument.value if tableChange.instrument is not None else -1)
         self.writeRSEInstrument(tableChange.rse)
         if self.versionTuple == (5, 0, 0):
             self.placeholder(1)
-        self.writeSignedByte(tableChange.volume.value
-                             if tableChange.volume is not None else -1)
-        self.writeSignedByte(tableChange.balance.value
-                             if tableChange.balance is not None else -1)
-        self.writeSignedByte(tableChange.chorus.value
-                             if tableChange.chorus is not None else -1)
-        self.writeSignedByte(tableChange.reverb.value
-                             if tableChange.reverb is not None else -1)
-        self.writeSignedByte(tableChange.phaser.value
-                             if tableChange.phaser is not None else -1)
-        self.writeSignedByte(tableChange.tremolo.value
-                             if tableChange.tremolo is not None else -1)
+        self.writeI8(tableChange.volume.value if tableChange.volume is not None else -1)
+        self.writeI8(tableChange.balance.value if tableChange.balance is not None else -1)
+        self.writeI8(tableChange.chorus.value if tableChange.chorus is not None else -1)
+        self.writeI8(tableChange.reverb.value if tableChange.reverb is not None else -1)
+        self.writeI8(tableChange.phaser.value if tableChange.phaser is not None else -1)
+        self.writeI8(tableChange.tremolo.value if tableChange.tremolo is not None else -1)
         self.writeIntByteSizeString(tableChange.tempoName)
-        self.writeInt(tableChange.tempo.value
-                      if tableChange.tempo is not None else -1)
+        self.writeI32(tableChange.tempo.value if tableChange.tempo is not None else -1)
 
     def writeMixTableChangeDurations(self, tableChange):
         if tableChange.volume is not None:
-            self.writeSignedByte(tableChange.volume.duration)
+            self.writeI8(tableChange.volume.duration)
         if tableChange.balance is not None:
-            self.writeSignedByte(tableChange.balance.duration)
+            self.writeI8(tableChange.balance.duration)
         if tableChange.chorus is not None:
-            self.writeSignedByte(tableChange.chorus.duration)
+            self.writeI8(tableChange.chorus.duration)
         if tableChange.reverb is not None:
-            self.writeSignedByte(tableChange.reverb.duration)
+            self.writeI8(tableChange.reverb.duration)
         if tableChange.phaser is not None:
-            self.writeSignedByte(tableChange.phaser.duration)
+            self.writeI8(tableChange.phaser.duration)
         if tableChange.tremolo is not None:
-            self.writeSignedByte(tableChange.tremolo.duration)
+            self.writeI8(tableChange.tremolo.duration)
         if tableChange.tempo is not None:
-            self.writeSignedByte(tableChange.tempo.duration)
+            self.writeI8(tableChange.tempo.duration)
             if self.versionTuple > (5, 0, 0):
                 self.writeBool(tableChange.hideTempo)
 
@@ -1282,34 +1274,34 @@ class GP5File(gp4.GP4File):
             flags |= 0x40
         if tableChange.wah is not None and tableChange.wah.display:
             flags |= 0x80
-        self.writeByte(flags)
+        self.writeU8(flags)
 
     def writeWahEffect(self, wah):
         if wah is not None:
-            self.writeSignedByte(wah.value)
+            self.writeI8(wah.value)
         else:
-            self.writeSignedByte(gp.WahEffect.none.value)
+            self.writeI8(gp.WahEffect.none.value)
 
     def writeNote(self, note):
         flags = self.packNoteFlags(note)
-        self.writeByte(flags)
+        self.writeU8(flags)
         if flags & 0x20:
-            self.writeByte(self.getEnumValue(note.type))
+            self.writeU8(self.getEnumValue(note.type))
         if flags & 0x10:
             value = self.packVelocity(note.velocity)
-            self.writeSignedByte(value)
+            self.writeI8(value)
         if flags & 0x20:
             fret = note.value if note.type != gp.NoteType.tie else 0
-            self.writeSignedByte(fret)
+            self.writeI8(fret)
         if flags & 0x80:
-            self.writeSignedByte(self.getEnumValue(note.effect.leftHandFinger))
-            self.writeSignedByte(self.getEnumValue(note.effect.rightHandFinger))
+            self.writeI8(self.getEnumValue(note.effect.leftHandFinger))
+            self.writeI8(self.getEnumValue(note.effect.rightHandFinger))
         if flags & 0x01:
-            self.writeDouble(note.durationPercent)
+            self.writeF64(note.durationPercent)
         flags2 = 0x00
         if note.swapAccidentals:
             flags2 |= 0x02
-        self.writeByte(flags2)
+        self.writeU8(flags2)
         if flags & 0x08:
             self.writeNoteEffects(note)
 
@@ -1320,16 +1312,16 @@ class GP5File(gp4.GP4File):
         return flags
 
     def writeGrace(self, grace):
-        self.writeByte(grace.fret)
-        self.writeByte(self.packVelocity(grace.velocity))
-        self.writeByte(grace.transition.value)
-        self.writeByte(8 - grace.duration.bit_length())
+        self.writeU8(grace.fret)
+        self.writeU8(self.packVelocity(grace.velocity))
+        self.writeU8(grace.transition.value)
+        self.writeU8(8 - grace.duration.bit_length())
         flags = 0x00
         if grace.isDead:
             flags |= 0x01
         if grace.isOnBeat:
             flags |= 0x02
-        self.writeByte(flags)
+        self.writeU8(flags)
 
     def writeSlides(self, slides):
         slideType = 0
@@ -1346,16 +1338,16 @@ class GP5File(gp4.GP4File):
                 slideType |= 0x10
             elif slide == gp.SlideType.intoFromAbove:
                 slideType |= 0x20
-        self.writeByte(slideType)
+        self.writeU8(slideType)
 
     def writeHarmonic(self, note, harmonic):
-        self.writeSignedByte(harmonic.type)
+        self.writeI8(harmonic.type)
         if isinstance(harmonic, gp.ArtificialHarmonic):
             if not harmonic.pitch or not harmonic.octave:
                 harmonic.pitch = gp.PitchClass(note.realValue % 12)
                 harmonic.octave = gp.Octave.ottava
-            self.writeByte(harmonic.pitch.just)
-            self.writeSignedByte(harmonic.pitch.accidental)
-            self.writeByte(harmonic.octave.value)
+            self.writeU8(harmonic.pitch.just)
+            self.writeI8(harmonic.pitch.accidental)
+            self.writeU8(harmonic.octave.value)
         elif isinstance(harmonic, gp.TappedHarmonic):
-            self.writeByte(harmonic.fret)
+            self.writeU8(harmonic.fret)
