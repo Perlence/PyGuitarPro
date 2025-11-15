@@ -83,12 +83,6 @@ class GPFileBase:
         return (self.read(*args, default=default) if count == 1 else
                 [self.read(*args, default=default) for i in range(count)])
 
-    def readFloat(self, count=1, default=None):
-        """Read 4 little-endian bytes *count* times as a float."""
-        args = ('<f', 4)
-        return (self.read(*args, default=default) if count == 1 else
-                [self.read(*args, default=default) for i in range(count)])
-
     def readDouble(self, count=1, default=None):
         """Read 8 little-endian bytes *count* times as a double."""
         args = ('<d', 8)
@@ -185,10 +179,6 @@ class GPFileBase:
 
     def writeInt(self, data):
         packed = struct.pack('<i', int(data))
-        self.data.write(packed)
-
-    def writeFloat(self, data):
-        packed = struct.pack('<f', float(data))
         self.data.write(packed)
 
     def writeDouble(self, data):
