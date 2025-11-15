@@ -950,10 +950,7 @@ class GP5File(gp4.GP4File):
         self.writeIntByteSizeString(song.copyright)
         self.writeIntByteSizeString(song.tab)
         self.writeIntByteSizeString(song.instructions)
-
-        self.writeInt(len(song.notice))
-        for line in song.notice:
-            self.writeIntByteSizeString(line)
+        self.writeNotice(song.notice)
 
     def writeRSEMasterEffect(self, masterEffect):
         if self.versionTuple > (5, 0, 0):

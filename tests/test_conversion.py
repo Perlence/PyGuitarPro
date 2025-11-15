@@ -222,3 +222,30 @@ def testLongStrings(tmpdir):
     song2 = gp.parse(destpath)
     assert song != song2
     assert song2.tracks[0].name == 'A' * 40
+
+
+def testLongNotice(tmpdir):
+    song = gp.Song()
+    song.notice = [
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do'
+        ' eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim'
+        ' ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut'
+        ' aliquip ex ea commodo consequat. Duis aute irure dolor in'
+        ' reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla'
+        ' pariatur. Excepteur sint occaecat cupidatat non proident, sunt in'
+        ' culpa qui officia deserunt mollit anim id est laborum.',
+    ]
+    destpath = str(tmpdir.join('long_notice.gp5'))
+    gp.write(song, destpath)
+
+    song2 = gp.parse(destpath)
+    assert song != song2
+    assert song2.notice == [
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do'
+        ' eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim'
+        ' ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut'
+        ' aliquip ex ea commodo consequat. Duis aute irure dolor ',
+        'in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla'
+        ' pariatur. Excepteur sint occaecat cupidatat non proident, sunt in'
+        ' culpa qui officia deserunt mollit anim id est laborum.',
+    ]

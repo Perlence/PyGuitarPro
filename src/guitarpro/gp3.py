@@ -1,3 +1,5 @@
+import textwrap
+
 import attr
 
 from . import models as gp
@@ -1061,9 +1063,7 @@ class GP3File(GPFileBase):
         self.writeIntByteSizeString(song.copyright)
         self.writeIntByteSizeString(song.tab)
         self.writeIntByteSizeString(song.instructions)
-        self.writeInt(len(song.notice))
-        for line in song.notice:
-            self.writeIntByteSizeString(line)
+        self.writeNotice(song.notice)
 
     def packAuthor(self, song):
         if song.words and song.music:
@@ -1073,6 +1073,16 @@ class GP3File(GPFileBase):
                 return song.words
         else:
             return song.words + song.music
+
+    def writeNotice(self, notice: list[str]):
+        notice = [
+            wl
+            for line in notice
+            for wl in textwrap.wrap(line, 255, expand_tabs=False, replace_whitespace=False, drop_whitespace=False)
+        ]
+        self.writeInt(len(notice))
+        for line in notice:
+            self.writeIntByteSizeString(line)
 
     def writeMidiChannels(self, tracks):
         def getTrackChannelByChannel(channel):
