@@ -39,8 +39,8 @@ class GPFileBase:
     # Reading
     # =======
 
-    def skip(self, count):
-        return self.data.read(count)
+    def skip(self, count) -> None:
+        self.data.read(count)
 
     def read(self, fmt, count, default=None):
         try:
