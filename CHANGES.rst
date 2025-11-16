@@ -1,6 +1,18 @@
 Changelog
 =========
 
+Version 0.10.1
+-------------
+
+*2025-11-16*
+
+**Changes:**
+
+- Fixed writing long strings using ``writeByteSizeString`` `#47 <https://github.com/Perlence/PyGuitarPro/pull/47>`_.
+- Fixed writing long notice lines.
+- Refactored the IO methods in GPFileBase.
+
+
 Version 0.10
 -------------
 

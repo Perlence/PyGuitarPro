@@ -1,6 +1,6 @@
 [project]
 name = "PyGuitarPro"
-version = "0.10"
+version = "0.10.1"
 description = "Read, write, and manipulate GP3, GP4 and GP5 files."
 readme = "README.rst"
 license = "LGPL-3.0-only"
