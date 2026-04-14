@@ -10,6 +10,7 @@ LOCATION = Path(__file__).parent
 TESTS = [
     'Effects.gp3',
     'Chords.gp3',
+    'Chord Old Format.gp3',
     'Duration.gp3',
     'Harmonics.gp3',
     'Measure Header.gp3',
