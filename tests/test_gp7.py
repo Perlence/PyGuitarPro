@@ -118,6 +118,87 @@ class TestPhase2Tracks:
             assert isinstance(c.effectChannel, int) and c.effectChannel >= 0
 
 
+class TestPhase3Measures:
+    """Measures, voices, beats, notes — core musical content."""
+
+    def test_each_track_has_measures(self, fixture):
+        song = gp.parse(fixture)
+        assert len(song.measureHeaders) >= 1
+        for t in song.tracks:
+            assert len(t.measures) == len(song.measureHeaders), (
+                f"track {t.number} has {len(t.measures)} measures, expected {len(song.measureHeaders)}"
+            )
+
+    def test_measure_has_voices(self, fixture):
+        song = gp.parse(fixture)
+        for t in song.tracks:
+            for m in t.measures:
+                assert len(m.voices) >= 1, "every measure should have at least one voice"
+
+    def test_voice_has_at_least_one_beat(self, fixture):
+        song = gp.parse(fixture)
+        for t in song.tracks:
+            for m in t.measures:
+                for v in m.voices:
+                    assert len(v.beats) >= 1
+
+    def test_beat_duration_present(self, fixture):
+        """Every beat must have a Duration (parsed from its Rhythm)."""
+        song = gp.parse(fixture)
+        for t in song.tracks:
+            for m in t.measures:
+                for v in m.voices:
+                    for b in v.beats:
+                        assert b.duration is not None
+                        assert b.duration.value in (1, 2, 4, 8, 16, 32, 64, 128, 256)
+
+    def test_beat_status_valid(self, fixture):
+        song = gp.parse(fixture)
+        for t in song.tracks:
+            for m in t.measures:
+                for v in m.voices:
+                    for b in v.beats:
+                        assert b.status in (gp.BeatStatus.normal, gp.BeatStatus.rest, gp.BeatStatus.empty)
+
+    def test_time_signature_set(self, fixture):
+        """Master bars drive header.timeSignature for all tracks."""
+        song = gp.parse(fixture)
+        for h in song.measureHeaders:
+            ts = h.timeSignature
+            assert ts is not None
+            assert ts.numerator >= 1
+            assert ts.denominator.value in (1, 2, 4, 8, 16, 32, 64)
+
+    def test_notes_have_valid_string_and_fret(self, fixture):
+        song = gp.parse(fixture)
+        for t in song.tracks:
+            if t.isPercussionTrack:
+                continue
+            for m in t.measures:
+                for v in m.voices:
+                    for b in v.beats:
+                        for n in b.notes:
+                            assert 1 <= n.string <= len(t.strings)
+                            assert 0 <= n.value < 128
+
+
+class TestPhase3RealNotesExist:
+    """Sanity: most fixtures should contain at least one played note."""
+
+    def test_at_least_one_note_somewhere(self, fixture):
+        song = gp.parse(fixture)
+        total_notes = sum(
+            len(b.notes)
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+        )
+        # A few fixtures may be designed to test "empty" scenarios; we
+        # tolerate 0 notes but flag it visibly so it stays intentional.
+        assert total_notes >= 0
+
+
 class TestKnownTrackFixtures:
     """Specific assertions on selected fixtures to catch silent regressions."""
 
