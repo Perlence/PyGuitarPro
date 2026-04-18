@@ -17,7 +17,6 @@ jobs:
           - {name: '3.12', python: '3.12', just: test}
           - {name: '3.11', python: '3.11', just: test}
           - {name: '3.10', python: '3.10', just: test}
-          - {name: '3.9', python: '3.9', just: test}
           - {name: PyPy3, python: 'pypy3.11', just: test}
           - {name: Lint, python: '3.13', just: lint}
     steps:
