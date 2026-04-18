@@ -1281,8 +1281,9 @@ class GP3File(GPFileBase):
     def writeOldChord(self, chord):
         self.writeIntByteSizeString(chord.name)
         self.writeI32(chord.firstFret)
-        for fret in clamp(chord.strings, 6, fillvalue=-1):
-            self.writeI32(fret)
+        if chord.firstFret:
+            for fret in clamp(chord.strings, 6, fillvalue=-1):
+                self.writeI32(fret)
 
     def writeNewChord(self, chord):
         self.writeBool(chord.sharp)
