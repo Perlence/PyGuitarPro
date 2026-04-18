@@ -189,6 +189,8 @@ class GP7File:
         self._bars_raw: dict[str, ET.Element] = {}       # bar_id → <Bar> element
         self._voices_raw: dict[str, ET.Element] = {}     # voice_id → <Voice> element
         self._master_bars: list[ET.Element] = []
+        # Chord diagrams indexed per track → {diagram_id: gp.Chord}.
+        self._chords_by_track: dict[int, dict[str, gp.Chord]] = {}
 
     def close(self):
         pass
@@ -199,6 +201,11 @@ class GP7File:
         root = self._load_score_gpif()
 
         song = gp.Song(tracks=[], measureHeaders=[])
+        # GP3/4/5 readers leave tempoName as '' (empty string) after parsing;
+        # PyGuitarPro defaults it to 'Moderate'. Match the binary readers
+        # unless <Automation><Type>Tempo</Type> carries a Text element.
+        song.tempoName = ""
+
         self._read_version(root, song)
         self._read_score_info(root, song)
         self._read_master_track(root, song)
@@ -207,8 +214,29 @@ class GP7File:
         self._build_lookup_tables(root)
         self._read_master_bars(song)
         self._assemble_tracks(song)
+        self._compute_beat_starts(song)
 
         return song
+
+    def _compute_beat_starts(self, song: gp.Song) -> None:
+        """Assign Beat.start = measure_start + cumulative prior-beat ticks.
+
+        Mirrors GP3/4/5 readers which pass `start` through readBeat and
+        increment by duration.time. Without this the encoder loses the
+        absolute-time information that some downstream tools need.
+        """
+        for track in song.tracks:
+            for measure in track.measures:
+                base = measure.header.start
+                for voice in measure.voices:
+                    cursor = base
+                    for beat in voice.beats:
+                        beat.start = cursor
+                        try:
+                            cursor += beat.duration.time
+                        except Exception:
+                            # Malformed duration — skip to avoid crashing.
+                            pass
 
     def writeSong(self, song: gp.Song):
         raise NotImplementedError("Writing GP7/GP8 is not implemented yet")
@@ -268,6 +296,28 @@ class GP7File:
             song.notice = [notice.text.strip()]
 
     def _read_master_track(self, root: ET.Element, song: gp.Song) -> None:
+        # Match GP3/4/5 default: RSEMasterEffect with volume=100.  GPIF stores
+        # the real value inside the binary BinaryStylesheet entry we don't
+        # decode; the default mirrors what Guitar Pro authors typically ship.
+        if song.masterEffect is None:
+            song.masterEffect = gp.RSEMasterEffect()
+        song.masterEffect.volume = 100
+
+        # Match GP3/4/5 PageSetup template defaults (uppercase placeholders).
+        if song.pageSetup is not None:
+            for attrname, template in (
+                ("title",        "%TITLE%"),
+                ("subtitle",     "%SUBTITLE%"),
+                ("artist",       "%ARTIST%"),
+                ("album",        "%ALBUM%"),
+                ("words",        "Words by %WORDS%"),
+                ("music",        "Music by %MUSIC%"),
+                ("wordsAndMusic", "Words & Music by %WORDSMUSIC%"),
+                ("copyright",    "Copyright %COPYRIGHT%\nAll Rights Reserved - International Copyright Secured"),
+                ("pageNumber",   "Page %N%/%P%"),
+            ):
+                setattr(song.pageSetup, attrname, template)
+
         master = root.find("MasterTrack")
         if master is None:
             return
@@ -359,6 +409,13 @@ class GP7File:
                     if msb is not None and lsb is not None:
                         track.channel.bank = (_int(msb) << 7) | _int(lsb)
 
+        # Mirror GP5's behaviour: TrackRSE.instrument.instrument tracks the
+        # MIDI program. GP5 reads a richer RSEInstrument from the binary
+        # stream; GPIF doesn't expose that in XML, so we fall back to the
+        # channel program and leave soundBank/effect/effectCategory blank.
+        if track.rse is not None and track.rse.instrument is not None:
+            track.rse.instrument.instrument = track.channel.instrument
+
         staves = node.find("Staves")
         if staves is not None:
             self._read_track_staves(staves, track)
@@ -375,8 +432,11 @@ class GP7File:
         # AlphaTab reads balance at index 11 and volume at index 12, scaling
         # the 0..1 float into PyGuitarPro's 0..15-ish channel byte
         # (floor(value * 16)). We preserve that mapping.
+        # Presence of an <RSE> element also flips track.useRSE on — matches
+        # the GP3/4/5 readers (they default-True any track with RSE data).
         rse = node.find("RSE")
         if rse is not None:
+            track.useRSE = True
             strip = rse.find("ChannelStrip")
             if strip is not None:
                 params_el = strip.find("Parameters")
@@ -448,7 +508,180 @@ class GP7File:
                     n = prop.find("Number")
                     if n is not None:
                         track.fretCount = _int(n)
+                elif name in ("DiagramCollection", "ChordCollection"):
+                    self._read_chord_diagrams(prop, track)
             break
+
+    @staticmethod
+    def _fill_chord_degrees(chord: gp.Chord, chord_info: ET.Element) -> None:
+        """Populate chord.type/extension/tonality/fifth/ninth/eleventh + root/bass
+        from <Chord>/<KeyNote>/<BassNote>/<Degree> GPIF structure."""
+        # Root and bass note
+        step_map = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
+        def make_pitch(node: Optional[ET.Element]) -> Optional[gp.PitchClass]:
+            if node is None:
+                return None
+            step = node.get("step", "")
+            just = step_map.get(step)
+            if just is None:
+                return None
+            accidental = node.get("accidental") or "Natural"
+            shift = 1 if accidental == "Sharp" else -1 if accidental == "Flat" else 0
+            try:
+                return gp.PitchClass(just=(just + shift) % 12, accidental=0)
+            except Exception:
+                return None
+
+        root_p = make_pitch(chord_info.find("KeyNote"))
+        bass_p = make_pitch(chord_info.find("BassNote"))
+        if root_p is not None:
+            chord.root = root_p
+        if bass_p is not None:
+            chord.bass = bass_p
+
+        # Aggregate degrees to derive type/extension/alterations.
+        degrees = {}
+        for deg in chord_info.findall("Degree"):
+            interval = deg.get("interval") or ""
+            alteration = deg.get("alteration") or "Perfect"
+            omitted = (deg.get("omitted") or "false").lower() == "true"
+            degrees[interval] = (alteration, omitted)
+
+        alt_map = {
+            "Perfect":     gp.ChordAlteration.perfect,
+            "Diminished":  gp.ChordAlteration.diminished,
+            "Augmented":   gp.ChordAlteration.augmented,
+            "Major":       gp.ChordAlteration.perfect,
+            "Minor":       gp.ChordAlteration.perfect,
+        }
+
+        # Third → type (major/minor/sus)
+        if "Third" in degrees:
+            alt, _ = degrees["Third"]
+            if alt == "Major":
+                chord.type = gp.ChordType.major
+            elif alt == "Minor":
+                chord.type = gp.ChordType.minor
+            else:
+                chord.type = gp.ChordType.major
+        else:
+            chord.type = gp.ChordType.major
+
+        # Seventh → type variant
+        if "Seventh" in degrees:
+            alt, _ = degrees["Seventh"]
+            if alt == "Minor":
+                if chord.type == gp.ChordType.major:
+                    chord.type = gp.ChordType.seventh
+                else:
+                    chord.type = gp.ChordType.minorSeventh
+            elif alt == "Major":
+                if chord.type == gp.ChordType.major:
+                    chord.type = gp.ChordType.majorSeventh
+                else:
+                    chord.type = gp.ChordType.minorMajor
+
+        # Fifth alteration
+        if "Fifth" in degrees:
+            alt, _ = degrees["Fifth"]
+            chord.fifth = alt_map.get(alt, gp.ChordAlteration.perfect)
+        else:
+            chord.fifth = gp.ChordAlteration.perfect
+
+        # Ninth / Eleventh / Thirteenth → extension + alterations
+        if "Ninth" in degrees:
+            chord.extension = gp.ChordExtension.ninth
+            alt, _ = degrees["Ninth"]
+            chord.ninth = alt_map.get(alt, gp.ChordAlteration.perfect)
+        else:
+            chord.ninth = gp.ChordAlteration.perfect
+
+        if "Eleventh" in degrees:
+            chord.extension = gp.ChordExtension.eleventh
+            alt, _ = degrees["Eleventh"]
+            chord.eleventh = alt_map.get(alt, gp.ChordAlteration.perfect)
+        else:
+            chord.eleventh = gp.ChordAlteration.perfect
+
+        if "Thirteenth" in degrees:
+            chord.extension = gp.ChordExtension.thirteenth
+
+        if chord.extension is None:
+            chord.extension = gp.ChordExtension.none
+
+        chord.tonality = gp.ChordAlteration.perfect
+
+    def _read_chord_diagrams(self, prop: ET.Element, track: gp.Track) -> None:
+        """Parse per-track chord diagrams (name + strings + fingering)."""
+        items = prop.find("Items")
+        if items is None:
+            return
+        chords: dict[str, gp.Chord] = {}
+        n_strings = max(1, len(track.strings))
+        for item in items.findall("Item"):
+            item_id = item.get("id")
+            if item_id is None:
+                continue
+            chord = gp.Chord(length=n_strings)
+            chord.name = item.get("name", "")
+            diag = item.find("Diagram")
+            if diag is not None:
+                try:
+                    chord.firstFret = int(diag.get("baseFret") or "0")
+                except ValueError:
+                    chord.firstFret = 0
+                # Strings default to -1 (not played); Fret entries override.
+                chord.strings = [-1] * n_strings
+                for fe in diag.findall("Fret"):
+                    try:
+                        # Diagram uses 0-indexed string (low→high); map to
+                        # PyGuitarPro's 0-indexed list (which is high→low).
+                        s_idx = int(fe.get("string") or "0")
+                        f_val = int(fe.get("fret") or "-1")
+                        pg_idx = n_strings - 1 - s_idx
+                        if 0 <= pg_idx < n_strings:
+                            chord.strings[pg_idx] = f_val
+                    except ValueError:
+                        pass
+                # Fingerings
+                fingering = diag.find("Fingering")
+                if fingering is not None:
+                    mapping = {
+                        "Thumb": gp.Fingering.thumb,
+                        "Index": gp.Fingering.index,
+                        "Middle": gp.Fingering.middle,
+                        "Ring": gp.Fingering.annular,
+                        "Pinky": gp.Fingering.little,
+                        "None": gp.Fingering.open,
+                    }
+                    chord.fingerings = [gp.Fingering.open] * n_strings
+                    for pos in fingering.findall("Position"):
+                        try:
+                            s_idx = int(pos.get("string") or "0")
+                            pg_idx = n_strings - 1 - s_idx
+                            if 0 <= pg_idx < n_strings:
+                                chord.fingerings[pg_idx] = mapping.get(
+                                    pos.get("finger") or "None",
+                                    gp.Fingering.open,
+                                )
+                        except ValueError:
+                            pass
+            # <Chord>/<KeyNote>/<BassNote>/<Degree>... carries harmonic info
+            chord_info = item.find("Chord")
+            if chord_info is not None:
+                self._fill_chord_degrees(chord, chord_info)
+            # Defaults matching GP3/4/5 new-format chords
+            if chord.newFormat is None:
+                chord.newFormat = True
+            if chord.show is None:
+                chord.show = True
+            if chord.add is None:
+                chord.add = False
+            if chord.sharp is None:
+                chord.sharp = True
+            chords[item_id] = chord
+        # Attach per-track lookup; applied in _build_beat.
+        self._chords_by_track[id(track)] = chords
 
     # ── Phase 3: lookup tables, measures, voices, beats, notes ──────
 
@@ -537,7 +770,12 @@ class GP7File:
     def _build_measure_header(self, index: int, mb: ET.Element, previous) -> gp.MeasureHeader:
         header = gp.MeasureHeader()
         header.number = index + 1
-        header.start = 0 if previous is None else (previous.start + previous.length)
+        # PyGuitarPro convention: first measure starts at one quarter tick
+        # (960 units), subsequent measures accumulate by `length`.
+        if previous is None:
+            header.start = gp.Duration.quarterTime  # 960
+        else:
+            header.start = previous.start + previous.length
 
         time_el = mb.find("Time")
         if time_el is not None and time_el.text:
@@ -559,12 +797,23 @@ class GP7File:
             is_minor = mode_txt == "minor"
             header.keySignature = self._key_signature_from_count(acc, is_minor)
 
-        # Section → marker
+        # Section → marker (title + optional color)
         section = mb.find("Section")
         if section is not None:
             title = _text(section.find("Text")) or _text(section.find("Letter"))
             if title:
-                header.marker = gp.Marker(title=title)
+                color_el = section.find("Color")
+                if color_el is not None and color_el.text:
+                    rgb = _split_ints(color_el.text)
+                    if len(rgb) >= 3:
+                        header.marker = gp.Marker(
+                            title=title,
+                            color=gp.Color(r=rgb[0], g=rgb[1], b=rgb[2]),
+                        )
+                    else:
+                        header.marker = gp.Marker(title=title)
+                else:
+                    header.marker = gp.Marker(title=title)
 
         # Double bar
         if mb.find("DoubleBar") is not None:
@@ -1019,11 +1268,16 @@ class GP7File:
             ]
             eff.tremoloBar = bar
 
-        # <Chord>id</Chord> — reference only; chord diagram content resolved
-        # via the track's <DiagramCollection>.
+        # <Chord>id</Chord> — lookup in the track's DiagramCollection that
+        # we pre-parsed in _read_chord_diagrams.
         chord_ref = raw.find("Chord")
         if chord_ref is not None and (chord_ref.text or "").strip():
-            beat._chord_id = chord_ref.text.strip()  # type: ignore[attr-defined]
+            chord_id = chord_ref.text.strip()
+            track_key = id(beat.voice.measure.track)
+            chord_map = self._chords_by_track.get(track_key, {})
+            chord = chord_map.get(chord_id)
+            if chord is not None:
+                beat.effect.chord = chord
 
         # <Ottavia>8va|8vb|15ma|15mb</Ottavia> → beat.octave
         octavia = raw.find("Ottavia")
