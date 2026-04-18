@@ -1,6 +1,20 @@
 Changelog
 =========
 
+Version 0.10.2
+-------------
+
+*2026-04-18*
+
+**Backward-incompatible changes:**
+
+- Dropped support for Python 3.9.
+
+**Changes:**
+
+- Fixed writing old chords in GP3 `#48 <https://github.com/Perlence/PyGuitarPro/pull/48>`_.
+
+
 Version 0.10.1
 -------------
 
