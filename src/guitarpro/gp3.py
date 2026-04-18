@@ -1281,8 +1281,6 @@ class GP3File(GPFileBase):
     def writeOldChord(self, chord):
         self.writeIntByteSizeString(chord.name)
         self.writeI32(chord.firstFret)
-        # Fret list is only present when firstFret is non-zero; this
-        # matches readOldChord and the byte layout produced by Guitar Pro.
         if chord.firstFret:
             for fret in clamp(chord.strings, 6, fillvalue=-1):
                 self.writeI32(fret)
