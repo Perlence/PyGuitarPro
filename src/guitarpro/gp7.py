@@ -14,7 +14,7 @@
 GP7/GP8 files are ZIP archives.  Only score.gpif is required:
 
     score.gpif         XML document describing the full score
-    BinaryStylesheet   style settings (ignored)
+    BinaryStylesheet   style settings (proprietary binary, not decoded)
     PartConfiguration  part visibility (ignored)
     LayoutConfiguration layout hints (ignored)
 
@@ -23,12 +23,77 @@ Bars reference Voices, Voices reference Beats, Beats reference Notes
 and Rhythms.  The reader first builds lookup maps from ids, then walks
 MasterBars to assemble per-track Measure/Voice/Beat/Note trees.
 
-Phased port:
-  * Phase 1 (done): song metadata, version detection
-  * Phase 2 (done): tracks, tuning, MIDI channels
-  * Phase 3 (in progress): measures, voices, beats, notes (no effects yet)
-  * Phase 4: effects (bends, slides, harmonics, palm mute, etc.)
-  * Phase 5: chord diagrams, markers, repeats, directions
+Coverage
+--------
+  * Song: title/artist/subtitle/album/words/music/copyright/tab/
+    instructions/notice, tempo (from MasterTrack automation), tempoName,
+    lyrics (first non-empty track's 5 lines), masterEffect.volume
+    (default 100), pageSetup template strings.
+  * Track: name, shortName, color, tuning, capo, fretCount, offset
+    (transpose), isSolo/isMute, useRSE, isPercussion; MIDI channel
+    instrument, bank, channel, effectChannel, port; RSE ChannelStrip
+    balance (param 11) and volume (param 12); chord diagram collection
+    with per-string frets, fingerings, and harmonic metadata (root,
+    bass, type, extension, 5th/9th/11th alterations, newFormat, show,
+    sharp, add defaults); per-track MTC Automations (Tempo/Volume/
+    Balance/Sound) attached to the first beat of each target bar.
+  * MeasureHeader: time signature (numerator/denominator + beams from
+    XProperty 1124139010), key signature, section marker (title + RGB
+    color), repeat open/close, alternate endings, double bar, triplet
+    feel, Coda/Segno/Fine target directions, Da Capo/Dal Segno/Da Coda
+    jumps. Anacrusis flag stashed on `header._anacrusis`.
+  * Beat: duration value + dotted + tuplet (enters/times), octave
+    (Ottavia 8va/8vb/15ma/15mb), free-text label, dynamics → velocity,
+    rest/empty status, stroke (Brush), pickStroke, slapEffect (Slapped/
+    Popped), hasRasgueado, vibrato (VibratoWTremBar), tremoloBar
+    (WhammyBar curve from origin/middle1/middle2/destination points),
+    chord reference → resolved chord diagram, fadeIn, tremoloPicking
+    (1/2→8th, 1/4→16th, 1/8→32nd), grace (OnBeat/BeforeBeat), legato
+    origin propagated to notes as hammer, start in ticks.
+  * Note: string (reversed from GPIF's low-to-high), fret, MIDI pitch
+    for percussion, velocity inherited from beat, type (normal/tie/
+    dead from Muted + Tied properties), palmMute, letRing, vibrato
+    (Slight or Wide), staccato/accent/heavy/ghost from Accent flags +
+    AntiAccent, bend curve (Bended + origin value/offset + middle
+    value + up to two offsets + destination), slides (all six flag
+    bits: Shift/Legato/OutDown/OutUp/InFromBelow/InFromAbove),
+    harmonic (Natural/Pinch/Semi/Tap/Artificial with pitch+octave
+    reconstructed from HarmonicFret), trill fret, tremoloPicking
+    (via beat propagation), grace (via beat propagation),
+    leftHandFinger/rightHandFinger (P/I/M/A/C mapped).
+
+Deliberately skipped (no PyGuitarPro model representation)
+---------------------------------------------------------
+  * Fermatas per beat (GP7 can place them mid-bar; GP3/4/5 only had
+    per-measure and PyGuitarPro's MeasureHeader has no fermata field).
+  * Hairpin crescendo/decrescendo.
+  * Barre fret/shape at beat level.
+  * Per-beat lyrics (`<Lyrics>` inside <Beat>).
+  * Beat XProperties (beamingMode, invertBeamDirection, brushDuration).
+  * Bar XProperties (displayScale).
+  * MasterBar XProperties beyond beaming rules (displayScale).
+  * Systems layouts (ScoreSystemsLayout, track.systemsLayout).
+  * BackingTrack asset (external audio file).
+  * FreeTime flag.
+  * SyncPoint automations.
+  * Ornaments (Turn / Inverted Turn / Upper/Lower Mordent) — GP7-only
+    feature with no GP3/4/5 equivalent or PyGuitarPro field.
+  * Per-note percussion articulation ID — GP7-only.
+  * Grand Staff tracks (multiple staves per track) — PyGuitarPro's
+    Track flattens to a single staff.
+  * NotationPatch.
+  * SustainPedalMarkers.
+  * Partial capo (per-string capo).
+  * Channel strip EQ/compressor parameters (indices 0-10) — only the
+    volume/balance entries at indices 11/12 map to PyGuitarPro.
+  * BinaryStylesheet entries: track.rse.instrument.effect,
+    effectCategory, soundBank, unknown. These live in the proprietary
+    binary sidecar Guitar Pro ships alongside score.gpif; AlphaTab also
+    does not decode them beyond basic passthrough.
+
+Attribution
+-----------
+Ported from AlphaTab's Gp7To8Importer.ts / GpifParser.ts (MPL-2.0).
 """
 from __future__ import annotations
 
@@ -215,6 +280,7 @@ class GP7File:
         self._read_master_bars(song)
         self._assemble_tracks(song)
         self._compute_beat_starts(song)
+        self._attach_track_automations(song)
 
         return song
 
@@ -344,6 +410,11 @@ class GP7File:
         for i, t_node in enumerate(tracks_node.findall("Track")):
             track = self._read_track(t_node, song)
             track.number = i + 1
+            # Collect per-track automations (Tempo/Volume/Instrument changes)
+            # for later attachment to beats after the DAG is built.
+            auto_node = t_node.find("Automations")
+            if auto_node is not None:
+                track._automations = self._read_automations(auto_node)  # type: ignore[attr-defined]
             song.tracks.append(track)
 
         # PyGuitarPro stores lyrics at the Song level — take the first
@@ -473,6 +544,66 @@ class GP7File:
             track._lyrics_lines = self._read_lyrics_lines(lyrics_node)  # type: ignore[attr-defined]
 
         return track
+
+    @staticmethod
+    def _read_automations(node: ET.Element) -> list[dict]:
+        """Extract master/track <Automation> entries — mid-song parameter
+        changes (Tempo/Volume/Sound/Balance/etc.).
+
+        Returns list of {type, bar, position, value, linear} dicts. Mapping to
+        PyGuitarPro's per-beat MixTableChange happens after beats are built,
+        in `_attach_automations`.
+        """
+        out: list[dict] = []
+        for a in node.findall("Automation"):
+            entry = {
+                "type":     _text(a.find("Type")),
+                "bar":      _int(a.find("Bar"), -1),
+                "position": _float(a.find("Position"), 0.0),
+                "value":    _text(a.find("Value")),
+                "linear":   _text(a.find("Linear")).lower() == "true",
+            }
+            out.append(entry)
+        return out
+
+    def _attach_track_automations(self, song: gp.Song) -> None:
+        """Apply a track's cached automations to the first beat of the target
+        bar, creating a MixTableChange with the appropriate field set.
+
+        PyGuitarPro's MTC holds tempo/volume/balance/instrument items with
+        value + duration + allTracks flag.  GPIF automations lack the
+        allTracks concept (it's implicit at master level), so we pass
+        ``allTracks=False`` for track-level MTCs.
+        """
+        for track in song.tracks:
+            events = getattr(track, "_automations", None)
+            if not events:
+                continue
+            for ev in events:
+                bar = ev["bar"]
+                if bar < 0 or bar >= len(track.measures):
+                    continue
+                measure = track.measures[bar]
+                if not measure.voices or not measure.voices[0].beats:
+                    continue
+                target_beat = measure.voices[0].beats[0]
+                mtc = target_beat.effect.mixTableChange or gp.MixTableChange()
+                etype = ev["type"]
+                parts = (ev["value"] or "").strip().split()
+                first = parts[0] if parts else ""
+                try:
+                    num = int(float(first)) if first else 0
+                except ValueError:
+                    num = 0
+                if etype == "Tempo":
+                    mtc.tempo = gp.MixTableItem(value=num, duration=0, allTracks=True)
+                elif etype == "Volume":
+                    mtc.volume = gp.MixTableItem(value=num, duration=0, allTracks=False)
+                elif etype == "Balance":
+                    mtc.balance = gp.MixTableItem(value=num, duration=0, allTracks=False)
+                elif etype == "Sound":
+                    mtc.instrument = gp.MixTableItem(value=num, duration=0, allTracks=False)
+                target_beat.effect.mixTableChange = mtc
 
     @staticmethod
     def _read_lyrics_lines(lyrics_node: ET.Element) -> list[tuple[int, str]]:
@@ -777,6 +908,13 @@ class GP7File:
         else:
             header.start = previous.start + previous.length
 
+        # Anacrusis (partial first bar) — GPIF flags it on the first MasterBar
+        # only, and AlphaTab tracks it via parent-level _hasAnacrusis. For
+        # our purposes the presence of <Anacrusis/> is sufficient — no
+        # exact PyGuitarPro field exists so we stash it for downstream use.
+        if mb.find("Anacrusis") is not None:
+            header._anacrusis = True  # type: ignore[attr-defined]
+
         time_el = mb.find("Time")
         if time_el is not None and time_el.text:
             num_s, _, den_s = time_el.text.strip().partition("/")
@@ -1026,6 +1164,7 @@ class GP7File:
         tp_dur = getattr(beat, "_tremolo_picking_duration", None)
         grace_active = getattr(beat, "_grace_active", False)
         grace_on_beat = getattr(beat, "_grace_on_beat", False)
+        legato_origin = getattr(beat, "_legato_origin", False)
         for n in beat.notes:
             if tp_dur is not None:
                 n.effect.tremoloPicking = gp.TremoloPickingEffect(
@@ -1040,6 +1179,8 @@ class GP7File:
                     isDead=False,
                     velocity=n.velocity,
                 )
+            if legato_origin:
+                n.effect.hammer = True
 
         return beat
 
@@ -1130,6 +1271,13 @@ class GP7File:
                         bend_destination["offset"] = int(v / _BEND_OFFSET_SCALE)
 
         # ── Sibling elements of <Note>: top-level effect flags ──
+        finger_map = {
+            "P": gp.Fingering.thumb,
+            "I": gp.Fingering.index,
+            "M": gp.Fingering.middle,
+            "A": gp.Fingering.annular,
+            "C": gp.Fingering.little,
+        }
         for child in raw:
             tag = child.tag
             if tag == "LetRing":
@@ -1153,6 +1301,8 @@ class GP7File:
                     note.effect.heavyAccentuatedNote = True
                 if flags & _ACCENT_NORMAL:
                     note.effect.accentuatedNote = True
+                # bit 0x10 = tenuto — PyGuitarPro's closest match is
+                # letRing; leaving unset to avoid over-translation.
             elif tag == "Trill":
                 try:
                     trill_fret = int((child.text or "0").strip())
@@ -1163,9 +1313,16 @@ class GP7File:
                 except ValueError:
                     pass
             elif tag == "Tie":
-                # Tie destination=true means this note is a tie continuation.
                 if child.get("destination", "").lower() == "true":
                     note.type = gp.NoteType.tie
+            elif tag == "LeftFingering":
+                fp = finger_map.get((child.text or "").strip())
+                if fp is not None:
+                    note.effect.leftHandFinger = fp
+            elif tag == "RightFingering":
+                fp = finger_map.get((child.text or "").strip())
+                if fp is not None:
+                    note.effect.rightHandFinger = fp
 
         # ── Assemble bend curve ──
         if bended:
@@ -1278,6 +1435,12 @@ class GP7File:
             chord = chord_map.get(chord_id)
             if chord is not None:
                 beat.effect.chord = chord
+
+        # <Legato origin="true"/> — GPIF marks the source of a legato/hammer
+        # group. Store for propagation to notes after they're built.
+        legato = raw.find("Legato")
+        if legato is not None and legato.get("origin", "").lower() == "true":
+            beat._legato_origin = True  # type: ignore[attr-defined]
 
         # <Ottavia>8va|8vb|15ma|15mb</Ottavia> → beat.octave
         octavia = raw.find("Ottavia")
