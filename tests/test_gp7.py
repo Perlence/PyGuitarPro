@@ -199,6 +199,104 @@ class TestPhase3RealNotesExist:
         assert total_notes >= 0
 
 
+class TestPhase4Effects:
+    """Effect fixtures should actually produce populated effect fields."""
+
+    def _iter_notes(self, song):
+        for t in song.tracks:
+            for m in t.measures:
+                for v in m.voices:
+                    for b in v.beats:
+                        for n in b.notes:
+                            yield n, b, t
+
+    def test_bends_fixture_has_bend_effect(self):
+        path = FIXTURES_DIR / "bends.gp"
+        if not path.exists():
+            pytest.skip("bends.gp not present")
+        song = gp.parse(path)
+        bent = [n for n, _, _ in self._iter_notes(song) if n.effect.bend]
+        assert bent, "bends.gp must contain at least one note with effect.bend"
+        # Bend must have at least two points (origin + destination).
+        for n in bent:
+            assert len(n.effect.bend.points) >= 2
+
+    def test_harmonics_fixture_has_harmonic(self):
+        path = FIXTURES_DIR / "harmonics.gp"
+        if not path.exists():
+            pytest.skip("harmonics.gp not present")
+        song = gp.parse(path)
+        with_harm = [n for n, _, _ in self._iter_notes(song) if n.effect.harmonic is not None]
+        assert with_harm, "harmonics.gp must expose at least one harmonic note"
+
+    def test_hammer_fixture_has_hammer(self):
+        path = FIXTURES_DIR / "hammer.gp"
+        if not path.exists():
+            pytest.skip("hammer.gp not present")
+        song = gp.parse(path)
+        with_ham = [n for n, _, _ in self._iter_notes(song) if n.effect.hammer]
+        assert with_ham, "hammer.gp must expose at least one hammer-on/pull-off"
+
+    def test_vibrato_fixture_has_vibrato(self):
+        path = FIXTURES_DIR / "vibrato.gp"
+        if not path.exists():
+            pytest.skip("vibrato.gp not present")
+        song = gp.parse(path)
+        with_vib = [n for n, _, _ in self._iter_notes(song) if n.effect.vibrato]
+        assert with_vib, "vibrato.gp must expose at least one vibrato note"
+
+    def test_dead_fixture_has_dead_notes(self):
+        path = FIXTURES_DIR / "dead.gp"
+        if not path.exists():
+            pytest.skip("dead.gp not present")
+        song = gp.parse(path)
+        dead = [n for n, _, _ in self._iter_notes(song) if n.type == gp.NoteType.dead]
+        assert dead, "dead.gp must expose at least one muted (dead) note"
+
+    def test_accentuations_fixture_has_accents(self):
+        path = FIXTURES_DIR / "accentuations.gp"
+        if not path.exists():
+            pytest.skip("accentuations.gp not present")
+        song = gp.parse(path)
+        accented = [n for n, _, _ in self._iter_notes(song)
+                    if n.effect.accentuatedNote or n.effect.heavyAccentuatedNote
+                    or n.effect.staccato]
+        assert accented, "accentuations.gp must expose accented/staccato notes"
+
+    def test_grace_fixture_has_grace(self):
+        path = FIXTURES_DIR / "grace.gp"
+        if not path.exists():
+            pytest.skip("grace.gp not present")
+        song = gp.parse(path)
+        with_grace = [n for n, _, _ in self._iter_notes(song) if n.effect.grace is not None]
+        assert with_grace, "grace.gp must expose grace notes"
+
+    def test_trills_fixture_has_trill(self):
+        path = FIXTURES_DIR / "trills.gp"
+        if not path.exists():
+            pytest.skip("trills.gp not present")
+        song = gp.parse(path)
+        with_trill = [n for n, _, _ in self._iter_notes(song) if n.effect.trill is not None]
+        assert with_trill, "trills.gp must expose trilled notes"
+
+    def test_effects_fixture_has_tremolo_picking(self):
+        """`effects.gp` is the grab-bag fixture — contains <Tremolo> picking."""
+        path = FIXTURES_DIR / "effects.gp"
+        if not path.exists():
+            pytest.skip("effects.gp not present")
+        song = gp.parse(path)
+        with_tp = [n for n, _, _ in self._iter_notes(song) if n.effect.tremoloPicking is not None]
+        assert with_tp, "effects.gp must expose tremolo-picking notes"
+
+    def test_whammy_fixture_has_tremolo_bar(self):
+        path = FIXTURES_DIR / "whammy-advanced.gp"
+        if not path.exists():
+            pytest.skip("whammy-advanced.gp not present")
+        song = gp.parse(path)
+        bars = [b for _, b, _ in self._iter_notes(song) if b.effect.tremoloBar is not None]
+        assert bars, "whammy-advanced.gp must expose tremolo-bar curves"
+
+
 class TestKnownTrackFixtures:
     """Specific assertions on selected fixtures to catch silent regressions."""
 

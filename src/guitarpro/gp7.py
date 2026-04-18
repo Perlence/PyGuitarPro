@@ -55,6 +55,25 @@ def _int(elem: Optional[ET.Element], default: int = 0) -> int:
         return default
 
 
+def _float(elem: Optional[ET.Element], default: float = 0.0) -> float:
+    if elem is None or elem.text is None:
+        return default
+    try:
+        return float(elem.text.strip())
+    except ValueError:
+        return default
+
+
+def _float_attr(elem: ET.Element, name: str, default: float = 0.0) -> float:
+    raw = elem.get(name)
+    if raw is None or raw == "":
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
 def _split_ints(text: str) -> list[int]:
     out = []
     for token in text.strip().split():
@@ -101,6 +120,26 @@ _CLEF_MAP = {
     "C3":      3,  # alto
     "Neutral": 0,  # neutral — use treble as default
 }
+
+# Accent flag bits (<Accent>N</Accent> inside <Note>)
+_ACCENT_STACCATO      = 0x01
+_ACCENT_HEAVY         = 0x04
+_ACCENT_NORMAL        = 0x08
+# 0x10 = tenuto (not represented in PyGuitarPro)
+
+# Slide flag bits (<Property name="Slide">/<Flags>)
+_SLIDE_SHIFT           = 0x01
+_SLIDE_LEGATO          = 0x02
+_SLIDE_OUT_DOWN        = 0x04
+_SLIDE_OUT_UP          = 0x08
+_SLIDE_IN_FROM_BELOW   = 0x10
+_SLIDE_IN_FROM_ABOVE   = 0x20
+# 0x40/0x80 = pick slides (no direct PyGuitarPro mapping)
+
+# GPIF bend-value units: float cent / 25 gives PyGuitarPro quarter-step units.
+_BEND_VALUE_SCALE = 25.0
+# GPIF bend offset 0..100 gives PyGuitarPro 0..12 position units.
+_BEND_OFFSET_SCALE = 100.0 / 12.0
 
 
 # ── Reader ────────────────────────────────────────────────────────────
@@ -569,6 +608,9 @@ class GP7File:
         if free_text is not None and free_text.text:
             beat.text = free_text.text.strip()
 
+        # Beat-level effects ---------------------------------------
+        self._apply_beat_effects(raw, beat)
+
         # Notes
         notes_ids = _split_tokens(_text(raw.find("Notes")))
         velocity = _DYNAMIC_VELOCITY.get(_text(raw.find("Dynamic")), 95)
@@ -591,6 +633,26 @@ class GP7File:
         else:
             beat.status = gp.BeatStatus.normal
 
+        # Propagate beat-level attributes (tremolo picking, grace) onto
+        # the constituent notes — PyGuitarPro models these per-note.
+        tp_dur = getattr(beat, "_tremolo_picking_duration", None)
+        grace_active = getattr(beat, "_grace_active", False)
+        grace_on_beat = getattr(beat, "_grace_on_beat", False)
+        for n in beat.notes:
+            if tp_dur is not None:
+                n.effect.tremoloPicking = gp.TremoloPickingEffect(
+                    duration=gp.Duration(value=tp_dur),
+                )
+            if grace_active:
+                n.effect.grace = gp.GraceEffect(
+                    fret=n.value,
+                    duration=32,
+                    isOnBeat=grace_on_beat,
+                    transition=gp.GraceEffectTransition.none,
+                    isDead=False,
+                    velocity=n.velocity,
+                )
+
         return beat
 
     def _build_note(self, beat: gp.Beat, note_id: str, velocity: int) -> Optional[gp.Note]:
@@ -600,47 +662,248 @@ class GP7File:
 
         note = gp.Note(beat=beat)
         note.velocity = velocity
-        note.type = gp.NoteType.normal  # default; overridden below for tie/dead
+        note.type = gp.NoteType.normal  # overridden below for tie/dead
 
-        props = raw.find("Properties")
+        # ── <Properties>/<Property> block (pitch, techniques, bends) ──
         fret = 0
         string_number = 1
         midi_value = None
+        # Accumulators for bend curve (assembled after property loop).
+        bended = False
+        bend_origin = {"value": 0, "offset": 0}
+        bend_middle_value = None
+        bend_middle_offset1 = None
+        bend_middle_offset2 = None
+        bend_destination = {"value": 0, "offset": 60}
+        # Harmonic accumulators.
+        harmonic_type = None
+        harmonic_fret = 0.0
+
+        props = raw.find("Properties")
         if props is not None:
             for prop in props.findall("Property"):
                 name = prop.get("name")
                 if name == "Fret":
                     fret = _int(prop.find("Fret"))
                 elif name == "String":
-                    # XML string is 0-indexed low-to-high; PyGuitarPro is
-                    # 1-indexed high-to-low. track.strings length gives N.
                     gpif_idx = _int(prop.find("String"))
                     n_strings = len(beat.voice.measure.track.strings)
                     if n_strings > 0:
-                        string_number = n_strings - gpif_idx
-                        if string_number < 1:
-                            string_number = 1
+                        string_number = max(1, n_strings - gpif_idx)
                 elif name == "Midi":
                     midi_value = _int(prop.find("Number"))
                 elif name == "Muted":
-                    enable = prop.find("Enable")
-                    if enable is not None:
+                    if prop.find("Enable") is not None:
                         note.type = gp.NoteType.dead
                 elif name == "Tied":
                     dest = prop.find("TieDest")
                     if dest is not None and (dest.text or "").lower() == "true":
                         note.type = gp.NoteType.tie
+                elif name == "PalmMuted":
+                    if prop.find("Enable") is not None:
+                        note.effect.palmMute = True
+                elif name == "HarmonicType":
+                    htype = prop.find("HType")
+                    if htype is not None:
+                        harmonic_type = (htype.text or "").strip().lower()
+                elif name == "HarmonicFret":
+                    hfret = prop.find("HFret")
+                    if hfret is not None and hfret.text:
+                        try:
+                            harmonic_fret = float(hfret.text.strip())
+                        except ValueError:
+                            harmonic_fret = 0.0
+                elif name == "Slide":
+                    flags = _int(prop.find("Flags"))
+                    self._apply_slide_flags(note, flags)
+                elif name == "HopoOrigin":
+                    if prop.find("Enable") is not None:
+                        note.effect.hammer = True
+                elif name == "Bended":
+                    bended = True
+                elif name == "BendOriginValue":
+                    v = _float(prop.find("Float"))
+                    bend_origin["value"] = int(v / _BEND_VALUE_SCALE)
+                elif name == "BendOriginOffset":
+                    v = _float(prop.find("Float"))
+                    bend_origin["offset"] = int(v / _BEND_OFFSET_SCALE)
+                elif name == "BendMiddleValue":
+                    bend_middle_value = int(_float(prop.find("Float")) / _BEND_VALUE_SCALE)
+                elif name == "BendMiddleOffset1":
+                    bend_middle_offset1 = int(_float(prop.find("Float")) / _BEND_OFFSET_SCALE)
+                elif name == "BendMiddleOffset2":
+                    bend_middle_offset2 = int(_float(prop.find("Float")) / _BEND_OFFSET_SCALE)
+                elif name == "BendDestinationValue":
+                    v = _float(prop.find("Float"))
+                    bend_destination["value"] = int(v / _BEND_VALUE_SCALE)
+                elif name == "BendDestinationOffset":
+                    v = _float(prop.find("Float"))
+                    if v:  # keep default 60 if unset
+                        bend_destination["offset"] = int(v / _BEND_OFFSET_SCALE)
+
+        # ── Sibling elements of <Note>: top-level effect flags ──
+        for child in raw:
+            tag = child.tag
+            if tag == "LetRing":
+                note.effect.letRing = True
+            elif tag == "Vibrato":
+                txt = (child.text or "").strip()
+                if txt in ("Slight", "Wide"):
+                    note.effect.vibrato = True
+            elif tag == "AntiAccent":
+                if (child.text or "").strip().lower() == "normal":
+                    note.effect.ghostNote = True
+            elif tag == "Accent":
+                flags = 0
+                try:
+                    flags = int((child.text or "0").strip())
+                except ValueError:
+                    pass
+                if flags & _ACCENT_STACCATO:
+                    note.effect.staccato = True
+                if flags & _ACCENT_HEAVY:
+                    note.effect.heavyAccentuatedNote = True
+                if flags & _ACCENT_NORMAL:
+                    note.effect.accentuatedNote = True
+            elif tag == "Trill":
+                try:
+                    trill_fret = int((child.text or "0").strip())
+                    note.effect.trill = gp.TrillEffect(
+                        fret=trill_fret,
+                        duration=gp.Duration(value=16),  # default 16th speed
+                    )
+                except ValueError:
+                    pass
+            elif tag == "Tie":
+                # Tie destination=true means this note is a tie continuation.
+                if child.get("destination", "").lower() == "true":
+                    note.type = gp.NoteType.tie
+
+        # ── Assemble bend curve ──
+        if bended:
+            bend = gp.BendEffect(type=gp.BendType.bend, value=bend_destination["value"])
+            bend.points.append(gp.BendPoint(position=0, value=bend_origin["value"]))
+            if bend_middle_value is not None:
+                pos1 = bend_middle_offset1 if bend_middle_offset1 is not None else 6
+                bend.points.append(gp.BendPoint(position=pos1, value=bend_middle_value))
+                if bend_middle_offset2 is not None and bend_middle_offset2 != bend_middle_offset1:
+                    bend.points.append(gp.BendPoint(position=bend_middle_offset2, value=bend_middle_value))
+            bend.points.append(gp.BendPoint(
+                position=bend_destination["offset"],
+                value=bend_destination["value"],
+            ))
+            note.effect.bend = bend
+
+        # ── Assemble harmonic ──
+        if harmonic_type == "natural":
+            note.effect.harmonic = gp.NaturalHarmonic()
+        elif harmonic_type == "pinch":
+            note.effect.harmonic = gp.PinchHarmonic()
+        elif harmonic_type == "semi":
+            note.effect.harmonic = gp.SemiHarmonic()
+        elif harmonic_type == "tap":
+            note.effect.harmonic = gp.TappedHarmonic(fret=int(harmonic_fret))
+        elif harmonic_type == "artificial":
+            # ArtificialHarmonic needs pitch + octave; harmonic_fret is a
+            # float semitone offset that encodes both.
+            pitch_val = int(round(harmonic_fret)) % 12
+            octave_val = int(round(harmonic_fret)) // 12
+            note.effect.harmonic = gp.ArtificialHarmonic(
+                pitch=gp.PitchClass(just=pitch_val, accidental=0),
+                octave=gp.Octave(max(0, min(4, octave_val))),
+            )
 
         note.string = string_number
-        # For percussion tracks, `value` is the MIDI drum note; otherwise
-        # it's the fret number. We keep fret here; the MIDI value is
-        # reconstructable from string pitch + fret by consumers.
         if beat.voice.measure.track.isPercussionTrack and midi_value is not None:
             note.value = midi_value
         else:
             note.value = fret
 
         return note
+
+    def _apply_beat_effects(self, raw: ET.Element, beat: gp.Beat) -> None:
+        """Port beat-level effects: tremolo picking, fade, whammy, grace,
+        brush/stroke, chord-id attachment (chord content filled in Phase 5)."""
+        eff = beat.effect
+
+        # <Fadding>FadeIn|FadeOut|VolumeSwell</Fadding>
+        fadding = raw.find("Fadding")
+        if fadding is not None and (fadding.text or "").strip() == "FadeIn":
+            eff.fadeIn = True
+
+        # <Tremolo>1/2|1/4|1/8</Tremolo> on BEAT — GPIF applies picking at
+        # beat level, PyGuitarPro applies at note level. Set on each note
+        # after notes are built (handled by caller).
+        tremolo = raw.find("Tremolo")
+        if tremolo is not None:
+            txt = (tremolo.text or "").strip()
+            # Map fraction to PyGuitarPro TremoloPickingEffect duration:
+            #   1/2 → 8th, 1/4 → 16th, 1/8 → 32nd
+            dur_map = {"1/2": 8, "1/4": 16, "1/8": 32}
+            dv = dur_map.get(txt)
+            if dv is not None:
+                # Store for note-attachment (after notes are built).
+                beat._tremolo_picking_duration = dv  # type: ignore[attr-defined]
+
+        # <GraceNotes>OnBeat|BeforeBeat</GraceNotes> — whole beat is a
+        # grace note group; PyGuitarPro attaches GraceEffect per-note.
+        grace = raw.find("GraceNotes")
+        if grace is not None:
+            txt = (grace.text or "").strip()
+            beat._grace_on_beat = txt == "OnBeat"  # type: ignore[attr-defined]
+            beat._grace_active = True  # type: ignore[attr-defined]
+
+        # <Arpeggio>Up|Down</Arpeggio> → brush stroke
+        arpeggio = raw.find("Arpeggio")
+        if arpeggio is not None:
+            direction = (arpeggio.text or "").strip()
+            if direction == "Up":
+                eff.stroke = gp.BeatStroke(
+                    direction=gp.BeatStrokeDirection.up, value=0,
+                )
+            elif direction == "Down":
+                eff.stroke = gp.BeatStroke(
+                    direction=gp.BeatStrokeDirection.down, value=0,
+                )
+
+        # <Whammy> element describes a whammy-bar curve on this beat.
+        whammy = raw.find("Whammy")
+        if whammy is not None:
+            origin_v = int(_float_attr(whammy, "originValue") / _BEND_VALUE_SCALE)
+            middle_v = int(_float_attr(whammy, "middleValue") / _BEND_VALUE_SCALE)
+            dest_v = int(_float_attr(whammy, "destinationValue") / _BEND_VALUE_SCALE)
+            bar = gp.BendEffect(type=gp.BendType.bend, value=dest_v)
+            bar.points = [
+                gp.BendPoint(position=0, value=origin_v),
+                gp.BendPoint(position=6, value=middle_v),
+                gp.BendPoint(position=12, value=dest_v),
+            ]
+            eff.tremoloBar = bar
+
+        # <Chord>id</Chord> — reference only; chord diagram content resolved
+        # in Phase 5 when we read <Track>/<DiagramCollection>.
+        chord_ref = raw.find("Chord")
+        if chord_ref is not None and (chord_ref.text or "").strip():
+            beat._chord_id = chord_ref.text.strip()  # type: ignore[attr-defined]
+
+    @staticmethod
+    def _apply_slide_flags(note: gp.Note, flags: int) -> None:
+        """Map GPIF slide flags to PyGuitarPro SlideType list."""
+        slides = []
+        if flags & _SLIDE_SHIFT:
+            slides.append(gp.SlideType.shiftSlideTo)
+        if flags & _SLIDE_LEGATO:
+            slides.append(gp.SlideType.legatoSlideTo)
+        if flags & _SLIDE_OUT_DOWN:
+            slides.append(gp.SlideType.outDownwards)
+        if flags & _SLIDE_OUT_UP:
+            slides.append(gp.SlideType.outUpwards)
+        if flags & _SLIDE_IN_FROM_BELOW:
+            slides.append(gp.SlideType.intoFromBelow)
+        if flags & _SLIDE_IN_FROM_ABOVE:
+            slides.append(gp.SlideType.intoFromAbove)
+        if slides:
+            note.effect.slides = slides
 
     @staticmethod
     def _empty_beat(voice: gp.Voice) -> gp.Beat:
