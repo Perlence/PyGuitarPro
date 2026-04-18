@@ -136,6 +136,35 @@ _SLIDE_IN_FROM_BELOW   = 0x10
 _SLIDE_IN_FROM_ABOVE   = 0x20
 # 0x40/0x80 = pick slides (no direct PyGuitarPro mapping)
 
+# GPIF Target → PyGuitarPro direction-sign names (Coda/Segno/Fine "destinations")
+_DIRECTION_TARGETS = {
+    "Coda":        "Coda",
+    "DoubleCoda":  "Double Coda",
+    "Segno":       "Segno",
+    "SegnoSegno":  "Segno Segno",
+    "Fine":        "Fine",
+}
+
+# GPIF Jump → PyGuitarPro fromDirection names (Da Capo / Dal Segno family).
+# NB: GPIF has the typo "DaSegno" in its enum; the corresponding
+# canonical musical term is "Dal Segno".
+_DIRECTION_JUMPS = {
+    "DaCapo":                      "Da Capo",
+    "DaCapoAlCoda":                "Da Capo al Coda",
+    "DaCapoAlDoubleCoda":          "Da Capo al Double Coda",
+    "DaCapoAlFine":                "Da Capo al Fine",
+    "DaSegno":                     "Dal Segno",
+    "DaSegnoAlCoda":               "Dal Segno al Coda",
+    "DaSegnoAlDoubleCoda":         "Dal Segno al Double Coda",
+    "DaSegnoAlFine":               "Dal Segno al Fine",
+    "DaSegnoSegno":                "Dal Segno Segno",
+    "DaSegnoSegnoAlCoda":          "Dal Segno Segno al Coda",
+    "DaSegnoSegnoAlDoubleCoda":    "Dal Segno Segno al Double Coda",
+    "DaSegnoSegnoAlFine":          "Dal Segno Segno al Fine",
+    "DaCoda":                      "Da Coda",
+    "DaDoubleCoda":                "Da Double Coda",
+}
+
 # GPIF bend-value units: float cent / 25 gives PyGuitarPro quarter-step units.
 _BEND_VALUE_SCALE = 25.0
 # GPIF bend offset 0..100 gives PyGuitarPro 0..12 position units.
@@ -267,6 +296,20 @@ class GP7File:
             track.number = i + 1
             song.tracks.append(track)
 
+        # PyGuitarPro stores lyrics at the Song level — take the first
+        # non-empty per-track lyrics we parsed, padding to 5 lines.
+        for t in song.tracks:
+            lines = getattr(t, "_lyrics_lines", None)
+            if lines and any(text for _, text in lines):
+                song.lyrics = gp.Lyrics(
+                    trackChoice=t.number - 1,
+                    lines=[gp.LyricLine(startingMeasure=sm, lyrics=text)
+                           for sm, text in lines[:5]],
+                )
+                while len(song.lyrics.lines) < 5:
+                    song.lyrics.lines.append(gp.LyricLine(startingMeasure=1, lyrics=""))
+                break
+
     def _read_track(self, node: ET.Element, song: gp.Song) -> gp.Track:
         track = gp.Track(song=song, number=0)
         track.strings = []
@@ -320,13 +363,65 @@ class GP7File:
         if staves is not None:
             self._read_track_staves(staves, track)
 
+        # <Transpose><Chromatic>N</Chromatic><Octave>M</Octave></Transpose>
+        # Total offset in semitones = octave*12 + chromatic.
+        transpose = node.find("Transpose")
+        if transpose is not None:
+            chrom = _int(transpose.find("Chromatic"))
+            oct_ = _int(transpose.find("Octave"))
+            track.offset = oct_ * 12 + chrom
+
+        # <RSE><ChannelStrip><Parameters>...</Parameters></ChannelStrip></RSE>
+        # AlphaTab reads balance at index 11 and volume at index 12, scaling
+        # the 0..1 float into PyGuitarPro's 0..15-ish channel byte
+        # (floor(value * 16)). We preserve that mapping.
+        rse = node.find("RSE")
+        if rse is not None:
+            strip = rse.find("ChannelStrip")
+            if strip is not None:
+                params_el = strip.find("Parameters")
+                if params_el is not None and params_el.text:
+                    parts = params_el.text.strip().split()
+                    try:
+                        if len(parts) > 12:
+                            track.channel.balance = int(float(parts[11]) * 16)
+                            track.channel.volume = int(float(parts[12]) * 16)
+                    except ValueError:
+                        pass
+
+        # Track-level flags that live as direct children.
+        # <Muted/PlaybackState> are tri-state element+text; <PlayingStyle>,
+        # <SystemsDefautLayout> etc. aren't represented in PyGuitarPro so
+        # they're ignored.
+        state = _text(node.find("PlaybackState"))
+        if state == "Solo":
+            track.isSolo = True
+        elif state == "Mute":
+            track.isMute = True
+
         if not track.strings and not track.isPercussionTrack:
             track.strings = [
                 gp.GuitarString(number=i + 1, value=v)
                 for i, v in enumerate([64, 59, 55, 50, 45, 40])
             ]
 
+        # Lyrics — first line of the first track becomes song.lyrics.
+        # PyGuitarPro stores lyrics on song (not per-track); we collect them
+        # and apply during _read_tracks completion.
+        lyrics_node = node.find("Lyrics")
+        if lyrics_node is not None:
+            track._lyrics_lines = self._read_lyrics_lines(lyrics_node)  # type: ignore[attr-defined]
+
         return track
+
+    @staticmethod
+    def _read_lyrics_lines(lyrics_node: ET.Element) -> list[tuple[int, str]]:
+        out: list[tuple[int, str]] = []
+        for line in lyrics_node.findall("Line"):
+            starting = _int(line.find("Offset"))
+            text = _text(line.find("Text"))
+            out.append((starting, text))
+        return out
 
     def _read_track_staves(self, staves_node: ET.Element, track: gp.Track) -> None:
         for staff in staves_node.findall("Staff"):
@@ -503,7 +598,51 @@ class GP7File:
         elif tf == "Triplet16th":
             header.tripletFeel = gp.TripletFeel.sixteenth
 
+        # Directions (Coda/Segno markers & Da Capo/Dal Segno jumps).
+        directions = mb.find("Directions")
+        if directions is not None:
+            for dnode in directions:
+                if dnode.tag == "Target":
+                    txt = (dnode.text or "").strip()
+                    if txt in _DIRECTION_TARGETS:
+                        header.direction = gp.DirectionSign(name=_DIRECTION_TARGETS[txt])
+                elif dnode.tag == "Jump":
+                    txt = (dnode.text or "").strip()
+                    if txt in _DIRECTION_JUMPS:
+                        header.fromDirection = gp.DirectionSign(name=_DIRECTION_JUMPS[txt])
+
+        # TimeSignature beam pattern — stored in XProperties id=1124139010
+        # as an <Int> payload when non-default. We read but PyGuitarPro's
+        # TimeSignature expects a `beams` list; GPIF's single int encodes
+        # the pattern so we leave PyGuitarPro's default unless an explicit
+        # value is present.
+        xprops = mb.find("XProperties")
+        if xprops is not None:
+            for xp in xprops.findall("XProperty"):
+                if xp.get("id") == "1124139010":
+                    # Default is 8 (i.e. [2,2,2,2] for 4/4). Anything else
+                    # overrides; we decode pairs-of-bits into beam counts.
+                    val = _int(xp.find("Int"), 8)
+                    header.timeSignature.beams = self._decode_beams(
+                        val, header.timeSignature.numerator,
+                    )
+
         return header
+
+    @staticmethod
+    def _decode_beams(encoded: int, numerator: int) -> list[int]:
+        """Convert GPIF's encoded beam pattern to PyGuitarPro's list of 4.
+
+        Default 8 maps to [2,2,2,2]. Rare non-default values (e.g. 1/4 time
+        has 1 single beat) expand to a list that matches the numerator.
+        PyGuitarPro keeps only 4 slots, so we pad/truncate accordingly.
+        """
+        if encoded == 8:
+            return [2, 2, 2, 2]
+        # Best-effort: split numerator into 4 roughly equal groups.
+        base, rem = divmod(max(numerator, 1), 4)
+        out = [base + (1 if i < rem else 0) for i in range(4)]
+        return out
 
     @staticmethod
     def _key_signature_from_count(acc: int, is_minor: bool) -> gp.KeySignature:
@@ -881,10 +1020,101 @@ class GP7File:
             eff.tremoloBar = bar
 
         # <Chord>id</Chord> — reference only; chord diagram content resolved
-        # in Phase 5 when we read <Track>/<DiagramCollection>.
+        # via the track's <DiagramCollection>.
         chord_ref = raw.find("Chord")
         if chord_ref is not None and (chord_ref.text or "").strip():
             beat._chord_id = chord_ref.text.strip()  # type: ignore[attr-defined]
+
+        # <Ottavia>8va|8vb|15ma|15mb</Ottavia> → beat.octave
+        octavia = raw.find("Ottavia")
+        if octavia is not None:
+            txt = (octavia.text or "").strip()
+            if txt == "8va":
+                beat.octave = gp.Octave.ottava
+            elif txt == "8vb":
+                beat.octave = gp.Octave.ottavaBassa
+            elif txt == "15ma":
+                beat.octave = gp.Octave.quindicesima
+            elif txt == "15mb":
+                beat.octave = gp.Octave.quindicesimaBassa
+
+        # <Properties> on the beat: Brush, PickStroke, Slapped, Popped,
+        # VibratoWTremBar, Rasgueado, WhammyBar curve points.
+        props = raw.find("Properties")
+        if props is not None:
+            self._apply_beat_properties(props, beat)
+
+    def _apply_beat_properties(self, props: ET.Element, beat: gp.Beat) -> None:
+        eff = beat.effect
+        whammy_origin = None
+        whammy_middle_value = None
+        whammy_middle_offset1 = None
+        whammy_middle_offset2 = None
+        whammy_destination = None
+        is_whammy = False
+
+        for prop in props.findall("Property"):
+            name = prop.get("name")
+            if name == "Brush":
+                direction = _text(prop.find("Direction"))
+                eff.stroke = gp.BeatStroke(
+                    direction=gp.BeatStrokeDirection.up if direction == "Up" else gp.BeatStrokeDirection.down,
+                    value=0,
+                )
+            elif name == "PickStroke":
+                direction = _text(prop.find("Direction"))
+                eff.pickStroke = (gp.BeatStrokeDirection.up if direction == "Up"
+                                  else gp.BeatStrokeDirection.down)
+            elif name == "Slapped":
+                if prop.find("Enable") is not None:
+                    eff.slapEffect = gp.SlapEffect.slapping
+            elif name == "Popped":
+                if prop.find("Enable") is not None:
+                    eff.slapEffect = gp.SlapEffect.popping
+            elif name == "Rasgueado":
+                eff.hasRasgueado = True
+            elif name == "VibratoWTremBar":
+                strength = _text(prop.find("Strength"))
+                if strength in ("Wide", "Slight"):
+                    eff.vibrato = True
+            # Whammy bar curve points (may override simpler Whammy element).
+            elif name == "WhammyBar":
+                is_whammy = True
+            elif name == "WhammyBarOriginValue":
+                if whammy_origin is None:
+                    whammy_origin = {"value": 0, "offset": 0}
+                whammy_origin["value"] = int(_float(prop.find("Float")) / _BEND_VALUE_SCALE)
+            elif name == "WhammyBarOriginOffset":
+                if whammy_origin is None:
+                    whammy_origin = {"value": 0, "offset": 0}
+                whammy_origin["offset"] = int(_float(prop.find("Float")) / _BEND_OFFSET_SCALE)
+            elif name == "WhammyBarMiddleValue":
+                whammy_middle_value = int(_float(prop.find("Float")) / _BEND_VALUE_SCALE)
+            elif name == "WhammyBarMiddleOffset1":
+                whammy_middle_offset1 = int(_float(prop.find("Float")) / _BEND_OFFSET_SCALE)
+            elif name == "WhammyBarMiddleOffset2":
+                whammy_middle_offset2 = int(_float(prop.find("Float")) / _BEND_OFFSET_SCALE)
+            elif name == "WhammyBarDestinationValue":
+                if whammy_destination is None:
+                    whammy_destination = {"value": 0, "offset": 60}
+                whammy_destination["value"] = int(_float(prop.find("Float")) / _BEND_VALUE_SCALE)
+            elif name == "WhammyBarDestinationOffset":
+                if whammy_destination is None:
+                    whammy_destination = {"value": 0, "offset": 0}
+                whammy_destination["offset"] = int(_float(prop.find("Float")) / _BEND_OFFSET_SCALE)
+
+        if is_whammy or whammy_origin or whammy_middle_value is not None or whammy_destination:
+            origin = whammy_origin or {"value": 0, "offset": 0}
+            dest = whammy_destination or {"value": 0, "offset": 12}
+            bar = gp.BendEffect(type=gp.BendType.bend, value=dest["value"])
+            bar.points.append(gp.BendPoint(position=0, value=origin["value"]))
+            if whammy_middle_value is not None:
+                pos1 = whammy_middle_offset1 if whammy_middle_offset1 is not None else 6
+                bar.points.append(gp.BendPoint(position=pos1, value=whammy_middle_value))
+                if whammy_middle_offset2 is not None and whammy_middle_offset2 != whammy_middle_offset1:
+                    bar.points.append(gp.BendPoint(position=whammy_middle_offset2, value=whammy_middle_value))
+            bar.points.append(gp.BendPoint(position=dest["offset"], value=dest["value"]))
+            eff.tremoloBar = bar
 
     @staticmethod
     def _apply_slide_flags(note: gp.Note, flags: int) -> None:

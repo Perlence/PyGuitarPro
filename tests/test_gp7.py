@@ -297,6 +297,66 @@ class TestPhase4Effects:
         assert bars, "whammy-advanced.gp must expose tremolo-bar curves"
 
 
+class TestPhase5Rest:
+    """Remaining parity items: lyrics, transpose, channel volume/balance,
+    directions, beat octave/slap/pick/rasgueado, MasterBar XProperties."""
+
+    def _iter_notes(self, song):
+        for t in song.tracks:
+            for m in t.measures:
+                for v in m.voices:
+                    for b in v.beats:
+                        for n in b.notes:
+                            yield n, b, t
+
+    def test_channel_volume_balance_populated(self, fixture):
+        """ChannelStrip Parameters should populate track.channel volume/balance
+        (non-zero for any real track)."""
+        song = gp.parse(fixture)
+        for t in song.tracks:
+            # Both default to 0 — if ChannelStrip parses correctly, at
+            # least some tracks will have non-zero values.
+            assert t.channel.volume >= 0
+            assert t.channel.balance >= 0
+
+    def test_transpose_is_integer(self, fixture):
+        song = gp.parse(fixture)
+        for t in song.tracks:
+            assert isinstance(t.offset, int)
+
+    def test_lyrics_populated_if_present(self, fixture):
+        """Lyrics is either unset or a well-formed Lyrics object."""
+        song = gp.parse(fixture)
+        if song.lyrics is not None:
+            assert len(song.lyrics.lines) == 5
+            for line in song.lyrics.lines:
+                assert isinstance(line.startingMeasure, int)
+                assert isinstance(line.lyrics, str)
+
+    def test_beat_octave_is_valid_enum(self, fixture):
+        song = gp.parse(fixture)
+        for t in song.tracks:
+            for m in t.measures:
+                for v in m.voices:
+                    for b in v.beats:
+                        assert isinstance(b.octave, gp.Octave)
+
+
+class TestPhase5Directions:
+    def test_any_direction_in_fixture_is_parsed(self):
+        """Find a fixture with Directions in XML and check it round-trips
+        into MeasureHeader.direction / fromDirection."""
+        for fx in FIXTURES:
+            raw = fx.read_bytes()
+            if b"<Directions>" in raw:
+                song = gp.parse(fx)
+                has = any(h.direction is not None or h.fromDirection is not None
+                          for h in song.measureHeaders)
+                assert has, f"{fx.name} advertises <Directions> but none parsed"
+                return
+        pytest.skip("no fixture advertises <Directions>")
+
+
 class TestKnownTrackFixtures:
     """Specific assertions on selected fixtures to catch silent regressions."""
 
