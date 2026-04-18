@@ -5,6 +5,7 @@ from .iobase import GPFileBase
 from .gp3 import GP3File
 from .gp4 import GP4File
 from .gp5 import GP5File
+from .gp7 import GP7File
 from .models import GPException, Song
 
 __all__ = ('parse', 'write')
@@ -45,7 +46,13 @@ _EXT_VERSIONS = {
     'gp4': (4, 0, 6),
     'gp5': (5, 1, 0),
     'tmp': (5, 2, 0),
+    # GP7/GP8 extensions (.gp, .gp7, .gp8) intentionally omitted until write
+    # support lands; read path routes via zip-magic detection, not extension.
 }
+
+# ZIP magic bytes mark a GP7/GP8 file (GPIF format). GP3/4/5 start with a
+# byte-size-string ("FICHIER GUITAR PRO...").
+_ZIP_MAGIC = b"PK\x03\x04"
 
 
 def parse(stream, encoding='cp1252') -> Song:
@@ -95,6 +102,14 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
         filename = getattr(fp, 'name', '<file>')
 
     if mode == 'rb':
+        # GP7/GP8 files are ZIP archives; peek at the first 4 bytes to route.
+        magic = fp.read(len(_ZIP_MAGIC))
+        fp.seek(0)
+        if magic == _ZIP_MAGIC:
+            # Version tuple is refined by GP7File.readSong() from the
+            # <GPVersion> element in score.gpif.
+            gpfile = GP7File(fp, encoding or 'utf-8', version='GPIF', versionTuple=(7, 0, 0))
+            return gpfile, shouldClose
         gpfilebase = GPFileBase(fp, encoding)
         versionString = gpfilebase.readVersion()
     elif mode == 'wb':
@@ -103,6 +118,9 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
             version = song.versionTuple
         if version is None:
             version = guessVersionByExtension(filename)
+        if version and version[0] >= 7:
+            gpfile = GP7File(fp, encoding or 'utf-8', version='GPIF', versionTuple=version)
+            return gpfile, shouldClose
         versionString = _VERSIONS[(version, isClipboard)]
 
     version, GPFile = getVersionAndGPFile(versionString)
