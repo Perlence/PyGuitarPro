@@ -49,7 +49,7 @@ Documentation = "https://pyguitarpro.readthedocs.io/"
 
 [build-system]
 build-backend = "uv_build"
-requires = ["uv_build>=0.8.14,<0.9.0"]
+requires = ["uv_build>=0.11.7,<0.12"]
 
 [tool.uv.build-backend]
 module-name = "guitarpro"
