@@ -443,6 +443,13 @@ class Duration:
 
     quarterTime = 960
 
+    #: Breve / double-whole note — two whole notes long. GPIF-only
+    #: (GP3/4/5 binary formats have no breve). Encoded with a sentinel
+    #: negative value so the existing power-of-two ``value`` scheme
+    #: for ``whole … 128th`` stays intact; ``time`` / ``fromTime`` check
+    #: for this sentinel explicitly.
+    doubleWhole = -2
+
     whole = 1
     half = 2
     quarter = 4
@@ -461,7 +468,11 @@ class Duration:
 
     @property
     def time(self):
-        result = self.quarterTime * 4 // self.value
+        if self.value == self.doubleWhole:
+            # Breve = 2 whole notes = 8 quarter-notes.
+            result = self.quarterTime * 8
+        else:
+            result = self.quarterTime * 4 // self.value
         if self.isDotted:
             result += result // 2
         return self.tuplet.convertTime(result)
@@ -511,16 +522,37 @@ class TimeSignature:
 
 
 class TripletFeel(Enum):
-    """An enumeration of different triplet feels."""
+    """An enumeration of different triplet feels.
+
+    Mirrors alphaTab's ``TripletFeel`` enum one-for-one (7 values).
+    GP3/4/5 binary formats only distinguish none / triplet-8th /
+    triplet-16th; the ``dotted*`` and ``scottish*`` variants are
+    GPIF-only (GP6/7/8).
+    """
 
     #: No triplet feel.
     none = 0
 
-    #: Eighth triplet feel.
+    #: Eighth triplet feel — play eighth-note pairs as quarter + eighth
+    #: triplet (standard jazz swing).
     eighth = 1
 
     #: Sixteenth triplet feel.
     sixteenth = 2
+
+    #: GPIF: eighth-note pairs play as dotted-eighth + sixteenth
+    #: (double-dotted shuffle).
+    dottedEighth = 3
+
+    #: GPIF: sixteenth-note pairs play as dotted-sixteenth + 32nd.
+    dottedSixteenth = 4
+
+    #: GPIF: eighth-note pairs play as sixteenth + dotted-eighth
+    #: ("Scotch snap" — short-long instead of long-short).
+    scottishEighth = 5
+
+    #: GPIF: sixteenth-note pairs play as 32nd + dotted-sixteenth.
+    scottishSixteenth = 6
 
 
 class FermataType(Enum):

@@ -150,7 +150,10 @@ class TestPhase3Measures:
                 for v in m.voices:
                     for b in v.beats:
                         assert b.duration is not None
-                        assert b.duration.value in (1, 2, 4, 8, 16, 32, 64, 128, 256)
+                        # -2 is the GPIF DoubleWhole (breve) sentinel;
+                        # everything else is a standard power-of-two
+                        # division of a whole note.
+                        assert b.duration.value in (-2, 1, 2, 4, 8, 16, 32, 64, 128, 256)
 
     def test_beat_status_valid(self, fixture):
         song = gp.parse(fixture)
@@ -843,6 +846,44 @@ class TestKnownTrackFixtures:
         assert roles == {"Factory", "User"}, roles
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
+
+    def test_triplet_feel_fixture_covers_full_seven_variant_enum(self):
+        """Regression test for the full `<TripletFeel>` enum. alphaTab
+        has 7 values (NoTripletFeel / Triplet8th / Triplet16th /
+        Dotted8th / Dotted16th / Scottish8th / Scottish16th);
+        PyGuitarPro previously mapped only Triplet8th and Triplet16th,
+        collapsing everything else to the default `none`. A GPIF file
+        authored with Scottish16th feel would round-trip as no-swing.
+
+        `triplet-feel.gp` is synthesised from `effects.gp` with six
+        different TripletFeel values injected on bars 1..6. Bar 0 is
+        untouched and should keep the default NoTripletFeel → none.
+
+        Also verifies the new ``DoubleWhole`` (breve) duration: the
+        first beat's rhythm has ``NoteValue=DoubleWhole``, which maps
+        to the ``-2`` sentinel on ``Duration.value`` and expands to
+        ``quarterTime * 8`` ticks in ``Duration.time``.
+        """
+        path = FIXTURES_DIR / "triplet-feel.gp"
+        if not path.exists():
+            pytest.skip("triplet-feel.gp not present")
+        song = gp.parse(path)
+        expected = [
+            gp.TripletFeel.none,
+            gp.TripletFeel.eighth,
+            gp.TripletFeel.sixteenth,
+            gp.TripletFeel.dottedEighth,
+            gp.TripletFeel.dottedSixteenth,
+            gp.TripletFeel.scottishEighth,
+            gp.TripletFeel.scottishSixteenth,
+        ]
+        actual = [h.tripletFeel for h in song.measureHeaders[:7]]
+        assert actual == expected, actual
+
+        # DoubleWhole on the first beat's rhythm.
+        first_beat = song.tracks[0].measures[0].voices[0].beats[0]
+        assert first_beat.duration.value == gp.Duration.doubleWhole == -2
+        assert first_beat.duration.time == gp.Duration.quarterTime * 8
 
     def test_canon_backing_track_and_sync_points_captured(self):
         """Regression test for the GPIF backing-track subsystem.

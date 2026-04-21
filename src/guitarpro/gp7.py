@@ -220,6 +220,7 @@ _RASGUEADO_MAP = {
 
 
 _DURATION_MAP = {
+    "DoubleWhole": -2,   # Breve; represented with AT's negative sentinel
     "Whole":   1,
     "Half":    2,
     "Quarter": 4,
@@ -1363,12 +1364,22 @@ class GP7File:
                 bits |= 1 << (k - 1) if k >= 1 else 0
             header.repeatAlternative = bits
 
-        # Triplet feel
+        # Triplet feel — alphaTab maps all seven GPIF values. Missing
+        # variants leave the header at TripletFeel.none (the GPIF
+        # ``NoTripletFeel`` explicitly means "no swing" and maps to the
+        # same default).
         tf = _text(mb.find("TripletFeel"))
-        if tf == "Triplet8th":
-            header.tripletFeel = gp.TripletFeel.eighth
-        elif tf == "Triplet16th":
-            header.tripletFeel = gp.TripletFeel.sixteenth
+        tf_map = {
+            "NoTripletFeel":   gp.TripletFeel.none,
+            "Triplet8th":      gp.TripletFeel.eighth,
+            "Triplet16th":     gp.TripletFeel.sixteenth,
+            "Dotted8th":       gp.TripletFeel.dottedEighth,
+            "Dotted16th":      gp.TripletFeel.dottedSixteenth,
+            "Scottish8th":     gp.TripletFeel.scottishEighth,
+            "Scottish16th":    gp.TripletFeel.scottishSixteenth,
+        }
+        if tf in tf_map:
+            header.tripletFeel = tf_map[tf]
 
         # Directions (Coda/Segno markers & Da Capo/Dal Segno jumps).
         directions = mb.find("Directions")
