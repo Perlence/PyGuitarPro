@@ -375,8 +375,11 @@ class GP7File:
         # unless <Automation><Type>Tempo</Type> carries a Text element.
         song.tempoName = ""
 
+        self._backing_track_padding_ms: float = 0.0
+
         self._read_version(root, song)
         self._read_score_info(root, song)
+        self._read_backing_track(root, song)
         self._read_master_track(root, song)
         self._read_tracks(root, song)
 
@@ -385,6 +388,7 @@ class GP7File:
         self._assemble_tracks(song)
         self._compute_beat_starts(song)
         self._attach_track_automations(song)
+        self._attach_sync_points(song)
 
         return song
 
@@ -474,6 +478,74 @@ class GP7File:
         if notice is not None and notice.text:
             song.notice = [notice.text.strip()]
 
+    # alphaTab's hard-coded sample rate for converting BackingTrack
+    # frame counts into milliseconds. If real-world files ever ship a
+    # different rate, this is the one knob to adjust.
+    _BACKING_TRACK_SAMPLE_RATE = 44100.0
+
+    def _read_backing_track(self, root: ET.Element, song: gp.Song) -> None:
+        """Parse ``<Score><BackingTrack>`` into :attr:`Song.backingTrack`.
+
+        Mirrors alphaTab's ``GpifParser._parseBackingTrackNode``: only
+        create the model object when ``Enabled=true`` and
+        ``Source=Local`` (remote / YouTube tracks aren't decodable
+        without external credentials). FramePadding → milliseconds is
+        stored as ``_backing_track_padding_ms`` so we can subtract it
+        from SyncPoint offsets later, matching alphaTab's behaviour.
+        """
+        # <BackingTrack> is a direct child of <GPIF>, not of <Score>.
+        bt = root.find("BackingTrack")
+        if bt is None:
+            return
+
+        enabled = _text(bt.find("Enabled")).lower() == "true"
+        source = _text(bt.find("Source"))
+        if not enabled or source != "Local":
+            return
+
+        frame_padding = _int(bt.find("FramePadding"))
+        self._backing_track_padding_ms = (
+            frame_padding / self._BACKING_TRACK_SAMPLE_RATE
+        ) * 1000.0
+
+        song.backingTrack = gp.BackingTrack(
+            name=_text(bt.find("Name")),
+            shortName=_text(bt.find("ShortName")),
+            paddingMs=self._backing_track_padding_ms,
+            assetId=_text(bt.find("AssetId")),
+        )
+
+    def _attach_sync_points(self, song: gp.Song) -> None:
+        """Collect master-track ``SyncPoint`` automations into
+        :attr:`MeasureHeader.syncPoints`.
+
+        GPIF emits SyncPoints inside the master-track's ``<Automations>``
+        with a structured ``<Value>`` containing ``<BarIndex>``,
+        ``<BarOccurrence>`` and ``<FrameOffset>`` (audio frames at the
+        alphaTab sample rate). AlphaTab subtracts the backing-track
+        padding from the millisecond offset; we mirror that.
+        """
+        events = getattr(song, "_masterTrackAutomations", None)
+        if not events:
+            return
+        for ev in events:
+            if ev.get("type") != "SyncPoint":
+                continue
+            sp = ev.get("syncPoint")
+            if sp is None:
+                continue
+            bar_idx = sp["barIndex"]
+            if bar_idx < 0 or bar_idx >= len(song.measureHeaders):
+                continue
+            song.measureHeaders[bar_idx].syncPoints.append(
+                gp.SyncPointData(
+                    barIndex=bar_idx,
+                    barOccurrence=sp["barOccurrence"],
+                    millisecondOffset=sp["millisecondOffset"]
+                    - self._backing_track_padding_ms,
+                )
+            )
+
     def _read_master_track(self, root: ET.Element, song: gp.Song) -> None:
         # Match GP3/4/5 default: RSEMasterEffect with volume=100.  GPIF stores
         # the real value inside the binary BinaryStylesheet entry we don't
@@ -503,16 +575,43 @@ class GP7File:
         automations = master.find("Automations")
         if automations is None:
             return
+
+        # Collect every master-track automation into a structured list;
+        # both the first-hit Tempo below and the SyncPoint attach step
+        # consume the same cache.
+        master_events: list[dict] = []
+        tempo_set = False
         for automation in automations.findall("Automation"):
             kind = _text(automation.find("Type"))
-            if kind == "Tempo":
-                value = automation.find("Value")
-                if value is not None and value.text:
-                    try:
-                        song.tempo = int(value.text.strip().split()[0])
-                    except (ValueError, IndexError):
-                        pass
-                break
+            value = automation.find("Value")
+            entry = {
+                "type":     kind,
+                "bar":      _int(automation.find("Bar"), -1),
+                "position": _float(automation.find("Position"), 0.0),
+            }
+            if kind == "SyncPoint" and value is not None:
+                # <Value> is structured, not plain text.
+                bar_idx = _int(value.find("BarIndex"), 0)
+                bar_occ = _int(value.find("BarOccurrence"), 0)
+                frame = _float(value.find("FrameOffset"), 0.0)
+                ms = (frame / self._BACKING_TRACK_SAMPLE_RATE) * 1000.0
+                entry["syncPoint"] = {
+                    "barIndex": bar_idx,
+                    "barOccurrence": bar_occ,
+                    "millisecondOffset": ms,
+                }
+            elif value is not None:
+                entry["value"] = _text(value)
+            master_events.append(entry)
+
+            if kind == "Tempo" and not tempo_set and value is not None and value.text:
+                try:
+                    song.tempo = int(value.text.strip().split()[0])
+                    tempo_set = True
+                except (ValueError, IndexError):
+                    pass
+
+        song._masterTrackAutomations = master_events  # type: ignore[attr-defined]
 
     # ── tracks ─────────────────────────────────────────────────────
 

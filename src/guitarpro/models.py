@@ -19,6 +19,7 @@ __all__ = [
     'SlapEffect', 'FadeType', 'CrescendoType', 'GolpeType', 'WahPedal',
     'RasgueadoType', 'BarreShape', 'BeatBeamingMode',
     'SustainPedalMarker', 'SustainPedalMarkerType',
+    'BackingTrack', 'SyncPointData',
     'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
@@ -344,6 +345,11 @@ class Song:
     measureHeaders: list['MeasureHeader'] = attr.Factory(lambda: [MeasureHeader()])
     tracks: list['Track'] = attr.Factory(lambda self: [Track(self)], takes_self=True)
     masterEffect: RSEMasterEffect = attr.Factory(RSEMasterEffect)
+    #: GPIF ``<BackingTrack>`` — external audio playback companion.
+    #: ``None`` when the score has no backing track, or when the
+    #: backing track is remote / YouTube (alphaTab only decodes local
+    #: backing tracks). Empty for GP3/4/5.
+    backingTrack: Optional['BackingTrack'] = None
 
     _currentRepeatGroup: RepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, eq=False, repr=False)
 
@@ -580,6 +586,10 @@ class MeasureHeader:
     #: should cluster beats within the bar. Empty list means "use the
     #: time-signature default".
     beamingRuleGroups: list[int] = attr.Factory(list)
+    #: GPIF ``<Automation><Type>SyncPoint>`` entries attached to this
+    #: master-bar, linking bar positions to backing-track timestamps.
+    #: Empty for non-audio scores and for GP3/4/5.
+    syncPoints: 'list[SyncPointData]' = attr.Factory(list)
 
     @property
     def length(self):
@@ -969,6 +979,49 @@ class WahPedal(Enum):
     none = 0
     open = 1
     closed = 2
+
+
+@hashableAttrs
+class BackingTrack:
+    """GPIF ``<BackingTrack>`` — external audio file attached to the
+    score for playback alongside (or instead of) the synthesized MIDI.
+
+    Mirrors alphaTab's ``BackingTrack`` model. AlphaTab exposes only the
+    raw audio bytes; PyGuitarPro additionally preserves a few of the
+    GPIF metadata fields so a future writer can regenerate the same
+    ``<BackingTrack>`` block.
+
+    Only created when GPIF carries ``<Enabled>true</Enabled>`` and
+    ``<Source>Local</Source>`` (the only backing-track source alphaTab
+    currently supports — remote / YouTube links are not decoded).
+    """
+
+    name: str = ''
+    shortName: str = ''
+    #: Frame padding converted to milliseconds (GPIF stores it as an
+    #: integer frame count at the alphaTab sample rate).
+    paddingMs: float = 0.0
+    #: AssetId referenced inside the ZIP; the actual audio bytes live in
+    #: a separate Asset subtree which PyGuitarPro does not decode (it
+    #: would drag in non-trivial audio-decoder code). Preserved so a
+    #: future writer can pair the BackingTrack with its Asset entry.
+    assetId: str = ''
+
+
+@hashableAttrs
+class SyncPointData:
+    """GPIF ``<Automation><Type>SyncPoint</Type>`` payload — links a
+    bar position to an absolute timestamp in the backing track audio.
+
+    Mirrors alphaTab's ``SyncPointData``. ``millisecondOffset`` is
+    pre-adjusted for the backing track's ``FramePadding`` (subtracted
+    as alphaTab does), so the value represents the point in the bar
+    where the backing-track audio should reach.
+    """
+
+    barIndex: int = 0
+    barOccurrence: int = 0
+    millisecondOffset: float = 0.0
 
 
 class SustainPedalMarkerType(Enum):

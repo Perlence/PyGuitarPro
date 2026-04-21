@@ -844,6 +844,42 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_canon_backing_track_and_sync_points_captured(self):
+        """Regression test for the GPIF backing-track subsystem.
+
+        `canon-audio-track.gp` ships with a local WAV attached via
+        `<BackingTrack>` plus 16 `<Automation><Type>SyncPoint>` entries
+        on the master track linking bar positions to audio timestamps.
+        PyGuitarPro's reader previously dropped both: the whole audio
+        subsystem disappeared on a round-trip.
+
+        This test asserts the backing-track metadata lands on
+        `song.backingTrack` (enabled + Local), and that all 16 sync
+        points populate `MeasureHeader.syncPoints` with padding-adjusted
+        millisecond offsets matching alphaTab's semantics.
+        """
+        path = FIXTURES_DIR / "canon-audio-track.gp"
+        if not path.exists():
+            pytest.skip("canon-audio-track.gp not present")
+        song = gp.parse(path)
+
+        assert song.backingTrack is not None
+        assert song.backingTrack.name == "Audio Track"
+        assert song.backingTrack.shortName == "a.track"
+        # FramePadding was -72900 frames at 44.1kHz → -1653.0612… ms.
+        assert abs(song.backingTrack.paddingMs - (-1653.0612244897958)) < 1e-6
+
+        all_sync_points = [
+            sp for h in song.measureHeaders for sp in h.syncPoints
+        ]
+        assert len(all_sync_points) == 16, len(all_sync_points)
+        # First sync point sits at the start of bar 0 (barOccurrence=0);
+        # after subtracting the negative padding its offset should be
+        # positive and equal to +1653.0612… ms (the padding magnitude).
+        assert all_sync_points[0].barIndex == 0
+        assert all_sync_points[0].barOccurrence == 0
+        assert abs(all_sync_points[0].millisecondOffset - 1653.0612244897958) < 1e-6
+
     def test_sustain_pedal_fixture_extracts_markers_per_bar(self):
         """Regression test for the SustainPedal automation code path.
         GPIF expresses piano / keyboard sustain-pedal actions as
