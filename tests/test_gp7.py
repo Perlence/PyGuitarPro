@@ -384,6 +384,32 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_effects_fixture_propagates_tapped_to_beat(self):
+        """Regression test for the `<Property name="Tapped">` note
+        property. AlphaTab hoists this note-level flag onto the beat's
+        tap state (`beat.tap = true`). In PyGuitarPro the closest
+        pre-existing concept is `beat.effect.slapEffect = SlapEffect.tapping`.
+
+        Before this fix the property was silently discarded; after it
+        the containing beat's `slapEffect` reflects the tap articulation.
+        """
+        path = FIXTURES_DIR / "effects.gp"
+        if not path.exists():
+            pytest.skip("effects.gp not present")
+        song = gp.parse(path)
+        tapped_beats = [
+            b
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            if b.effect.slapEffect == gp.SlapEffect.tapping
+        ]
+        assert tapped_beats, (
+            "expected at least one beat with SlapEffect.tapping from "
+            "note-level <Property name='Tapped'>"
+        )
+
     def test_effects_fixture_extracts_instrument_articulation(self):
         """Regression test for `<InstrumentArticulation>` handling in
         `_build_note`. Every `<Note>` in GP7/GP8 has a sibling

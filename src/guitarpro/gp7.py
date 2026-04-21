@@ -1257,6 +1257,13 @@ class GP7File:
                     # Presence of the property alone is enough; alphaTab's
                     # reference reader does the same check.
                     note.effect.leftHandTapped = True
+                elif name == "Tapped":
+                    # GP7+ stores right-hand tap at the note level; alphaTab
+                    # hoists it onto the containing beat. Use the closest
+                    # pre-existing PyGuitarPro concept: SlapEffect.tapping.
+                    # Preserve any stronger beat-level slap/pop already set.
+                    if beat.effect.slapEffect == gp.SlapEffect.none:
+                        beat.effect.slapEffect = gp.SlapEffect.tapping
                 elif name == "Bended":
                     bended = True
                 elif name == "BendOriginValue":
