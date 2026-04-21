@@ -515,19 +515,17 @@ class GP7File:
             if sec is not None and (sec.text or "").strip():
                 track.channel.effectChannel = _int(sec)
 
-        sounds = node.find("Sounds")
-        if sounds is not None:
-            first_sound = sounds.find("Sound")
-            if first_sound is not None:
-                midi = first_sound.find("MIDI")
-                if midi is not None:
-                    prog = midi.find("Program")
-                    if prog is not None:
-                        track.channel.instrument = _int(prog)
-                    msb = midi.find("MSB")
-                    lsb = midi.find("LSB")
-                    if msb is not None and lsb is not None:
-                        track.channel.bank = (_int(msb) << 7) | _int(lsb)
+        sounds_node = node.find("Sounds")
+        if sounds_node is not None:
+            for sound_el in sounds_node.findall("Sound"):
+                sound = self._read_sound(sound_el)
+                track.sounds.append(sound)
+            # Mirror the first sound's program/bank onto track.channel —
+            # alphaTab does the same thing on Track.playbackInfo and it
+            # keeps code that only looks at MidiChannel working.
+            if track.sounds:
+                track.channel.instrument = track.sounds[0].program
+                track.channel.bank = track.sounds[0].bank
 
         # Mirror GP5's behaviour: TrackRSE.instrument.instrument tracks the
         # MIDI program. GP5 reads a richer RSEInstrument from the binary
@@ -662,6 +660,38 @@ class GP7File:
             text = _text(line.find("Text"))
             out.append((starting, text))
         return out
+
+    @staticmethod
+    def _read_sound(node: ET.Element) -> gp.GpifSound:
+        """Parse a single GPIF ``<Sound>`` element into a :class:`GpifSound`.
+
+        Mirrors alphaTab's ``GpifParser._parseSound`` + ``_parseSoundMidi``:
+        Name / Path / Role are plain text children; MIDI Program / MSB / LSB
+        live inside a ``<MIDI>`` wrapper. ``bank`` is the combined 14-bit
+        value (MIDI Bank Select: ``((MSB & 0x7f) << 7) | LSB``).
+        """
+        sound = gp.GpifSound()
+        for child in node:
+            tag = child.tag
+            if tag == "Name":
+                sound.name = (child.text or "").strip()
+            elif tag == "Path":
+                sound.path = (child.text or "").strip()
+            elif tag == "Role":
+                sound.role = (child.text or "").strip()
+            elif tag == "MIDI":
+                msb = 0
+                lsb = 0
+                for midi_child in child:
+                    mt = midi_child.tag
+                    if mt == "Program":
+                        sound.program = _int(midi_child)
+                    elif mt == "MSB":
+                        msb = _int(midi_child)
+                    elif mt == "LSB":
+                        lsb = _int(midi_child)
+                sound.bank = ((msb & 0x7f) << 7) | lsb
+        return sound
 
     def _read_track_staves(self, staves_node: ET.Element, track: gp.Track) -> None:
         for staff in staves_node.findall("Staff"):

@@ -652,6 +652,24 @@ class TrackRSE:
             self.equalizer.knobs = [0.0] * 3
 
 
+@hashableAttrs
+class GpifSound:
+    """A single GPIF ``<Sound>`` entry — one soundbank/MIDI program pair
+    a track can play. GPIF tracks carry a list of these (e.g. clean +
+    distortion channels with different MIDI programs or bank selects).
+
+    Mirrors alphaTab's ``GpifSound`` one-for-one. ``bank`` is the combined
+    14-bit value ``((MSB & 0x7f) << 7) | LSB`` — same formula as alphaTab
+    and as MIDI's Bank Select (CC 0 / CC 32).
+    """
+
+    name: str = ''
+    path: str = ''
+    role: str = ''
+    program: int = 0
+    bank: int = 0
+
+
 @hashableAttrs(repr=False)
 class Track:
     """A track contains multiple measures."""
@@ -680,6 +698,12 @@ class Track:
     settings: TrackSettings = attr.Factory(TrackSettings)
     useRSE: bool = False
     rse: TrackRSE = attr.Factory(TrackRSE)
+    #: Full list of GPIF ``<Sound>`` entries for this track. Populated
+    #: by the GP7/GP8 reader; empty for GP3/4/5 (which don't expose this
+    #: richer metadata). The first entry's MIDI program/bank is also
+    #: mirrored onto ``channel.instrument``/``channel.bank`` for
+    #: back-compat with code that only consults :class:`MidiChannel`.
+    sounds: list['GpifSound'] = attr.Factory(list)
 
 
 @hashableAttrs

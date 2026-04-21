@@ -786,6 +786,54 @@ class TestKnownTrackFixtures:
         )
         assert set(tapped_frets) == {4, 15}
 
+    def test_program_change_fixture_preserves_all_sounds(self):
+        """Regression test for `<Sounds>` extraction: every GPIF track has
+        a list of `<Sound>` entries, and PyGuitarPro previously kept only
+        the first one's MIDI program + bank on `track.channel`, dropping
+        the rest entirely plus their name / path / role metadata.
+
+        `program-change.gp` has a single track with two sounds — a steel
+        guitar (factory preset, program 25) and an overdriven guitar
+        (user preset, program 29). Both must survive on `track.sounds`.
+        """
+        path = FIXTURES_DIR / "program-change.gp"
+        if not path.exists():
+            pytest.skip("program-change.gp not present")
+        song = gp.parse(path)
+        track = song.tracks[0]
+        assert len(track.sounds) == 2, (
+            f"expected 2 Sound entries, got {len(track.sounds)}"
+        )
+        programs = [s.program for s in track.sounds]
+        assert programs == [25, 29], programs
+        names = [s.name for s in track.sounds]
+        assert "Steel Mart" in names
+        assert "Overdriven Guitar" in names
+        roles = {s.role for s in track.sounds}
+        assert roles == {"Factory", "User"}, roles
+        # Back-compat: first sound mirrored onto channel.
+        assert track.channel.instrument == 25
+
+    def test_bank_change_fixture_combines_msb_and_lsb(self):
+        """Regression test for the MIDI Bank Select encoding. GPIF stores
+        the 14-bit bank as two children inside ``<MIDI>``: ``<MSB>``
+        (coarse) and ``<LSB>`` (fine). The combined value is
+        ``((MSB & 0x7f) << 7) | LSB`` — same formula alphaTab uses and
+        same as MIDI CC 0 / CC 32.
+
+        ``bank-change.gp`` has one track with two sounds sharing the same
+        program but different MSB values (0 and 2) — so the resulting
+        banks must be ``0`` and ``256`` (``2 << 7``).
+        """
+        path = FIXTURES_DIR / "bank-change.gp"
+        if not path.exists():
+            pytest.skip("bank-change.gp not present")
+        song = gp.parse(path)
+        track = song.tracks[0]
+        assert len(track.sounds) == 2
+        banks = [s.bank for s in track.sounds]
+        assert banks == [0, 256], banks
+
     def test_element_variation_fixture_maps_gp6_percussion_articulation(self):
         """Regression test for GP6-style percussion encoding: when a
         `<Note>` carries both `<Property name="Element">` and
