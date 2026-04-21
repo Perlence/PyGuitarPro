@@ -785,3 +785,34 @@ class TestKnownTrackFixtures:
             f"expected 5 left-hand-tapped notes, got {len(tapped_frets)}"
         )
         assert set(tapped_frets) == {4, 15}
+
+    def test_element_variation_fixture_maps_gp6_percussion_articulation(self):
+        """Regression test for GP6-style percussion encoding: when a
+        `<Note>` carries both `<Property name="Element">` and
+        `<Property name="Variation">`, their indices must be combined via
+        the GP6 percussion mapping table into a MIDI articulation number.
+        The mapped value takes precedence over any sibling
+        `<InstrumentArticulation>` (alphaTab's documented order).
+
+        `element-variation.gp` is derived from `effects.gp` by injecting
+        ``Element=1, Variation=1`` into the first note's `<Properties>`.
+        Under the GP6 table that pair maps to snare rim shot = MIDI 91.
+        The note's sibling `<InstrumentArticulation>` is `0`, so without
+        the fix the rim-shot mapping is lost.
+        """
+        path = FIXTURES_DIR / "element-variation.gp"
+        if not path.exists():
+            pytest.skip("element-variation.gp not present")
+        song = gp.parse(path)
+        articulations = [
+            n.percussionArticulation
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            for n in b.notes
+        ]
+        assert 91 in articulations, (
+            "expected Element=1/Variation=1 to map to MIDI 91 (snare rim "
+            "shot) via the GP6 percussion table"
+        )

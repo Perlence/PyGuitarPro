@@ -203,6 +203,44 @@ _SLIDE_PICK_DOWN       = 0x40
 _SLIDE_PICK_UP         = 0x80
 # 0x40/0x80 = pick slides (no direct PyGuitarPro mapping)
 
+# GP6 percussion mapping: (element, variation) → MIDI articulation number.
+# 17 elements × 3 variations. Ported verbatim from alphaTab's
+# ``PercussionMapper._gp6ElementAndVariationToArticulation``.
+_GP6_PERCUSSION_ARTICULATION: list[list[int]] = [
+    [35, 35, 35],     # [0]  Kick          (hit, unused, unused)
+    [38, 91, 37],     # [1]  Snare         (hit, rim shot, side stick)
+    [99, 100, 99],    # [2]  Cowbell low   (hit, tip, unused)
+    [56, 100, 56],    # [3]  Cowbell med   (hit, tip, unused)
+    [102, 103, 102],  # [4]  Cowbell high  (hit, tip, unused)
+    [43, 43, 43],     # [5]  Tom very low
+    [45, 45, 45],     # [6]  Tom low
+    [47, 47, 47],     # [7]  Tom medium
+    [48, 48, 48],     # [8]  Tom high
+    [50, 50, 50],     # [9]  Tom very high
+    [42, 92, 46],     # [10] Hihat         (closed, half, open)
+    [44, 44, 44],     # [11] Pedal hihat
+    [57, 98, 57],     # [12] Crash medium  (hit, choke, unused)
+    [49, 97, 49],     # [13] Crash high    (hit, choke, unused)
+    [55, 95, 55],     # [14] Splash        (hit, choke, unused)
+    [51, 93, 127],    # [15] Ride          (middle, edge, bell)
+    [52, 96, 52],     # [16] China         (hit, choke, unused)
+]
+
+
+def _gp6_percussion_articulation(element: int, variation: int) -> int:
+    """Return the MIDI articulation number for a GP6-style percussion
+    (element, variation) pair. Mirrors alphaTab's
+    ``PercussionMapper.articulationFromElementVariation``; unknown element
+    falls back to 38 (Snare hit), out-of-range variation collapses to 0."""
+    if 0 <= element < len(_GP6_PERCUSSION_ARTICULATION):
+        # alphaTab checks `variation >= _gp6...length` (not 3) — mirror exactly.
+        if variation >= len(_GP6_PERCUSSION_ARTICULATION):
+            variation = 0
+        row = _GP6_PERCUSSION_ARTICULATION[element]
+        if 0 <= variation < len(row):
+            return row[variation]
+    return 38  # default: Snare (hit)
+
 # GPIF Target → PyGuitarPro direction-sign names (Coda/Segno/Fine "destinations")
 _DIRECTION_TARGETS = {
     "Coda":        "Coda",
@@ -1267,6 +1305,13 @@ class GP7File:
         harmonic_fret = 0.0
         # Accidental-mode precedence: TransposedPitch wins over ConcertPitch.
         has_transposed_pitch = False
+        # GP6-style percussion encoding: element + variation indices are
+        # combined into a MIDI articulation via the GP6 mapping table below.
+        # Sentinel -1 lets us detect the "both set" case after the loop, so
+        # we can override any <InstrumentArticulation> sibling value — this
+        # matches alphaTab's GpifParser._parseNoteProperties precedence.
+        element = -1
+        variation = -1
 
         props = raw.find("Properties")
         if props is not None:
@@ -1355,6 +1400,10 @@ class GP7File:
                     note.accidentalMode = gp.NoteAccidentalMode.default
                     self._apply_concert_pitch(prop, note)
                     has_transposed_pitch = True
+                elif name == "Element":
+                    element = _int(prop.find("Element"))
+                elif name == "Variation":
+                    variation = _int(prop.find("Variation"))
 
         # ── Sibling elements of <Note>: top-level effect flags ──
         finger_map = {
@@ -1435,6 +1484,14 @@ class GP7File:
                 txt = (child.text or "").strip()
                 if txt in ornament_map:
                     note.ornament = ornament_map[txt]
+
+        # GP6-style percussion: when both Element and Variation are present,
+        # their mapped MIDI articulation takes precedence over any value set
+        # by a sibling <InstrumentArticulation>. Mirrors alphaTab's
+        # GpifParser._parseNoteProperties — applied after the sibling loop
+        # because GPIF serialises <InstrumentArticulation> before <Properties>.
+        if element != -1 and variation != -1:
+            note.percussionArticulation = _gp6_percussion_articulation(element, variation)
 
         # ── Assemble bend curve ──
         if bended:
