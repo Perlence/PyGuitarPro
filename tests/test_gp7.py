@@ -814,6 +814,32 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_tuning_sounding_fixture_extracts_tuning_name_and_part_sounding(self):
+        """Regression test for three track-level AT-parity fields the reader
+        was silently discarding:
+
+          - `<Property name="Tuning"><Label>`  → `track.tuningName`
+            (human-readable tuning name such as "Drop D")
+          - `<PartSounding><TranspositionPitch>`  → `track.transpositionPitch`
+            (semitone offset between written and sounding pitch)
+          - `<PartSounding><NominalKey>`  → `track.nominalKey`
+            (written key for transposing instruments, e.g. "Bb")
+
+        No `.gp` file in alphaTab's GP7/GP8 test corpus uses either
+        `<Label>` or `<PartSounding>`, but both are live code paths in
+        alphaTab's parser. ``tuning-sounding.gp`` is derived from
+        ``effects.gp`` by injecting both elements so the regression case
+        exercises them end-to-end.
+        """
+        path = FIXTURES_DIR / "tuning-sounding.gp"
+        if not path.exists():
+            pytest.skip("tuning-sounding.gp not present")
+        song = gp.parse(path)
+        t = song.tracks[0]
+        assert t.tuningName == "Drop D"
+        assert t.transpositionPitch == -2
+        assert t.nominalKey == "Bb"
+
     def test_effects_fixture_extracts_systems_layout(self):
         """Regression test for `<SystemsLayout>` and `<SystemsDefautLayout>`
         (typo preserved in GPIF). Every GP7/GP8 track carries these two

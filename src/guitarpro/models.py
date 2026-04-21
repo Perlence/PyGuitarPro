@@ -723,6 +723,20 @@ class Track:
     #: standard-notation staff (5 for standard, often 1 for percussion
     #: single-line cue). Default follows alphaTab's fallback of 5.
     staffLineCount: int = 5
+    #: GPIF ``<Property name="Tuning"><Label>`` — human-readable tuning
+    #: name such as ``"Drop D"`` or ``"Standard"``. Empty when the file
+    #: doesn't annotate the tuning. Mirrors alphaTab's
+    #: ``staff.stringTuning.name``.
+    tuningName: str = ''
+    #: GPIF ``<PartSounding><TranspositionPitch>`` — chromatic offset (in
+    #: semitones) between written and sounding pitch for a transposing
+    #: instrument (e.g. Bb trumpet = -2). Mirrors alphaTab's
+    #: ``staff.displayTranspositionPitch``.
+    transpositionPitch: int = 0
+    #: GPIF ``<PartSounding><NominalKey>`` — the key the instrument is
+    #: written in (e.g. ``"Bb"``, ``"Eb"``). Used by the renderer to
+    #: transpose key signatures. Empty when not specified.
+    nominalKey: str = ''
 
 
 @hashableAttrs

@@ -528,6 +528,18 @@ class GP7File:
         if layout_el is not None and layout_el.text:
             track.systemsLayout = _split_ints(layout_el.text)
 
+        # <PartSounding> holds transposition hints for a transposing
+        # instrument (e.g. Bb trumpet, Eb sax). Mirrors alphaTab's
+        # GpifParser._parsePartSounding.
+        part_sounding = node.find("PartSounding")
+        if part_sounding is not None:
+            tp = part_sounding.find("TranspositionPitch")
+            if tp is not None and (tp.text or "").strip():
+                track.transpositionPitch = _int(tp)
+            nk = part_sounding.find("NominalKey")
+            if nk is not None and (nk.text or "").strip():
+                track.nominalKey = nk.text.strip()
+
         for midi_tag in ("GeneralMidi", "MidiConnection", "MIDISettings"):
             midi = node.find(midi_tag)
             if midi is None:
@@ -740,6 +752,12 @@ class GP7File:
                                 gp.GuitarString(number=i + 1, value=v)
                                 for i, v in enumerate(values)
                             ]
+                    # <Label> carries the tuning's human name (e.g.
+                    # "Drop D", "DADGAD"). AlphaTab stores it on
+                    # staff.stringTuning.name; mirror onto the track.
+                    label = prop.find("Label")
+                    if label is not None and (label.text or "").strip():
+                        track.tuningName = label.text.strip()
                 elif name == "CapoFret":
                     fret = prop.find("Fret")
                     if fret is not None:
