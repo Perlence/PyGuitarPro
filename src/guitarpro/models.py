@@ -16,7 +16,8 @@ __all__ = [
     'TrackSettings', 'Track', 'GuitarString', 'MeasureClef', 'LineBreak',
     'SimileMark',
     'Measure', 'VoiceDirection', 'Voice', 'BeatStrokeDirection', 'BeatStroke',
-    'SlapEffect', 'FadeType', 'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
+    'SlapEffect', 'FadeType', 'CrescendoType', 'GolpeType', 'WahPedal',
+    'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
     'GraceEffectTransition', 'Velocities', 'GraceEffect', 'TrillEffect',
@@ -848,6 +849,41 @@ class FadeType(Enum):
     volumeSwell = 3
 
 
+class CrescendoType(Enum):
+    """Beat-level hairpin direction.
+
+    Mirrors alphaTab's ``CrescendoType``. Stored on :attr:`BeatEffect.crescendo`.
+    """
+
+    none = 0
+    crescendo = 1
+    decrescendo = 2
+
+
+class GolpeType(Enum):
+    """Flamenco "golpe" body-tap indication on a beat (GP7+).
+
+    Mirrors alphaTab's ``GolpeType``. Stored on :attr:`BeatEffect.golpe`.
+    """
+
+    none = 0
+    finger = 1
+    thumb = 2
+
+
+class WahPedal(Enum):
+    """GP7+ wah-pedal state marker placed on a beat.
+
+    Distinct from :class:`WahEffect` (GP5 mix-table entry with a numeric
+    pedal position): GP7 stores a simple Open/Closed annotation on the
+    beat. Mirrors alphaTab's ``WahPedal``.
+    """
+
+    none = 0
+    open = 1
+    closed = 2
+
+
 @hashableAttrs
 class BeatEffect:
     """This class contains all beat effects."""
@@ -864,6 +900,16 @@ class BeatEffect:
     mixTableChange: Optional['MixTableChange'] = None
     slapEffect: SlapEffect = SlapEffect.none
     vibrato: bool = False
+    #: GP7+ hairpin (crescendo / decrescendo) annotation.
+    crescendo: CrescendoType = CrescendoType.none
+    #: GP7+ slashed-rhythm notation marker.
+    slashed: bool = False
+    #: GP7+ "dead slap" guitar body slap marker.
+    deadSlapped: bool = False
+    #: GP7+ flamenco "golpe" finger/thumb tap marker.
+    golpe: GolpeType = GolpeType.none
+    #: GP7+ wah pedal state (Open / Closed). Independent of :class:`WahEffect`.
+    wahPedal: WahPedal = WahPedal.none
 
     @property
     def isChord(self):
@@ -941,6 +987,9 @@ class Beat:
     octave: Octave = Octave.none
     display: BeatDisplay = attr.Factory(BeatDisplay)
     status: BeatStatus = BeatStatus.empty
+    #: GP7+ backing-track synchronisation timestamp in milliseconds.
+    #: ``None`` means no timer is displayed on this beat.
+    timer: Optional[int] = None
 
     @property
     def startInMeasure(self):

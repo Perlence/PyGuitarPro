@@ -384,6 +384,50 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_effects_fixture_extracts_wah_pedal(self):
+        """Regression test for beat-level `<Wah>` Open/Closed element.
+
+        `effects.gp` contains `<Wah>` elements; before this fix
+        `beat.effect.wahPedal` was never populated.
+        """
+        path = FIXTURES_DIR / "effects.gp"
+        if not path.exists():
+            pytest.skip("effects.gp not present")
+        song = gp.parse(path)
+        values = {
+            b.effect.wahPedal
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            if b.effect.wahPedal != gp.WahPedal.none
+        }
+        assert values, "effects.gp contains <Wah>; none extracted"
+        assert values <= {gp.WahPedal.open, gp.WahPedal.closed}
+
+    def test_timer_fixture_extracts_timer_values(self):
+        """Regression test for beat-level `<Timer>` element.
+
+        The `timer.gp` fixture (from the alphaTab test corpus) carries
+        backing-track sync timestamps on several beats; before this fix
+        `beat.timer` stayed at ``None`` everywhere.
+        """
+        path = FIXTURES_DIR / "timer.gp"
+        if not path.exists():
+            pytest.skip("timer.gp not present")
+        song = gp.parse(path)
+        timers = [
+            b.timer
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            if b.timer is not None
+        ]
+        assert timers, "timer.gp contains <Timer>; none extracted"
+        # Timer values are non-negative milliseconds.
+        assert all(t >= 0 for t in timers)
+
     def test_show_string_number_field_exists_and_defaults_false(self):
         """Regression test for the `<Property name="ShowStringNumber">`
         note property. The handler is a small additive change; the

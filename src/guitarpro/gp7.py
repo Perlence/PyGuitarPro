@@ -1474,6 +1474,52 @@ class GP7File:
         brush/stroke, chord-id attachment (chord content filled in Phase 5)."""
         eff = beat.effect
 
+        # <Hairpin>Crescendo|Decrescendo</Hairpin>
+        hairpin = raw.find("Hairpin")
+        if hairpin is not None:
+            txt = (hairpin.text or "").strip()
+            if txt == "Crescendo":
+                eff.crescendo = gp.CrescendoType.crescendo
+            elif txt == "Decrescendo":
+                eff.crescendo = gp.CrescendoType.decrescendo
+
+        # <Slashed/> marker (beat rendered with a slash).
+        if raw.find("Slashed") is not None:
+            eff.slashed = True
+
+        # <DeadSlapped/> marker (right-hand body slap).
+        if raw.find("DeadSlapped") is not None:
+            eff.deadSlapped = True
+
+        # <Golpe>Finger|Thumb</Golpe> flamenco body-tap indication.
+        golpe = raw.find("Golpe")
+        if golpe is not None:
+            txt = (golpe.text or "").strip()
+            if txt == "Finger":
+                eff.golpe = gp.GolpeType.finger
+            elif txt == "Thumb":
+                eff.golpe = gp.GolpeType.thumb
+
+        # <Wah>Open|Closed</Wah> — GP7 wah pedal state annotation.
+        # Distinct from the GP5 WahEffect (numeric pedal position) — this
+        # is a simple Open / Closed marker on the beat itself.
+        wah = raw.find("Wah")
+        if wah is not None:
+            txt = (wah.text or "").strip()
+            if txt == "Open":
+                eff.wahPedal = gp.WahPedal.open
+            elif txt == "Closed":
+                eff.wahPedal = gp.WahPedal.closed
+
+        # <Timer>N</Timer> — backing-track timer in milliseconds.
+        timer = raw.find("Timer")
+        if timer is not None and timer.text is not None:
+            try:
+                v = int(timer.text.strip())
+                beat.timer = v if v >= 0 else None
+            except ValueError:
+                pass
+
         # <TransposedPitchStemOrientation>Upward|Downward</...> and the
         # <UserTransposedPitchStemOrientation> override together set the
         # preferred stem / beam direction on the beat. alphaTab stores the
