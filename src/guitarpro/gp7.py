@@ -1231,21 +1231,60 @@ class GP7File:
                     if txt in _DIRECTION_JUMPS:
                         header.fromDirection = gp.DirectionSign(name=_DIRECTION_JUMPS[txt])
 
-        # TimeSignature beam pattern — stored in XProperties id=1124139010
-        # as an <Int> payload when non-default. We read but PyGuitarPro's
-        # TimeSignature expects a `beams` list; GPIF's single int encodes
-        # the pattern so we leave PyGuitarPro's default unless an explicit
-        # value is present.
+        # MasterBar <XProperties>: a heterogeneous bag of named overrides
+        # keyed by magic integer id. Mirrors alphaTab's
+        # GpifParser._parseMasterBarXProperties.
+        #
+        #   1124073984 → header.displayScale (Double)
+        #   1124139010 → beamingRuleDuration / legacy beam-pattern source
+        #                (also used to decode TimeSignature.beams below)
+        #   1124139264..1124139295 → beamingRuleGroups[n] — 32-slot sparse
+        #                            array of group sizes
         xprops = mb.find("XProperties")
         if xprops is not None:
+            beaming_groups = [0] * 32
+            any_group = False
             for xp in xprops.findall("XProperty"):
-                if xp.get("id") == "1124139010":
-                    # Default is 8 (i.e. [2,2,2,2] for 4/4). Anything else
-                    # overrides; we decode pairs-of-bits into beam counts.
+                xid = xp.get("id", "")
+                if xid == "1124073984":
+                    # ElementTree gotcha: an Element with no children
+                    # is falsy, so we can't use `a or b` — have to check
+                    # `is not None` explicitly.
+                    dbl = xp.find("Double")
+                    if dbl is None:
+                        dbl = xp.find("Float")
+                    if dbl is not None:
+                        header.displayScale = _float(dbl, 1.0)
+                elif xid == "1124139010":
                     val = _int(xp.find("Int"), 8)
+                    # AlphaTab's beamingRuleDuration; 8 is the GP default
+                    # (eighth-note unit), so we treat 8 as "use default"
+                    # rather than an explicit override.
+                    if val and val != 8:
+                        header.beamingRuleDuration = val
+                    # Legacy behaviour: PGP also uses this id to decode
+                    # TimeSignature.beams — keep it so existing callers
+                    # that read `header.timeSignature.beams` still work.
                     header.timeSignature.beams = self._decode_beams(
                         val, header.timeSignature.numerator,
                     )
+                else:
+                    try:
+                        num = int(xid)
+                    except ValueError:
+                        continue
+                    if 1124139264 <= num <= 1124139295:
+                        group_index = num - 1124139264
+                        size = _int(xp.find("Int"), 0)
+                        beaming_groups[group_index] = size
+                        any_group = True
+            if any_group:
+                # Trim trailing zeros so we don't store the full 32-slot
+                # sparse array when only a few groups are populated.
+                last = 31
+                while last >= 0 and beaming_groups[last] == 0:
+                    last -= 1
+                header.beamingRuleGroups = beaming_groups[: last + 1]
 
         return header
 
@@ -1311,6 +1350,19 @@ class GP7File:
             simile_txt = _text(bar.find("SimileMark"))
             if simile_txt in simile_map:
                 measure.simileMark = simile_map[simile_txt]
+
+            # Bar <XProperties>: currently only 1124139520 (displayScale)
+            # is documented in alphaTab; anything else is tolerated and
+            # ignored for forward compatibility.
+            bar_xp = bar.find("XProperties")
+            if bar_xp is not None:
+                for xp in bar_xp.findall("XProperty"):
+                    if xp.get("id") == "1124139520":
+                        dbl = xp.find("Double")
+                        if dbl is None:
+                            dbl = xp.find("Float")
+                        if dbl is not None:
+                            measure.displayScale = _float(dbl, 1.0)
 
             voice_ids = _split_tokens(_text(bar.find("Voices")))
             for vid in voice_ids:
@@ -1754,6 +1806,30 @@ class GP7File:
         lyr = raw.find("Lyrics")
         if lyr is not None:
             beat.lyrics = [(line.text or "") for line in lyr.findall("Line")]
+
+        # Beat <XProperties>: mirrors alphaTab's
+        # GpifParser._parseBeatXProperties. The property ids are magic
+        # numbers baked into GPIF; the inner payload is always <Int>.
+        beat_xp = raw.find("XProperties")
+        if beat_xp is not None:
+            for xp in beat_xp.findall("XProperty"):
+                xid = xp.get("id", "")
+                if xid == "1124204546":
+                    val = _int(xp.find("Int"))
+                    if val == 1:
+                        beat.beamingMode = gp.BeatBeamingMode.forceMergeWithNext
+                    elif val == 2:
+                        beat.beamingMode = gp.BeatBeamingMode.forceSplitToNext
+                elif xid == "1124204552":
+                    val = _int(xp.find("Int"))
+                    # Mirror AT: secondary-split only applies when the
+                    # primary 1124204546 didn't already request full split.
+                    if val == 1 and beat.beamingMode != gp.BeatBeamingMode.forceSplitToNext:
+                        beat.beamingMode = gp.BeatBeamingMode.forceSplitOnSecondaryToNext
+                elif xid == "1124204545":
+                    beat.invertBeamDirection = _int(xp.find("Int")) == 1
+                elif xid == "687935489":
+                    beat.brushDuration = _int(xp.find("Int"))
 
         # <TransposedPitchStemOrientation>Upward|Downward</...> and the
         # <UserTransposedPitchStemOrientation> override together set the

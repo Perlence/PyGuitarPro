@@ -17,7 +17,7 @@ __all__ = [
     'SimileMark',
     'Measure', 'VoiceDirection', 'Voice', 'BeatStrokeDirection', 'BeatStroke',
     'SlapEffect', 'FadeType', 'CrescendoType', 'GolpeType', 'WahPedal',
-    'RasgueadoType', 'BarreShape',
+    'RasgueadoType', 'BarreShape', 'BeatBeamingMode',
     'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
@@ -566,6 +566,19 @@ class MeasureHeader:
     #: annotation. Always ``False`` for GP3/4/5 (the binary formats
     #: have no equivalent marker).
     isFreeTime: bool = False
+    #: GPIF ``<XProperty id="1124073984">`` — master-bar display scale.
+    #: ``1.0`` means default size; smaller values shrink the bar on
+    #: the page, larger values stretch it.
+    displayScale: float = 1.0
+    #: GPIF ``<XProperty id="1124139010">`` — note duration unit that
+    #: the :attr:`beamingRuleGroups` entries count in. ``0`` means no
+    #: custom beaming rule was set (use the time-signature default).
+    beamingRuleDuration: int = 0
+    #: GPIF ``<XProperty id="1124139264+n">`` — per-group size list that
+    #: together with :attr:`beamingRuleDuration` describes how beams
+    #: should cluster beats within the bar. Empty list means "use the
+    #: time-signature default".
+    beamingRuleGroups: list[int] = attr.Factory(list)
 
     @property
     def length(self):
@@ -809,6 +822,10 @@ class Measure:
     #: GPIF simile-mark annotation. None for GP3/4/5 (format has no
     #: equivalent element).
     simileMark: SimileMark = SimileMark.none
+    #: GPIF ``<XProperty id="1124139520">`` — per-measure display scale
+    #: (independent of :attr:`MeasureHeader.displayScale`, which is the
+    #: master-bar / score-wide scale). ``1.0`` means default.
+    displayScale: float = 1.0
 
     maxVoices = 2
 
@@ -947,6 +964,29 @@ class WahPedal(Enum):
     none = 0
     open = 1
     closed = 2
+
+
+class BeatBeamingMode(Enum):
+    """Explicit beaming override for a beat (GPIF XProperties).
+
+    GPIF exposes two XProperties that collectively determine how the
+    beat beams connect to neighbouring beats:
+
+      - ``ForceMergeWithNext``  — force a beam to the next beat even
+        if the rhythm would normally split.
+      - ``ForceSplitToNext``    — force a split between this and the
+        next beat.
+      - ``ForceSplitOnSecondaryToNext`` — split only the secondary
+        beams (8th-note stems stay joined, 16th-note tails separate).
+
+    ``auto`` lets the renderer choose based on time-signature rules.
+    Mirrors alphaTab's ``BeatBeamingMode`` enum.
+    """
+
+    auto = 0
+    forceMergeWithNext = 1
+    forceSplitToNext = 2
+    forceSplitOnSecondaryToNext = 3
 
 
 class BarreShape(Enum):
@@ -1123,6 +1163,16 @@ class Beat:
     #: beat). Empty for GP3/4/5 (those formats attach lyrics to the
     #: track, not to individual beats; see :class:`LyricLine`).
     lyrics: list[str] = attr.Factory(list)
+    #: GPIF ``<XProperty id="1124204546|1124204552|…">`` — explicit beaming
+    #: override. ``auto`` means the renderer decides from the rhythm.
+    beamingMode: BeatBeamingMode = BeatBeamingMode.auto
+    #: GPIF ``<XProperty id="1124204545">`` — force the beam to flip
+    #: direction (up / down) regardless of stem rules.
+    invertBeamDirection: bool = False
+    #: GPIF ``<XProperty id="687935489">`` — duration of a brush /
+    #: arpeggio strum in MIDI ticks. ``0`` means no custom duration
+    #: (the renderer / player uses its default).
+    brushDuration: int = 0
 
     @property
     def startInMeasure(self):

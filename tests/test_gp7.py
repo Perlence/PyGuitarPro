@@ -844,6 +844,49 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_accentuations_fixture_populates_beaming_rule_groups(self):
+        """Regression test for MasterBar <XProperties> beaming-rule
+        groups. AlphaTab collects XProperty ids 1124139264..295 into
+        `masterBar.beamingRuleGroups: int[]` — describes how beats
+        cluster for beam rendering within each bar. PyGuitarPro only
+        read id=1124139010 (duration) and dropped the groups array.
+
+        `accentuations.gp` is the densest natural fixture (530
+        XProperty occurrences) and carries the standard 4/4 pattern
+        ``[2, 2, 2, 2]`` on its first MasterBar.
+        """
+        path = FIXTURES_DIR / "accentuations.gp"
+        if not path.exists():
+            pytest.skip("accentuations.gp not present")
+        song = gp.parse(path)
+        assert song.measureHeaders[0].beamingRuleGroups == [2, 2, 2, 2]
+
+    def test_xproperties_fixture_extracts_beat_bar_masterbar_overrides(self):
+        """Regression test for the five XProperty ids the reader was
+        silently dropping:
+
+          - MasterBar id=1124073984 (<Double>) → header.displayScale
+          - Bar       id=1124139520 (<Double>) → measure.displayScale
+          - Beat      id=1124204546 (<Int>)     → beat.beamingMode
+          - Beat      id=1124204545 (<Int>)     → beat.invertBeamDirection
+          - Beat      id=687935489  (<Int>)     → beat.brushDuration
+
+        None of these five ids appear in alphaTab's GP7/GP8 corpus, so
+        `xproperties.gp` is synthetic (patched effects.gp).
+        """
+        path = FIXTURES_DIR / "xproperties.gp"
+        if not path.exists():
+            pytest.skip("xproperties.gp not present")
+        song = gp.parse(path)
+        header0 = song.measureHeaders[0]
+        measure0 = song.tracks[0].measures[0]
+        assert header0.displayScale == 0.8
+        assert measure0.displayScale == 1.25
+        beats = [b for v in measure0.voices for b in v.beats]
+        assert beats[0].beamingMode == gp.BeatBeamingMode.forceSplitToNext
+        assert beats[1].invertBeamDirection is True
+        assert beats[2].brushDuration == 240
+
     def test_beat_lyrics_fixture_extracts_per_beat_syllables(self):
         """Regression test for per-beat lyrics. GPIF attaches lyric
         syllables to individual beats via a `<Lyrics><Line>…</Line></Lyrics>`
