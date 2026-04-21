@@ -344,16 +344,37 @@ class TestPhase5Rest:
 
 class TestPhase5Directions:
     def test_any_direction_in_fixture_is_parsed(self):
-        """Find a fixture with Directions in XML and check it round-trips
-        into MeasureHeader.direction / fromDirection."""
+        """Find a fixture whose GPIF carries `<Directions>` and check the
+        direction markers round-trip onto ``MeasureHeader.direction`` /
+        ``fromDirection``.
+
+        A ``.gp`` is a ZIP; the previous version of this test grepped the
+        raw ZIP bytes for ``<Directions>`` and therefore never matched,
+        silently skipping on every run. We now open the archive and
+        check the embedded ``Content/score.gpif``.
+        """
+        import zipfile
         for fx in FIXTURES:
-            raw = fx.read_bytes()
-            if b"<Directions>" in raw:
-                song = gp.parse(fx)
-                has = any(h.direction is not None or h.fromDirection is not None
-                          for h in song.measureHeaders)
-                assert has, f"{fx.name} advertises <Directions> but none parsed"
-                return
+            try:
+                with zipfile.ZipFile(fx) as z:
+                    name = next(
+                        (n for n in z.namelist() if n.endswith("score.gpif")),
+                        None,
+                    )
+                    if name is None:
+                        continue
+                    xml = z.read(name)
+            except zipfile.BadZipFile:
+                continue
+            if b"<Directions>" not in xml:
+                continue
+            song = gp.parse(fx)
+            has = any(
+                h.direction is not None or h.fromDirection is not None
+                for h in song.measureHeaders
+            )
+            assert has, f"{fx.name} advertises <Directions> but none parsed"
+            return
         pytest.skip("no fixture advertises <Directions>")
 
 
@@ -361,14 +382,23 @@ class TestKnownTrackFixtures:
     """Specific assertions on selected fixtures to catch silent regressions."""
 
     def test_drumkit_is_percussion(self):
-        """Any fixture whose name hints at drums should have at least one
-        percussion track. Reads: if drums tests pass for drums.gp but flags
-        don't propagate, we'd silently treat drums as pitched."""
-        path = FIXTURES_DIR / "drums.gp"
+        """Any GP file with a drum-kit track should mark that track as
+        percussion. If the `<InstrumentSet><Type>drumKit</Type>` or the
+        `<MidiConnection table="Percussion">` signal is dropped by the
+        reader, drums silently render as pitched notes.
+
+        ``canon-audio-track.gp`` is the fattest multi-track fixture we
+        ship — it has dedicated ``Drums`` and ``Percussion`` tracks,
+        both of which must come through with ``isPercussionTrack=True``.
+        """
+        path = FIXTURES_DIR / "canon-audio-track.gp"
         if not path.exists():
-            pytest.skip("drums.gp not present")
+            pytest.skip("canon-audio-track.gp not present")
         song = gp.parse(path)
-        assert any(t.isPercussionTrack for t in song.tracks)
+        percussion_tracks = [t.name for t in song.tracks if t.isPercussionTrack]
+        assert percussion_tracks, (
+            "expected at least one percussion track in canon-audio-track.gp"
+        )
 
     def test_chords_fixture_tracks_have_tuning(self):
         path = FIXTURES_DIR / "chords.gp"
