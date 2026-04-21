@@ -1461,6 +1461,23 @@ class GP7File:
         brush/stroke, chord-id attachment (chord content filled in Phase 5)."""
         eff = beat.effect
 
+        # <TransposedPitchStemOrientation>Upward|Downward</...> and the
+        # <UserTransposedPitchStemOrientation> override together set the
+        # preferred stem / beam direction on the beat. alphaTab stores the
+        # latter (user) override on top of the former; we follow the same
+        # precedence by processing user last so it wins when both exist.
+        stem_map = {
+            "Upward":   gp.VoiceDirection.up,
+            "Downward": gp.VoiceDirection.down,
+        }
+        for stem_tag in ("TransposedPitchStemOrientation",
+                         "UserTransposedPitchStemOrientation"):
+            stem = raw.find(stem_tag)
+            if stem is not None:
+                txt = (stem.text or "").strip()
+                if txt in stem_map:
+                    beat.display.beamDirection = stem_map[txt]
+
         # <Fadding>FadeIn|FadeOut|VolumeSwell</Fadding>
         fadding = raw.find("Fadding")
         if fadding is not None:

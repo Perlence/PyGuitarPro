@@ -384,6 +384,31 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_beaming_mode_fixture_extracts_stem_orientation(self):
+        """Regression test for `<TransposedPitchStemOrientation>` +
+        `<UserTransposedPitchStemOrientation>` beat siblings. Both set
+        `beat.display.beamDirection` in alphaTab; PGP ignored them, so
+        the field stayed at its default `VoiceDirection.none`.
+
+        `beaming-mode.gp` has beats with both `Upward` and `Downward`
+        stem orientations."""
+        path = FIXTURES_DIR / "beaming-mode.gp"
+        if not path.exists():
+            pytest.skip("beaming-mode.gp not present")
+        song = gp.parse(path)
+        directions = {
+            b.display.beamDirection
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            if b.display.beamDirection != gp.VoiceDirection.none
+        }
+        assert directions == {
+            gp.VoiceDirection.up,
+            gp.VoiceDirection.down,
+        }, f"expected both up and down stem directions; got {directions}"
+
     def test_accent_tenuto_bit_parsed_independently(self):
         """Regression test for `<Accent>` bit `0x10` (Tenuto).
 
