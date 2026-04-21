@@ -561,6 +561,11 @@ class MeasureHeader:
     #: GPIF: fermatas placed within the bar, ordered by :attr:`Fermata.offset`.
     #: Empty for GP3/4/5 (format has no dedicated fermata element).
     fermatas: list[Fermata] = attr.Factory(list)
+    #: GPIF ``<FreeTime>`` — cadenza / rubato / out-of-tempo bar. The
+    #: renderer should replace the time signature with the "free time"
+    #: annotation. Always ``False`` for GP3/4/5 (the binary formats
+    #: have no equivalent marker).
+    isFreeTime: bool = False
 
     @property
     def length(self):

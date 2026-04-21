@@ -1148,6 +1148,11 @@ class GP7File:
         if mb.find("DoubleBar") is not None:
             header.hasDoubleBar = True
 
+        # <FreeTime/> — cadenza / rubato bar. Presence of the element
+        # alone is enough; alphaTab's GpifParser does the same check.
+        if mb.find("FreeTime") is not None:
+            header.isFreeTime = True
+
         # Fermatas — GPIF can mark one or more fermatas inside a bar, each
         # positioned via an "Offset" fraction and classified as Short /
         # Medium / Long. Keyed by tick offset from the bar's start.

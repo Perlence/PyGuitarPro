@@ -844,6 +844,26 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_free_time_fixture_flags_masterbar(self):
+        """Regression test for `<FreeTime/>` on a master bar.
+
+        GPIF marks a cadenza / rubato / out-of-tempo bar with a bare
+        `<FreeTime/>` element; alphaTab flips
+        `masterBar.isFreeTime = True`. PyGuitarPro's reader previously
+        ignored the element, so renderers lost the "free time" sign
+        that should replace the time signature.
+
+        `free-time.gp` is synthesised from `effects.gp` with
+        `<FreeTime/>` injected into the first MasterBar.
+        """
+        path = FIXTURES_DIR / "free-time.gp"
+        if not path.exists():
+            pytest.skip("free-time.gp not present")
+        song = gp.parse(path)
+        assert song.measureHeaders[0].isFreeTime is True
+        # No other bar carries the flag.
+        assert not any(h.isFreeTime for h in song.measureHeaders[1:])
+
     def test_rasgueado_fixture_extracts_fingering_pattern_enum(self):
         """Regression test for the full `<Rasgueado>` enum. GP3/4/5
         encode rasgueado as a bare boolean (`beat.effect.hasRasgueado`),
