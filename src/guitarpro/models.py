@@ -19,7 +19,7 @@ __all__ = [
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
     'GraceEffectTransition', 'Velocities', 'GraceEffect', 'TrillEffect',
-    'TremoloPickingEffect', 'SlideType', 'Fingering', 'NoteEffect', 'NoteType',
+    'TremoloPickingEffect', 'SlideType', 'VibratoType', 'Fingering', 'NoteEffect', 'NoteType',
     'NoteAccidentalMode', 'NoteOrnament',
     'Note', 'Chord', 'ChordType', 'Barre', 'ChordAlteration', 'ChordExtension',
     'PitchClass', 'MixTableItem', 'WahEffect', 'MixTableChange',
@@ -1081,6 +1081,20 @@ class Fingering(LenientEnum):
     little = 4
 
 
+class VibratoType(Enum):
+    """Vibrato intensity on a note.
+
+    GP3/4/5 only encode a boolean "has vibrato"; GP7 introduces two
+    intensity variants which alphaTab exposes via a `VibratoType` enum.
+    PGP keeps :attr:`NoteEffect.vibrato` (bool) for legacy readers and
+    adds :attr:`NoteEffect.vibratoType` for GP7 precision.
+    """
+
+    none = 0
+    slight = 1
+    wide = 2
+
+
 @hashableAttrs(repr=False)
 class NoteEffect:
     """Contains all effects which can be applied to one note."""
@@ -1104,6 +1118,9 @@ class NoteEffect:
     tremoloPicking: Optional[TremoloPickingEffect] = None
     trill: Optional[TrillEffect] = None
     vibrato: bool = False
+    #: GP7+ vibrato intensity. `vibrato` stays the canonical bool for
+    #: GP3/4/5; `vibratoType` carries the Slight/Wide distinction.
+    vibratoType: VibratoType = VibratoType.none
 
     @property
     def isBend(self):

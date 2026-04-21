@@ -384,6 +384,44 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_tremolo_vibrato_fixture_distinguishes_slight_and_wide(self):
+        """Regression test for the `<Vibrato>` note sibling element.
+
+        AlphaTab stores a `VibratoType` enum (Slight / Wide); PGP's
+        legacy `NoteEffect.vibrato` is a single bool that collapses
+        the distinction. The fix adds a `VibratoType` enum and
+        populates `NoteEffect.vibratoType` from the XML text while
+        keeping the legacy bool in sync.
+        """
+        path = FIXTURES_DIR / "tremolo-vibrato.gp"
+        if not path.exists():
+            pytest.skip("tremolo-vibrato.gp not present")
+        song = gp.parse(path)
+        types = {
+            n.effect.vibratoType
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            for n in b.notes
+            if n.effect.vibratoType != gp.VibratoType.none
+        }
+        assert types == {
+            gp.VibratoType.slight,
+            gp.VibratoType.wide,
+        }, f"expected both Slight and Wide; got {types}"
+        # Legacy `vibrato` bool must stay True for any non-`none` vibratoType
+        # so old consumers keep seeing "this note vibrates".
+        assert all(
+            n.effect.vibrato
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            for n in b.notes
+            if n.effect.vibratoType != gp.VibratoType.none
+        )
+
     def test_ornaments_fixture_extracts_all_ornament_types(self):
         """Regression test for `<Ornament>` sibling element in `_build_note`.
 

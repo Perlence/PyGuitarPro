@@ -1348,7 +1348,13 @@ class GP7File:
                 note.effect.letRing = True
             elif tag == "Vibrato":
                 txt = (child.text or "").strip()
-                if txt in ("Slight", "Wide"):
+                vib_map = {
+                    "Slight": gp.VibratoType.slight,
+                    "Wide":   gp.VibratoType.wide,
+                }
+                if txt in vib_map:
+                    note.effect.vibratoType = vib_map[txt]
+                    # Keep the GP3/4/5 `vibrato` bool aligned for legacy callers.
                     note.effect.vibrato = True
             elif tag == "AntiAccent":
                 if (child.text or "").strip().lower() == "normal":
