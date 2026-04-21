@@ -11,7 +11,8 @@ __all__ = [
     'GPException', 'RepeatGroup', 'Clipboard', 'KeySignature', 'Song',
     'LyricLine', 'Lyrics', 'Point', 'Padding', 'HeaderFooterElements',
     'PageSetup', 'MidiChannel', 'DirectionSign', 'Tuplet', 'Duration',
-    'TimeSignature', 'TripletFeel', 'MeasureHeader', 'Color', 'Marker',
+    'TimeSignature', 'TripletFeel', 'MeasureHeader', 'Fermata', 'FermataType',
+    'Color', 'Marker',
     'TrackSettings', 'Track', 'GuitarString', 'MeasureClef', 'LineBreak',
     'Measure', 'VoiceDirection', 'Voice', 'BeatStrokeDirection', 'BeatStroke',
     'SlapEffect', 'FadeType', 'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
@@ -511,6 +512,29 @@ class TripletFeel(Enum):
     sixteenth = 2
 
 
+class FermataType(Enum):
+    """Rendered fermata glyph — GP7+ distinguishes three durations."""
+
+    short = 0
+    medium = 1
+    long = 2
+
+
+@hashableAttrs
+class Fermata:
+    """A fermata placed on a :class:`MeasureHeader`.
+
+    Only GP7/GP8 expose fermatas as a dedicated structure; GP3/4/5 implied
+    them via tempo changes. Multiple fermatas may appear in one bar.
+    """
+
+    type: FermataType = FermataType.short
+    length: float = 0.0
+    #: Offset from the start of the bar, in MIDI ticks (``quarterTime`` per
+    #: quarter-note — matches alphaTab's conversion).
+    offset: int = 0
+
+
 @hashableAttrs(repr=False)
 class MeasureHeader:
     """A measure header contains metadata for measures over multiple
@@ -529,6 +553,9 @@ class MeasureHeader:
     tripletFeel: TripletFeel = TripletFeel.none
     direction: Optional[DirectionSign] = None
     fromDirection: Optional[DirectionSign] = None
+    #: GP7+: fermatas placed within the bar, ordered by :attr:`Fermata.offset`.
+    #: Empty for GP3/4/5 (format has no dedicated fermata element).
+    fermatas: list[Fermata] = attr.Factory(list)
 
     @property
     def length(self):

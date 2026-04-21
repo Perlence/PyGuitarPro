@@ -959,6 +959,43 @@ class GP7File:
         if mb.find("DoubleBar") is not None:
             header.hasDoubleBar = True
 
+        # Fermatas — GP7+ can mark one or more fermatas inside a bar, each
+        # positioned via an "Offset" fraction and classified as Short /
+        # Medium / Long. Keyed by tick offset from the bar's start.
+        fermatas_el = mb.find("Fermatas")
+        if fermatas_el is not None:
+            type_map = {
+                "Short":  gp.FermataType.short,
+                "Medium": gp.FermataType.medium,
+                "Long":   gp.FermataType.long,
+            }
+            for fermata_el in fermatas_el.findall("Fermata"):
+                fermata = gp.Fermata()
+                type_txt = _text(fermata_el.find("Type"))
+                if type_txt in type_map:
+                    fermata.type = type_map[type_txt]
+                length_txt = _text(fermata_el.find("Length"))
+                if length_txt:
+                    try:
+                        fermata.length = float(length_txt)
+                    except ValueError:
+                        pass
+                # <Offset>num/den</Offset> — GPIF expresses the position
+                # as (num/den) quarter notes from the start of the bar.
+                # Match alphaTab's conversion: ticks = num/den * quarterTime.
+                offset_txt = _text(fermata_el.find("Offset"))
+                if offset_txt and "/" in offset_txt:
+                    num_s, _, den_s = offset_txt.partition("/")
+                    try:
+                        num = int(num_s)
+                        den = int(den_s) if den_s else 4
+                        if den > 0:
+                            fermata.offset = int(num / den * gp.Duration.quarterTime)
+                    except ValueError:
+                        pass
+                header.fermatas.append(fermata)
+            header.fermatas.sort(key=lambda f: f.offset)
+
         # Repeat
         repeat = mb.find("Repeat")
         if repeat is not None:

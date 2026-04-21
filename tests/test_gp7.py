@@ -384,6 +384,41 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_fermata_fixture_extracts_fermatas(self):
+        """Regression test for `<Fermatas>` / `<Fermata>` handling.
+
+        GP7+ can place one or more fermatas at specific offsets within a
+        bar. Each `<Fermata>` carries a Type (Short/Medium/Long), an
+        Offset (quarter-note fraction from bar start), and an optional
+        Length. Previously the whole `<Fermatas>` element was ignored, so
+        `MeasureHeader.fermatas` was never populated.
+        """
+        path = FIXTURES_DIR / "fermata.gp"
+        if not path.exists():
+            pytest.skip("fermata.gp not present")
+        song = gp.parse(path)
+        headers_with_fermatas = [h for h in song.measureHeaders if h.fermatas]
+        assert headers_with_fermatas, "fermata.gp contains <Fermatas>; none extracted"
+        # All three FermataType values appear in the fixture.
+        all_types = {
+            f.type
+            for h in headers_with_fermatas
+            for f in h.fermatas
+        }
+        assert all_types == {
+            gp.FermataType.short,
+            gp.FermataType.medium,
+            gp.FermataType.long,
+        }, f"expected all FermataType values; got {all_types}"
+        # Fermatas must be sorted by offset, with the 0/1 fixture entry
+        # mapping to tick 0.
+        all_offsets = {
+            f.offset
+            for h in headers_with_fermatas
+            for f in h.fermatas
+        }
+        assert 0 in all_offsets
+
     def test_effects_fixture_maps_fadding_to_fade_type(self):
         """Regression test for `<Fadding>` handling in `_apply_beat_effects`.
 
