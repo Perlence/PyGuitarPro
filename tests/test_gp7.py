@@ -384,28 +384,25 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
-    def test_pick_slide_fixture_extracts_pick_slides(self):
-        """Regression test for `_apply_slide_flags` and the `SlideType`
-        enum: bits 0x40 (PickSlideDown) and 0x80 (PickSlideUp) introduced
-        in GP7 used to be silently discarded. `pick-slide.gp` contains 13
-        notes with these flags."""
-        path = FIXTURES_DIR / "pick-slide.gp"
+    def test_left_hand_tap_fixture_extracts_left_hand_tapped(self):
+        """Regression test for `_build_note` ignoring the `LeftHandTapped`
+        note property. This GP7-only articulation (circled "T" in the
+        score) was silently dropped. `left-hand-tap.gp` contains 5 such
+        notes at frets 4 and 15."""
+        path = FIXTURES_DIR / "left-hand-tap.gp"
         if not path.exists():
-            pytest.skip("pick-slide.gp not present")
+            pytest.skip("left-hand-tap.gp not present")
         song = gp.parse(path)
-        pick_types = {gp.SlideType.pickSlideDown, gp.SlideType.pickSlideUp}
-        pick_notes = [
-            n
+        tapped_frets = [
+            n.value
             for t in song.tracks
             for m in t.measures
             for v in m.voices
             for b in v.beats
             for n in b.notes
-            if n.effect.slides and any(s in pick_types for s in n.effect.slides)
+            if n.effect.leftHandTapped
         ]
-        assert len(pick_notes) == 13, (
-            f"expected 13 pick-slide notes, got {len(pick_notes)}"
+        assert len(tapped_frets) == 5, (
+            f"expected 5 left-hand-tapped notes, got {len(tapped_frets)}"
         )
-        # Both variants must appear — the fixture exercises down and up slides.
-        seen = {s for n in pick_notes for s in n.effect.slides if s in pick_types}
-        assert seen == pick_types
+        assert set(tapped_frets) == {4, 15}

@@ -1047,6 +1047,9 @@ class NoteEffect:
     harmonic: Optional[HarmonicEffect] = None
     heavyAccentuatedNote: bool = False
     leftHandFinger: Fingering = Fingering.open
+    #: GP7+: the note is struck by the fretting hand (without picking).
+    #: Rendered as a small circled "T" above the note.
+    leftHandTapped: bool = False
     letRing: bool = False
     palmMute: bool = False
     rightHandFinger: Fingering = Fingering.open

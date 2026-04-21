@@ -1250,6 +1250,11 @@ class GP7File:
                 elif name == "HopoOrigin":
                     if prop.find("Enable") is not None:
                         note.effect.hammer = True
+                elif name == "LeftHandTapped":
+                    # GP7+ fretting-hand strike (circled T in the score).
+                    # Presence of the property alone is enough; alphaTab's
+                    # reference reader does the same check.
+                    note.effect.leftHandTapped = True
                 elif name == "Bended":
                     bended = True
                 elif name == "BendOriginValue":
