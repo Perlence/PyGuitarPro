@@ -14,7 +14,7 @@ __all__ = [
     'TimeSignature', 'TripletFeel', 'MeasureHeader', 'Color', 'Marker',
     'TrackSettings', 'Track', 'GuitarString', 'MeasureClef', 'LineBreak',
     'Measure', 'VoiceDirection', 'Voice', 'BeatStrokeDirection', 'BeatStroke',
-    'SlapEffect', 'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
+    'SlapEffect', 'FadeType', 'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
     'GraceEffectTransition', 'Velocities', 'GraceEffect', 'TrillEffect',
@@ -785,6 +785,21 @@ class SlapEffect(Enum):
     popping = 3
 
 
+class FadeType(Enum):
+    """Beat-level fade effect.
+
+    GP3/4/5 only encode fade-in, so those readers toggle :attr:`BeatEffect.fadeIn`.
+    GP7 stores a richer `<Fadding>` element that distinguishes ``FadeIn``,
+    ``FadeOut`` and ``VolumeSwell`` — mirrored here as :attr:`FadeType` and
+    exposed as :attr:`BeatEffect.fade`.
+    """
+
+    none = 0
+    fadeIn = 1
+    fadeOut = 2
+    volumeSwell = 3
+
+
 @hashableAttrs
 class BeatEffect:
     """This class contains all beat effects."""
@@ -794,6 +809,9 @@ class BeatEffect:
     pickStroke: BeatStrokeDirection = BeatStrokeDirection.none
     chord: Optional['Chord'] = None
     fadeIn: bool = False
+    #: GP7+ fade variant. ``fadeIn`` stays the canonical field for GP3/4/5
+    #: compatibility; ``fade`` carries the full three-way distinction.
+    fade: FadeType = FadeType.none
     tremoloBar: Optional['BendEffect'] = None
     mixTableChange: Optional['MixTableChange'] = None
     slapEffect: SlapEffect = SlapEffect.none

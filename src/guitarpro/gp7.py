@@ -1408,8 +1408,18 @@ class GP7File:
 
         # <Fadding>FadeIn|FadeOut|VolumeSwell</Fadding>
         fadding = raw.find("Fadding")
-        if fadding is not None and (fadding.text or "").strip() == "FadeIn":
-            eff.fadeIn = True
+        if fadding is not None:
+            txt = (fadding.text or "").strip()
+            fade_map = {
+                "FadeIn":      gp.FadeType.fadeIn,
+                "FadeOut":     gp.FadeType.fadeOut,
+                "VolumeSwell": gp.FadeType.volumeSwell,
+            }
+            if txt in fade_map:
+                eff.fade = fade_map[txt]
+                # Keep the GP3/4/5 `fadeIn` bool in sync for callers that
+                # still read it — it remains a correct (if partial) view.
+                eff.fadeIn = (txt == "FadeIn")
 
         # <Tremolo>1/2|1/4|1/8</Tremolo> on BEAT — GPIF applies picking at
         # beat level, PyGuitarPro applies at note level. Set on each note

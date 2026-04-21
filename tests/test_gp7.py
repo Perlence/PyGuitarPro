@@ -384,6 +384,34 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_effects_fixture_maps_fadding_to_fade_type(self):
+        """Regression test for `<Fadding>` handling in `_apply_beat_effects`.
+
+        Previously only `FadeIn` set `beat.effect.fadeIn`; `FadeOut` and
+        `VolumeSwell` were silently discarded even though the comment
+        documented them. The fix introduces a `FadeType` enum and populates
+        `beat.effect.fade` for all three variants, keeping `fadeIn` in sync
+        for backward compatibility.
+        """
+        path = FIXTURES_DIR / "effects.gp"
+        if not path.exists():
+            pytest.skip("effects.gp not present")
+        song = gp.parse(path)
+        faded = [
+            b
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            if b.effect.fade != gp.FadeType.none
+        ]
+        assert faded, "expected at least one beat with a non-default FadeType"
+        # `effects.gp` only exercises FadeIn, so we can still pin both fields.
+        assert any(b.effect.fade == gp.FadeType.fadeIn for b in faded)
+        assert any(b.effect.fadeIn for b in faded), (
+            "fadeIn bool must stay aligned with fade == FadeIn for backward compat"
+        )
+
     def test_effects_fixture_propagates_tapped_to_beat(self):
         """Regression test for the `<Property name="Tapped">` note
         property. AlphaTab hoists this note-level flag onto the beat's
