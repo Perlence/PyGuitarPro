@@ -14,6 +14,7 @@ __all__ = [
     'TimeSignature', 'TripletFeel', 'MeasureHeader', 'Fermata', 'FermataType',
     'Color', 'Marker',
     'TrackSettings', 'Track', 'GuitarString', 'MeasureClef', 'LineBreak',
+    'SimileMark',
     'Measure', 'VoiceDirection', 'Voice', 'BeatStrokeDirection', 'BeatStroke',
     'SlapEffect', 'FadeType', 'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
@@ -713,6 +714,23 @@ class LineBreak(Enum):
     protect = 2
 
 
+class SimileMark(Enum):
+    """Simile-mark annotation placed on a bar (GP7+).
+
+    A simile mark tells the performer to repeat the previous bar(s).
+    Mirrors alphaTab's ``SimileMark`` enum.
+    """
+
+    #: No simile mark.
+    none = 0
+    #: Repeat the previous bar once.
+    simple = 1
+    #: First bar of a two-bar simile group.
+    firstOfDouble = 2
+    #: Second bar of a two-bar simile group.
+    secondOfDouble = 3
+
+
 @hashableAttrs(repr=False)
 class Measure:
     """A measure contains multiple voices of beats."""
@@ -722,6 +740,9 @@ class Measure:
     clef: MeasureClef = MeasureClef.treble
     voices: list['Voice'] = attr.Factory(lambda self: [Voice(self) for _ in range(self.maxVoices)], takes_self=True)
     lineBreak: LineBreak = LineBreak.none
+    #: GP7+ simile-mark annotation. None for GP3/4/5 (format has no
+    #: equivalent element).
+    simileMark: SimileMark = SimileMark.none
 
     maxVoices = 2
 

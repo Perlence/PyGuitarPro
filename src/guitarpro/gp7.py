@@ -1108,6 +1108,16 @@ class GP7File:
             if clef_txt in _CLEF_MAP:
                 measure.clef = gp.MeasureClef(_CLEF_MAP[clef_txt])
 
+            # <SimileMark>Simple|FirstOfDouble|SecondOfDouble</SimileMark>
+            simile_map = {
+                "Simple":         gp.SimileMark.simple,
+                "FirstOfDouble":  gp.SimileMark.firstOfDouble,
+                "SecondOfDouble": gp.SimileMark.secondOfDouble,
+            }
+            simile_txt = _text(bar.find("SimileMark"))
+            if simile_txt in simile_map:
+                measure.simileMark = simile_map[simile_txt]
+
             voice_ids = _split_tokens(_text(bar.find("Voices")))
             for vid in voice_ids:
                 voice = self._build_voice(measure, vid)

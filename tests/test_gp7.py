@@ -384,6 +384,29 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_simile_mark_fixture_extracts_all_types(self):
+        """Regression test for bar `<SimileMark>` element. GPIF marks
+        repeat-previous-bar shorthand with one of three values (`Simple`,
+        `FirstOfDouble`, `SecondOfDouble`). The reader ignored the
+        element, leaving `measure.simileMark` at the default `none`.
+
+        `simile-mark.gp` contains all three variants."""
+        path = FIXTURES_DIR / "simile-mark.gp"
+        if not path.exists():
+            pytest.skip("simile-mark.gp not present")
+        song = gp.parse(path)
+        marks = {
+            m.simileMark
+            for t in song.tracks
+            for m in t.measures
+            if m.simileMark != gp.SimileMark.none
+        }
+        assert marks == {
+            gp.SimileMark.simple,
+            gp.SimileMark.firstOfDouble,
+            gp.SimileMark.secondOfDouble,
+        }, f"expected all three SimileMark values; got {marks}"
+
     def test_beaming_mode_fixture_extracts_stem_orientation(self):
         """Regression test for `<TransposedPitchStemOrientation>` +
         `<UserTransposedPitchStemOrientation>` beat siblings. Both set
