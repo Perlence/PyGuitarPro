@@ -384,6 +384,35 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_effects_fixture_extracts_instrument_articulation(self):
+        """Regression test for `<InstrumentArticulation>` handling in
+        `_build_note`. Every `<Note>` in GP7/GP8 has a sibling
+        ``<InstrumentArticulation>`` integer (percussion articulation
+        index; ``0`` for pitched notes). If the tag is ignored,
+        ``note.percussionArticulation`` stays at its default of ``-1``.
+
+        This is a parser-coverage assertion: after the fix the field
+        should be populated (non-default) for every note in the file.
+        """
+        path = FIXTURES_DIR / "effects.gp"
+        if not path.exists():
+            pytest.skip("effects.gp not present")
+        song = gp.parse(path)
+        unpopulated = [
+            n
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            for n in b.notes
+            if n.percussionArticulation == -1
+        ]
+        # alphaTab stores the parsed value on every note; if the tag is
+        # skipped, unpopulated stays at -1.
+        assert not unpopulated, (
+            f"InstrumentArticulation not read for {len(unpopulated)} notes"
+        )
+
     def test_chords_fixture_extracts_accidental_mode(self):
         """Regression test for `_apply_concert_pitch`: GP7 stores an
         explicit ``<Accidental>`` choice in each note's ``ConcertPitch`` /

@@ -1148,6 +1148,10 @@ class Note:
     type: NoteType = NoteType.rest
     #: GP7+: explicit choice how the accidental is rendered (e.g. E♭ vs D♯).
     accidentalMode: NoteAccidentalMode = NoteAccidentalMode.default
+    #: GP7+ percussion articulation index. ``-1`` means unset / pitched track.
+    #: On percussion tracks, references an entry of the track's articulation
+    #: list or a GP7 built-in articulation number.
+    percussionArticulation: int = -1
 
     @property
     def realValue(self):

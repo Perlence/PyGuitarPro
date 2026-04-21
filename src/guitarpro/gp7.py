@@ -1343,6 +1343,14 @@ class GP7File:
                 fp = finger_map.get((child.text or "").strip())
                 if fp is not None:
                     note.effect.rightHandFinger = fp
+            elif tag == "InstrumentArticulation":
+                # Percussion articulation index (GP7+). For pitched tracks
+                # this is typically 0 and ignored; on percussion tracks it
+                # identifies which drum / cymbal is struck.
+                try:
+                    note.percussionArticulation = int((child.text or "0").strip())
+                except ValueError:
+                    pass
 
         # ── Assemble bend curve ──
         if bended:
