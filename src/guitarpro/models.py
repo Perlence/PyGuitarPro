@@ -17,7 +17,7 @@ __all__ = [
     'SimileMark',
     'Measure', 'VoiceDirection', 'Voice', 'BeatStrokeDirection', 'BeatStroke',
     'SlapEffect', 'FadeType', 'CrescendoType', 'GolpeType', 'WahPedal',
-    'RasgueadoType',
+    'RasgueadoType', 'BarreShape',
     'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
@@ -949,6 +949,20 @@ class WahPedal(Enum):
     closed = 2
 
 
+class BarreShape(Enum):
+    """Beat-level barré indication.
+
+    GPIF's ``<BarreFret>`` sets the fret; ``<BarreString>`` sets the
+    shape (0 = full bar across all strings, 1 = half / partial). GP3/4/5
+    encode barré only as part of the chord diagram, not per-beat.
+    Mirrors alphaTab's ``BarreShape`` enum.
+    """
+
+    none = 0
+    full = 1
+    half = 2
+
+
 class RasgueadoType(Enum):
     """Fingering pattern for a flamenco rasgueado strum.
 
@@ -1016,6 +1030,14 @@ class BeatEffect:
     golpe: GolpeType = GolpeType.none
     #: GPIF wah pedal state (Open / Closed). Independent of :class:`WahEffect`.
     wahPedal: WahPedal = WahPedal.none
+    #: GPIF ``<BarreFret>`` — fret at which the beat is barred. ``0`` means
+    #: no barre. GP3/4/5 carry barre info only on :class:`Chord`, not
+    #: per-beat.
+    barreFret: int = 0
+    #: GPIF ``<BarreString>`` shape — :attr:`BarreShape.full` (all strings)
+    #: or :attr:`BarreShape.half` (partial). :attr:`BarreShape.none`
+    #: when no barre is active.
+    barreShape: BarreShape = BarreShape.none
 
     @property
     def isChord(self):

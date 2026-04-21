@@ -1901,6 +1901,15 @@ class GP7File:
                 if variant is not None:
                     eff.rasgueado = gp.RasgueadoType[variant]
                 eff.hasRasgueado = True
+            elif name == "BarreFret":
+                # <BarreFret><Fret>N</Fret></BarreFret> — fret at which
+                # the beat is barred. Shape lives in a separate Property.
+                eff.barreFret = _int(prop.find("Fret"))
+            elif name == "BarreString":
+                # <BarreString><String>0|1</String></BarreString> —
+                # 0 = Full (all strings), 1 = Half (partial).
+                shape_map = {0: gp.BarreShape.full, 1: gp.BarreShape.half}
+                eff.barreShape = shape_map.get(_int(prop.find("String"), default=-1), gp.BarreShape.none)
             elif name == "VibratoWTremBar":
                 strength = _text(prop.find("Strength"))
                 if strength in ("Wide", "Slight"):

@@ -844,6 +844,32 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_barre_fixture_extracts_beat_level_barre(self):
+        """Regression test for GPIF's beat-level barre encoding.
+
+        `<BarreFret>` sets the fret number and `<BarreString>` sets the
+        shape (0 = full, 1 = half). GP3/4/5 encode barre only as part
+        of the chord diagram, not per-beat, so PyGuitarPro's reader
+        previously dropped both elements on GPIF files.
+
+        `barre.gp` injects two successive beats: (fret=5, full) and
+        (fret=7, half). Both must round-trip onto
+        `BeatEffect.barreFret` / `BeatEffect.barreShape`.
+        """
+        path = FIXTURES_DIR / "barre.gp"
+        if not path.exists():
+            pytest.skip("barre.gp not present")
+        song = gp.parse(path)
+        seen = [
+            (b.effect.barreFret, b.effect.barreShape)
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            if b.effect.barreShape != gp.BarreShape.none
+        ]
+        assert seen == [(5, gp.BarreShape.full), (7, gp.BarreShape.half)], seen
+
     def test_free_time_fixture_flags_masterbar(self):
         """Regression test for `<FreeTime/>` on a master bar.
 
