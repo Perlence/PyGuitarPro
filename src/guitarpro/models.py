@@ -616,6 +616,9 @@ class TrackRSE:
     equalizer: RSEEqualizer = attr.Factory(RSEEqualizer)
     humanize: int = 0
     autoAccentuation: Accentuation = Accentuation.none
+    #: Clef mode selected in the track editor. ``12`` forces bass clef for
+    #: any tuning; ``0`` lets the clef be inferred from the lowest string.
+    clefMode: int = 0
 
     def __attrs_post_init__(self):
         if not self.equalizer.knobs:
@@ -672,6 +675,7 @@ class MeasureClef(Enum):
     bass = 1
     tenor = 2
     alto = 3
+    neutral = 4
 
 
 class LineBreak(Enum):

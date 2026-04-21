@@ -126,6 +126,66 @@ def testChord(tmpdir, caplog, filename):
     assert song == song2
 
 
+def testGp5TrackClefRoundtripBass(tmpdir):
+    """Regression test for GP5 per-track clef extraction.
+
+    `GP5File.readTrackRSE` historically read three consecutive int32s
+    as "unknown" values. The first of those is the track's clef mode
+    (``12`` forces bass clef), documented in alphaTab's
+    ``Gp3To5Importer.readTrack``. Without extracting it, every GP5
+    track was reported as treble clef regardless of tuning.
+    """
+    filepath = LOCATION / 'Effects.gp5'
+    song = gp.parse(filepath)
+    track = song.tracks[0]
+    track.rse.clefMode = 12  # force bass clef
+
+    destpath = str(tmpdir.join('bass_clef.gp5'))
+    gp.write(song, destpath)
+    song2 = gp.parse(destpath)
+
+    assert song2.tracks[0].rse.clefMode == 12
+    assert song2.tracks[0].measures[0].clef is gp.MeasureClef.bass
+
+
+def testGp5PercussionTrackUsesNeutralClef(tmpdir):
+    """Percussion tracks should use the neutral clef per alphaTab parity."""
+    song = gp.Song()
+    song.tracks[0].isPercussionTrack = True
+
+    destpath = str(tmpdir.join('percussion.gp5'))
+    gp.write(song, destpath, version=(5, 1, 0))
+    song2 = gp.parse(destpath)
+
+    assert song2.tracks[0].isPercussionTrack is True
+    assert song2.tracks[0].measures[0].clef is gp.MeasureClef.neutral
+
+
+def testGp5LowTuningInfersBassClef(tmpdir):
+    """A track whose lowest string is below MIDI B1 (35) renders with
+    bass clef even when clefMode is 0 — matches AT's inference rule."""
+    filepath = LOCATION / 'Effects.gp5'
+    song = gp.parse(filepath)
+    track = song.tracks[0]
+    # Detune all strings down by an octave so the lowest falls below B1
+    for string in track.strings:
+        string.value -= 24
+    assert track.strings[-1].value < 35
+
+    destpath = str(tmpdir.join('low_tuning.gp5'))
+    gp.write(song, destpath)
+    song2 = gp.parse(destpath)
+
+    assert song2.tracks[0].measures[0].clef is gp.MeasureClef.bass
+
+
+def testGp5GuitarTrackKeepsTrebleClef():
+    """Sanity check: a normal guitar track still reports treble clef."""
+    filepath = LOCATION / 'Effects.gp5'
+    song = gp.parse(filepath)
+    assert song.tracks[0].measures[0].clef is gp.MeasureClef.treble
+
+
 @pytest.mark.parametrize('version', ['gp3', 'gp4', 'gp5'])
 def testReadErrorAnnotation(version):
     def writeToBytesIO(song):

@@ -7,6 +7,32 @@ from . import gp4
 class GP5File(gp4.GP4File):
     """A reader for GuitarPro 5 files."""
 
+    #: Tracks whose lowest string is below this MIDI pitch (B1) are
+    #: rendered with bass clef, matching the threshold used by Guitar Pro
+    #: and alphaTab.
+    _BASS_CLEF_TUNING_THRESHOLD = 35
+
+    #: Value of ``TrackRSE.clefMode`` that forces bass clef regardless
+    #: of the track's tuning.
+    _CLEF_MODE_BASS = 12
+
+    def _computeMeasureClef(self, track):
+        """Infer the clef that Guitar Pro displays for ``track``.
+
+        Matches the logic in alphaTab's ``Gp3To5Importer.readTrack``:
+        percussion tracks use the neutral clef; otherwise bass clef if
+        the RSE clef mode is ``12`` or the lowest string falls below
+        MIDI B1, else treble clef.
+        """
+        if track.isPercussionTrack:
+            return gp.MeasureClef.neutral
+        clefMode = track.rse.clefMode if track.rse is not None else 0
+        if clefMode == self._CLEF_MODE_BASS:
+            return gp.MeasureClef.bass
+        if track.strings and track.strings[-1].value < self._BASS_CLEF_TUNING_THRESHOLD:
+            return gp.MeasureClef.bass
+        return gp.MeasureClef.treble
+
     # Reading
     # =======
 
@@ -471,7 +497,12 @@ class GP5File(gp4.GP4File):
 
         - Humanize: :ref:`byte`.
 
-        - Unknown space: 6 :ref:`Ints <int>`.
+        - Clef mode: :ref:`int`. A value of ``12`` means the track is
+          always displayed with bass clef; other values leave the clef
+          inferred from the tuning.
+
+        - Unknown space: 2 :ref:`Ints <int>` (typically ``-1`` and
+          ``100``) followed by 12 unknown :ref:`Bytes <byte>`.
 
         - RSE instrument. See :meth:`readRSEInstrument`.
 
@@ -480,8 +511,9 @@ class GP5File(gp4.GP4File):
         - RSE instrument effect. See :meth:`readRSEInstrumentEffect`.
         """
         trackRSE.humanize = self.readU8()
-        for _ in range(3):
-            self.readI32()  # ???
+        trackRSE.clefMode = self.readI32()
+        self.readI32()  # ???
+        self.readI32()  # ??? (typically 100)
         self.skip(12)  # ???
         trackRSE.instrument = self.readRSEInstrument()
         if self.versionTuple > (5, 0, 0):
@@ -538,6 +570,7 @@ class GP5File(gp4.GP4File):
         Sub-measures are followed by a
         :class:`~guitarpro.models.LineBreak` stored in :ref:`byte`.
         """
+        measure.clef = self._computeMeasureClef(measure.track)
         start = measure.start
         for number, voice in enumerate(measure.voices[:gp.Measure.maxVoices]):
             self._currentVoiceNumber = number + 1
@@ -1152,7 +1185,7 @@ class GP5File(gp4.GP4File):
 
     def writeTrackRSE(self, trackRSE):
         self.writeU8(trackRSE.humanize)
-        self.writeI32(0)
+        self.writeI32(trackRSE.clefMode)
         self.writeI32(0)
         self.writeI32(100)
         self.placeholder(12)
