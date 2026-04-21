@@ -701,11 +701,11 @@ class GP7File:
     @staticmethod
     def _read_automations(node: ET.Element) -> list[dict]:
         """Extract master/track <Automation> entries — mid-song parameter
-        changes (Tempo/Volume/Sound/Balance/etc.).
+        changes (Tempo/Volume/Sound/Balance/SustainPedal/etc.).
 
         Returns list of {type, bar, position, value, linear} dicts. Mapping to
-        PyGuitarPro's per-beat MixTableChange happens after beats are built,
-        in `_attach_automations`.
+        PyGuitarPro's per-beat MixTableChange / Measure.sustainPedals happens
+        after beats are built, in the relevant attach step.
         """
         out: list[dict] = []
         for a in node.findall("Automation"):
@@ -756,7 +756,60 @@ class GP7File:
                     mtc.balance = gp.MixTableItem(value=num, duration=0, allTracks=False)
                 elif etype == "Sound":
                     mtc.instrument = gp.MixTableItem(value=num, duration=0, allTracks=False)
+                elif etype == "SustainPedal":
+                    # Handled in _attach_sustain_pedals — skip MTC.
+                    continue
                 target_beat.effect.mixTableChange = mtc
+
+        # SustainPedal automations are a separate concern (per-bar list,
+        # not a beat-attached MTC), so attach them in their own pass.
+        self._attach_sustain_pedals(song)
+
+    @staticmethod
+    def _attach_sustain_pedals(song: gp.Song) -> None:
+        """Attach SustainPedal automations to :attr:`Measure.sustainPedals`.
+
+        GPIF expresses sustain-pedal markers as track-level
+        ``<Automation><Type>SustainPedal</Type>`` entries whose ``Value``
+        field is two whitespace-separated numbers: a legacy numeric
+        (ignored) and a ``reference`` integer encoding the pedal action:
+        ``1`` → Down, ``2`` → Hold, ``3`` → Up. ``Position`` is the
+        ratio within the bar.
+        """
+        ref_map = {
+            1: gp.SustainPedalMarkerType.down,
+            2: gp.SustainPedalMarkerType.hold,
+            3: gp.SustainPedalMarkerType.up,
+        }
+        for track in song.tracks:
+            events = getattr(track, "_automations", None)
+            if not events:
+                continue
+            for ev in events:
+                if ev["type"] != "SustainPedal":
+                    continue
+                bar = ev["bar"]
+                if bar < 0 or bar >= len(track.measures):
+                    continue
+                parts = (ev["value"] or "").strip().split()
+                reference = 0
+                if len(parts) >= 2:
+                    try:
+                        reference = int(float(parts[1]))
+                    except ValueError:
+                        reference = 0
+                elif len(parts) == 1:
+                    # AT falls back to reference=1 when only the numeric
+                    # payload is present (legacy single-float encoding).
+                    reference = 1
+                pedal_type = ref_map.get(reference)
+                if pedal_type is None:
+                    continue
+                marker = gp.SustainPedalMarker(
+                    ratioPosition=ev["position"],
+                    type=pedal_type,
+                )
+                track.measures[bar].sustainPedals.append(marker)
 
     @staticmethod
     def _read_lyrics_lines(lyrics_node: ET.Element) -> list[tuple[int, str]]:

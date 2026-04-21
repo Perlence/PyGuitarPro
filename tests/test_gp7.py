@@ -844,6 +844,37 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_sustain_pedal_fixture_extracts_markers_per_bar(self):
+        """Regression test for the SustainPedal automation code path.
+        GPIF expresses piano / keyboard sustain-pedal actions as
+        track-level `<Automation><Type>SustainPedal</Type>` entries with
+        a `ratioPosition` and an encoded `reference` (1=Down, 2=Hold,
+        3=Up). AlphaTab bucket them per-bar onto
+        `Bar.sustainPedals: SustainPedalMarker[]`; PyGuitarPro's reader
+        previously passed every Automation through `MixTableChange`,
+        which has no sustain-pedal concept and dropped the action.
+
+        `sustain-pedal.gp` is synthesised from `effects.gp` with three
+        markers on bar 0: Down at 0.0, Hold at 0.5, Up at 1.0.
+        """
+        path = FIXTURES_DIR / "sustain-pedal.gp"
+        if not path.exists():
+            pytest.skip("sustain-pedal.gp not present")
+        song = gp.parse(path)
+        bar0 = song.tracks[0].measures[0]
+        assert len(bar0.sustainPedals) == 3
+        actions = [(sp.ratioPosition, sp.type) for sp in bar0.sustainPedals]
+        assert actions == [
+            (0.0, gp.SustainPedalMarkerType.down),
+            (0.5, gp.SustainPedalMarkerType.hold),
+            (1.0, gp.SustainPedalMarkerType.up),
+        ], actions
+        # No stray SustainPedal mixTableChange should leak to the first beat.
+        first_beat = bar0.voices[0].beats[0]
+        assert first_beat.effect.mixTableChange is None or \
+               (first_beat.effect.mixTableChange.tempo is None
+                and first_beat.effect.mixTableChange.volume is None)
+
     def test_accentuations_fixture_populates_beaming_rule_groups(self):
         """Regression test for MasterBar <XProperties> beaming-rule
         groups. AlphaTab collects XProperty ids 1124139264..295 into

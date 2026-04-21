@@ -18,6 +18,7 @@ __all__ = [
     'Measure', 'VoiceDirection', 'Voice', 'BeatStrokeDirection', 'BeatStroke',
     'SlapEffect', 'FadeType', 'CrescendoType', 'GolpeType', 'WahPedal',
     'RasgueadoType', 'BarreShape', 'BeatBeamingMode',
+    'SustainPedalMarker', 'SustainPedalMarkerType',
     'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
@@ -826,6 +827,10 @@ class Measure:
     #: (independent of :attr:`MeasureHeader.displayScale`, which is the
     #: master-bar / score-wide scale). ``1.0`` means default.
     displayScale: float = 1.0
+    #: GPIF sustain-pedal markers within this bar, each with a
+    #: ``ratioPosition`` in ``[0, 1]``. Empty for GP3/4/5 (no sub-bar
+    #: pedal concept) and for GPIF bars without pedal automations.
+    sustainPedals: 'list[SustainPedalMarker]' = attr.Factory(list)
 
     maxVoices = 2
 
@@ -964,6 +969,44 @@ class WahPedal(Enum):
     none = 0
     open = 1
     closed = 2
+
+
+class SustainPedalMarkerType(Enum):
+    """Sustain-pedal action at a given position in a bar.
+
+    Mirrors alphaTab's ``SustainPedalMarkerType``. GP3/4/5 encode a
+    sustain pedal as a single MIDI controller event; GPIF models
+    explicit down / hold / up events with sub-bar positions to drive
+    piano-style pedal rendering and playback.
+    """
+
+    #: Press the pedal from this point onward.
+    down = 0
+    #: Pedal stays held across this marker (used when a pedal is
+    #: held for a whole bar).
+    hold = 1
+    #: Release the pedal at this point.
+    up = 2
+
+
+@hashableAttrs
+class SustainPedalMarker:
+    """A single sustain-pedal marker within a measure.
+
+    GPIF attaches these via the track ``<Automations>`` list with
+    ``<Type>SustainPedal</Type>``. Each marker carries:
+
+    - ``ratioPosition`` — 0.0 … 1.0 fraction of the bar where the
+      action occurs (0.0 = bar start, 0.5 = halfway, 1.0 = bar end);
+    - ``type`` — down / hold / up (see :class:`SustainPedalMarkerType`).
+
+    Mirrors alphaTab's ``SustainPedalMarker``. PyGuitarPro exposes them
+    only on the GPIF reader (GP3/4/5 have no per-bar sub-position
+    concept for sustain control).
+    """
+
+    ratioPosition: float = 0.0
+    type: SustainPedalMarkerType = SustainPedalMarkerType.down
 
 
 class BeatBeamingMode(Enum):
