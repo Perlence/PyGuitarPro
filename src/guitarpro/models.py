@@ -515,7 +515,7 @@ class TripletFeel(Enum):
 
 
 class FermataType(Enum):
-    """Rendered fermata glyph — GP7+ distinguishes three durations."""
+    """Rendered fermata glyph — the GPIF format distinguishes three durations."""
 
     short = 0
     medium = 1
@@ -526,8 +526,9 @@ class FermataType(Enum):
 class Fermata:
     """A fermata placed on a :class:`MeasureHeader`.
 
-    Only GP7/GP8 expose fermatas as a dedicated structure; GP3/4/5 implied
-    them via tempo changes. Multiple fermatas may appear in one bar.
+    Only the GPIF format (GP6/7/8) exposes fermatas as a dedicated
+    structure; GP3/4/5 implied them via tempo changes. Multiple fermatas
+    may appear in one bar.
     """
 
     type: FermataType = FermataType.short
@@ -555,7 +556,7 @@ class MeasureHeader:
     tripletFeel: TripletFeel = TripletFeel.none
     direction: Optional[DirectionSign] = None
     fromDirection: Optional[DirectionSign] = None
-    #: GP7+: fermatas placed within the bar, ordered by :attr:`Fermata.offset`.
+    #: GPIF: fermatas placed within the bar, ordered by :attr:`Fermata.offset`.
     #: Empty for GP3/4/5 (format has no dedicated fermata element).
     fermatas: list[Fermata] = attr.Factory(list)
 
@@ -773,7 +774,7 @@ class LineBreak(Enum):
 
 
 class SimileMark(Enum):
-    """Simile-mark annotation placed on a bar (GP7+).
+    """Simile-mark annotation placed on a bar (GPIF format).
 
     A simile mark tells the performer to repeat the previous bar(s).
     Mirrors alphaTab's ``SimileMark`` enum.
@@ -798,7 +799,7 @@ class Measure:
     clef: MeasureClef = MeasureClef.treble
     voices: list['Voice'] = attr.Factory(lambda self: [Voice(self) for _ in range(self.maxVoices)], takes_self=True)
     lineBreak: LineBreak = LineBreak.none
-    #: GP7+ simile-mark annotation. None for GP3/4/5 (format has no
+    #: GPIF simile-mark annotation. None for GP3/4/5 (format has no
     #: equivalent element).
     simileMark: SimileMark = SimileMark.none
 
@@ -895,9 +896,9 @@ class FadeType(Enum):
     """Beat-level fade effect.
 
     GP3/4/5 only encode fade-in, so those readers toggle :attr:`BeatEffect.fadeIn`.
-    GP7 stores a richer `<Fadding>` element that distinguishes ``FadeIn``,
-    ``FadeOut`` and ``VolumeSwell`` — mirrored here as :attr:`FadeType` and
-    exposed as :attr:`BeatEffect.fade`.
+    The GPIF format stores a richer ``<Fadding>`` element that distinguishes
+    ``FadeIn``, ``FadeOut`` and ``VolumeSwell`` — mirrored here as
+    :attr:`FadeType` and exposed as :attr:`BeatEffect.fade`.
     """
 
     none = 0
@@ -918,7 +919,7 @@ class CrescendoType(Enum):
 
 
 class GolpeType(Enum):
-    """Flamenco "golpe" body-tap indication on a beat (GP7+).
+    """Flamenco "golpe" body-tap indication on a beat (GPIF format).
 
     Mirrors alphaTab's ``GolpeType``. Stored on :attr:`BeatEffect.golpe`.
     """
@@ -929,11 +930,11 @@ class GolpeType(Enum):
 
 
 class WahPedal(Enum):
-    """GP7+ wah-pedal state marker placed on a beat.
+    """GPIF wah-pedal state marker placed on a beat.
 
     Distinct from :class:`WahEffect` (GP5 mix-table entry with a numeric
-    pedal position): GP7 stores a simple Open/Closed annotation on the
-    beat. Mirrors alphaTab's ``WahPedal``.
+    pedal position): the GPIF format stores a simple Open/Closed
+    annotation on the beat. Mirrors alphaTab's ``WahPedal``.
     """
 
     none = 0
@@ -950,22 +951,22 @@ class BeatEffect:
     pickStroke: BeatStrokeDirection = BeatStrokeDirection.none
     chord: Optional['Chord'] = None
     fadeIn: bool = False
-    #: GP7+ fade variant. ``fadeIn`` stays the canonical field for GP3/4/5
+    #: GPIF fade variant. ``fadeIn`` stays the canonical field for GP3/4/5
     #: compatibility; ``fade`` carries the full three-way distinction.
     fade: FadeType = FadeType.none
     tremoloBar: Optional['BendEffect'] = None
     mixTableChange: Optional['MixTableChange'] = None
     slapEffect: SlapEffect = SlapEffect.none
     vibrato: bool = False
-    #: GP7+ hairpin (crescendo / decrescendo) annotation.
+    #: GPIF hairpin (crescendo / decrescendo) annotation.
     crescendo: CrescendoType = CrescendoType.none
-    #: GP7+ slashed-rhythm notation marker.
+    #: GPIF slashed-rhythm notation marker.
     slashed: bool = False
-    #: GP7+ "dead slap" guitar body slap marker.
+    #: GPIF "dead slap" guitar body slap marker.
     deadSlapped: bool = False
-    #: GP7+ flamenco "golpe" finger/thumb tap marker.
+    #: GPIF flamenco "golpe" finger/thumb tap marker.
     golpe: GolpeType = GolpeType.none
-    #: GP7+ wah pedal state (Open / Closed). Independent of :class:`WahEffect`.
+    #: GPIF wah pedal state (Open / Closed). Independent of :class:`WahEffect`.
     wahPedal: WahPedal = WahPedal.none
 
     @property
@@ -1044,7 +1045,7 @@ class Beat:
     octave: Octave = Octave.none
     display: BeatDisplay = attr.Factory(BeatDisplay)
     status: BeatStatus = BeatStatus.empty
-    #: GP7+ backing-track synchronisation timestamp in milliseconds.
+    #: GPIF backing-track synchronisation timestamp in milliseconds.
     #: ``None`` means no timer is displayed on this beat.
     timer: Optional[int] = None
 
@@ -1211,10 +1212,11 @@ class Fingering(LenientEnum):
 class VibratoType(Enum):
     """Vibrato intensity on a note.
 
-    GP3/4/5 only encode a boolean "has vibrato"; GP7 introduces two
-    intensity variants which alphaTab exposes via a `VibratoType` enum.
-    PGP keeps :attr:`NoteEffect.vibrato` (bool) for legacy readers and
-    adds :attr:`NoteEffect.vibratoType` for GP7 precision.
+    GP3/4/5 only encode a boolean "has vibrato"; the GPIF format
+    introduces two intensity variants which alphaTab exposes via a
+    ``VibratoType`` enum. PGP keeps :attr:`NoteEffect.vibrato` (bool)
+    for legacy readers and adds :attr:`NoteEffect.vibratoType` for GPIF
+    precision.
     """
 
     none = 0
@@ -1234,7 +1236,7 @@ class NoteEffect:
     harmonic: Optional[HarmonicEffect] = None
     heavyAccentuatedNote: bool = False
     leftHandFinger: Fingering = Fingering.open
-    #: GP7+: the note is struck by the fretting hand (without picking).
+    #: GPIF: the note is struck by the fretting hand (without picking).
     #: Rendered as a small circled "T" above the note.
     leftHandTapped: bool = False
     letRing: bool = False
@@ -1242,14 +1244,14 @@ class NoteEffect:
     rightHandFinger: Fingering = Fingering.open
     slides: list[SlideType] = attr.Factory(list)
     staccato: bool = False
-    #: GP7+ tenuto articulation — hold the note its full written value.
+    #: GPIF tenuto articulation — hold the note its full written value.
     #: Independent from :attr:`letRing`; corresponds to alphaTab's
     #: ``AccentuationType.Tenuto``.
     tenuto: bool = False
     tremoloPicking: Optional[TremoloPickingEffect] = None
     trill: Optional[TrillEffect] = None
     vibrato: bool = False
-    #: GP7+ vibrato intensity. `vibrato` stays the canonical bool for
+    #: GPIF vibrato intensity. `vibrato` stays the canonical bool for
     #: GP3/4/5; `vibratoType` carries the Slight/Wide distinction.
     vibratoType: VibratoType = VibratoType.none
 
@@ -1304,7 +1306,7 @@ class NoteType(LenientEnum):
 
 
 class NoteOrnament(Enum):
-    """Ornament symbol attached to a note (GP7+).
+    """Ornament symbol attached to a note (GPIF format).
 
     Mirrors alphaTab's ``NoteOrnament`` enum.
     """
@@ -1319,9 +1321,9 @@ class NoteOrnament(Enum):
 class NoteAccidentalMode(Enum):
     """How the accidental sign of a note is displayed.
 
-    Mirrors alphaTab's ``NoteAccidentalMode``. GP7+ stores the display
-    choice separately from the pitch so that e.g. E♭ and D♯ can be
-    distinguished in notation even though they sound the same.
+    Mirrors alphaTab's ``NoteAccidentalMode``. The GPIF format stores
+    the display choice separately from the pitch so that e.g. E♭ and
+    D♯ can be distinguished in notation even though they sound the same.
     """
 
     #: Accidentals are calculated automatically from key signature.
@@ -1352,13 +1354,13 @@ class Note:
     durationPercent: float = 1.0
     swapAccidentals: bool = False
     type: NoteType = NoteType.rest
-    #: GP7+: explicit choice how the accidental is rendered (e.g. E♭ vs D♯).
+    #: GPIF: explicit choice how the accidental is rendered (e.g. E♭ vs D♯).
     accidentalMode: NoteAccidentalMode = NoteAccidentalMode.default
-    #: GP7+ percussion articulation index. ``-1`` means unset / pitched track.
+    #: GPIF percussion articulation index. ``-1`` means unset / pitched track.
     #: On percussion tracks, references an entry of the track's articulation
-    #: list or a GP7 built-in articulation number.
+    #: list or a built-in articulation number.
     percussionArticulation: int = -1
-    #: GP7+ ornament glyph (turn / inverted turn / mordent variants).
+    #: GPIF ornament glyph (turn / inverted turn / mordent variants).
     ornament: NoteOrnament = NoteOrnament.none
     #: Explicit request to display this note's string number beside it.
     #: GPIF marks this per note; older binary formats have no equivalent.

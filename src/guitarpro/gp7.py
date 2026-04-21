@@ -9,10 +9,24 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
-"""Reader for Guitar Pro 7 and 8 (.gp) files.
+"""Reader for the GPIF XML score format used by Guitar Pro 6/7/8.
 
-GP7/GP8 files are ZIP archives.  Only score.gpif is required:
+Container versions
+------------------
+Guitar Pro 6 (``.gpx``), 7 (``.gp``) and 8 (``.gp``) all embed the same
+GPIF XML schema. The only difference is how the archive is packed:
 
+  - GP6  → BCFZ-compressed container (a proprietary Deflate variant)
+  - GP7  → ZIP archive
+  - GP8  → ZIP archive
+
+This module consumes the **ZIP** variant (GP7 and GP8), because PyGuitarPro
+does not yet ship a BCFZ decompressor. Once BCFZ support lands, the same
+GPIF code paths below apply to GP6 files unchanged — the parser is
+version-agnostic.
+
+Archive contents (ZIP)
+----------------------
     score.gpif         XML document describing the full score
     BinaryStylesheet   style settings (proprietary binary, not decoded)
     PartConfiguration  part visibility (ignored)
@@ -20,76 +34,99 @@ GP7/GP8 files are ZIP archives.  Only score.gpif is required:
 
 The GPIF XML is a denormalised DAG: MasterBars reference Bars by id,
 Bars reference Voices, Voices reference Beats, Beats reference Notes
-and Rhythms.  The reader first builds lookup maps from ids, then walks
+and Rhythms. The reader first builds lookup maps from ids, then walks
 MasterBars to assemble per-track Measure/Voice/Beat/Note trees.
 
 Coverage
 --------
-  * Song: title/artist/subtitle/album/words/music/copyright/tab/
-    instructions/notice, tempo (from MasterTrack automation), tempoName,
-    lyrics (first non-empty track's 5 lines), masterEffect.volume
-    (default 100), pageSetup template strings.
-  * Track: name, shortName, color, tuning, capo, fretCount, offset
-    (transpose), isSolo/isMute, useRSE, isPercussion; MIDI channel
-    instrument, bank, channel, effectChannel, port; RSE ChannelStrip
-    balance (param 11) and volume (param 12); chord diagram collection
-    with per-string frets, fingerings, and harmonic metadata (root,
-    bass, type, extension, 5th/9th/11th alterations, newFormat, show,
-    sharp, add defaults); per-track MTC Automations (Tempo/Volume/
-    Balance/Sound) attached to the first beat of each target bar.
-  * MeasureHeader: time signature (numerator/denominator + beams from
+Summarises the high-level fields captured on each GPIF object. The
+authoritative reference is the per-branch source below; consult
+``tests/test_gp7.py`` regression cases for round-trip guarantees on
+individual fields.
+
+  * Song — title, artist, subtitle, album, words, music, copyright,
+    tab credit, instructions, notice; ``<WordsAndMusic>`` fallback
+    when Words/Music are empty; tempo (from MasterTrack automation),
+    tempoName, lyrics (first non-empty track's 5 lines);
+    masterEffect.volume (default 100); pageSetup template strings.
+  * Track — name, shortName, color; tuning (with ``<Label>`` tuning
+    name), capo, fretCount, offset (transpose), instrumentRef (legacy
+    soundbank id incl. ``-gs`` grand-staff variants), isSolo/isMute,
+    useRSE, isPercussion; MIDI channel instrument, bank, channel,
+    effectChannel, port; **full ``<Sounds>`` collection** as
+    ``list[GpifSound]`` (Name/Path/Role/Program/14-bit bank); RSE
+    ChannelStrip balance (param 11) and volume (param 12); chord
+    diagram collection with per-string frets, fingerings, and
+    harmonic metadata (root, bass, type, extension, 5th/9th/11th
+    alterations, newFormat, show, sharp, add defaults); ``<PartSounding>``
+    transpositionPitch + nominalKey for transposing instruments;
+    ``<SystemsLayout>`` bars-per-system + ``<SystemsDefautLayout>``
+    fallback; ``<NotationPatch><LineCount>`` staff line count;
+    per-track Automations (Tempo/Volume/Balance/Sound) attached to
+    the first beat of each target bar.
+  * MeasureHeader — time signature (numerator/denominator + beams from
     XProperty 1124139010), key signature, section marker (title + RGB
     color), repeat open/close, alternate endings, double bar, triplet
-    feel, Coda/Segno/Fine target directions, Da Capo/Dal Segno/Da Coda
-    jumps. Anacrusis flag stashed on `header._anacrusis`.
-  * Beat: duration value + dotted + tuplet (enters/times), octave
+    feel, Coda/Segno/Fine target directions, Da Capo / Dal Segno /
+    Da Coda jumps, ``<Fermatas>`` placed mid-bar (list of Fermata with
+    offset + type). Anacrusis flag stashed on ``header._anacrusis``.
+  * Measure — ``<SimileMark>`` repeat-previous-bar annotation.
+  * Beat — duration value + dotted + tuplet (enters/times), octave
     (Ottavia 8va/8vb/15ma/15mb), free-text label, dynamics → velocity,
-    rest/empty status, stroke (Brush), pickStroke, slapEffect (Slapped/
-    Popped), hasRasgueado, vibrato (VibratoWTremBar), tremoloBar
-    (WhammyBar curve from origin/middle1/middle2/destination points),
-    chord reference → resolved chord diagram, fadeIn, tremoloPicking
-    (1/2→8th, 1/4→16th, 1/8→32nd), grace (OnBeat/BeforeBeat), legato
-    origin propagated to notes as hammer, start in ticks.
-  * Note: string (reversed from GPIF's low-to-high), fret, MIDI pitch
+    rest/empty status, stroke (Brush), pickStroke, slapEffect
+    (Slapped/Popped), hasRasgueado, vibrato (VibratoWTremBar),
+    tremoloBar (WhammyBar curve from origin/middle1/middle2/
+    destination points), chord reference → resolved chord diagram,
+    ``<Fadding>`` as full FadeType enum (FadeIn/FadeOut/VolumeSwell),
+    tremoloPicking (1/2→8th, 1/4→16th, 1/8→32nd), grace (OnBeat/
+    BeforeBeat), legato origin propagated to notes as hammer, start
+    in ticks, ``<TransposedPitchStemOrientation>``, ``<Hairpin>``
+    crescendo/decrescendo, ``<Slashed>``, ``<DeadSlapped>``,
+    ``<Golpe>`` finger/thumb tap, ``<Wah>`` Open/Closed pedal state,
+    ``<Timer>`` backing-track sync offset.
+  * Note — string (reversed from GPIF's low-to-high), fret, MIDI pitch
     for percussion, velocity inherited from beat, type (normal/tie/
     dead from Muted + Tied properties), palmMute, letRing, vibrato
-    (Slight or Wide), staccato/accent/heavy/ghost from Accent flags +
-    AntiAccent, bend curve (Bended + origin value/offset + middle
-    value + up to two offsets + destination), slides (all six flag
-    bits: Shift/Legato/OutDown/OutUp/InFromBelow/InFromAbove),
-    harmonic (Natural/Pinch/Semi/Tap/Artificial with pitch+octave
-    reconstructed from HarmonicFret), trill fret, tremoloPicking
-    (via beat propagation), grace (via beat propagation),
-    leftHandFinger/rightHandFinger (P/I/M/A/C mapped).
+    (Slight or Wide), staccato/accent/heavy/ghost/**tenuto** from
+    Accent flags + AntiAccent (incl. bit 0x10 = Tenuto), bend curve
+    (Bended + origin value/offset + middle value + up to two offsets
+    + destination), slides (all six flag bits:
+    Shift/Legato/OutDown/OutUp/InFromBelow/InFromAbove), harmonic
+    (Natural/Pinch/Semi/Tap/Artificial with pitch+octave reconstructed
+    from HarmonicFret), trill fret, tremoloPicking (via beat
+    propagation), grace (via beat propagation), leftHandFinger /
+    rightHandFinger (P/I/M/A/C mapped), ``<LeftHandTapped>``,
+    ``<Tapped>`` right-hand tap → beat.slapEffect.tapping,
+    ConcertPitch / TransposedPitch with NoteAccidentalMode precedence,
+    ``<InstrumentArticulation>`` percussion index, ``<Element>`` +
+    ``<Variation>`` GP6-style percussion mapping (17×3 table,
+    overrides InstrumentArticulation when both set),
+    ``<Ornament>`` (Turn/InvertedTurn/UpperMordent/LowerMordent),
+    ``ShowStringNumber`` display toggle.
 
-Deliberately skipped (no PyGuitarPro model representation)
----------------------------------------------------------
-  * Fermatas per beat (GP7 can place them mid-bar; GP3/4/5 only had
-    per-measure and PyGuitarPro's MeasureHeader has no fermata field).
-  * Hairpin crescendo/decrescendo.
-  * Barre fret/shape at beat level.
-  * Per-beat lyrics (`<Lyrics>` inside <Beat>).
-  * Beat XProperties (beamingMode, invertBeamDirection, brushDuration).
-  * Bar XProperties (displayScale).
-  * MasterBar XProperties beyond beaming rules (displayScale).
-  * Systems layouts (ScoreSystemsLayout, track.systemsLayout).
-  * BackingTrack asset (external audio file).
-  * FreeTime flag.
-  * SyncPoint automations.
-  * Ornaments (Turn / Inverted Turn / Upper/Lower Mordent) — GP7-only
-    feature with no GP3/4/5 equivalent or PyGuitarPro field.
-  * Per-note percussion articulation ID — GP7-only.
-  * Grand Staff tracks (multiple staves per track) — PyGuitarPro's
-    Track flattens to a single staff.
-  * NotationPatch.
-  * SustainPedalMarkers.
+Deliberately skipped (upstream gaps; see tracking issue #9)
+-----------------------------------------------------------
+  * Note ``<Octave>`` / ``<Tone>`` — GP6-era pitch encoding (0 corpus
+    occurrences in GP7/GP8).
+  * Beat ``<Rasgueado>`` enum variants (18 values) — currently only
+    captured as boolean ``hasRasgueado``.
+  * Beat ``<BarreFret>`` / ``<BarreShape>`` — barre info per beat.
+  * Per-beat ``<Lyrics>`` (``<Lyrics>`` inside ``<Beat>``).
+  * Beat / Bar / MasterBar ``<XProperties>`` (beamingMode, invert beam
+    direction, brush duration, display scale).
+  * MasterBar ``<FreeTime>`` cadenza marker.
+  * ``<BackingTrack>`` external audio asset and ``<SyncPoint>``
+    automations.
+  * ``<SustainPedal>`` markers per bar.
+  * HarmonicType ``feedback`` (5 of 7 AT types handled).
+  * Grand-staff multi-stave tracks — ``Track.instrumentRef`` preserves
+    the ``-gs`` marker for round-trip but PyGuitarPro's Track flattens
+    strings into a single list.
   * Partial capo (per-string capo).
-  * Channel strip EQ/compressor parameters (indices 0-10) — only the
-    volume/balance entries at indices 11/12 map to PyGuitarPro.
-  * BinaryStylesheet entries: track.rse.instrument.effect,
-    effectCategory, soundBank, unknown. These live in the proprietary
-    binary sidecar Guitar Pro ships alongside score.gpif; AlphaTab also
-    does not decode them beyond basic passthrough.
+  * Channel strip EQ/compressor parameters (indices 0–10) — only the
+    volume/balance entries at indices 11/12 map onto PyGuitarPro.
+  * BinaryStylesheet entries beyond MIDI program/bank; AlphaTab also
+    skips them.
 
 Attribution
 -----------
@@ -1084,7 +1121,7 @@ class GP7File:
         if mb.find("DoubleBar") is not None:
             header.hasDoubleBar = True
 
-        # Fermatas — GP7+ can mark one or more fermatas inside a bar, each
+        # Fermatas — GPIF can mark one or more fermatas inside a bar, each
         # positioned via an "Offset" fraction and classified as Short /
         # Medium / Long. Keyed by tick offset from the bar's start.
         fermatas_el = mb.find("Fermatas")
@@ -1435,12 +1472,12 @@ class GP7File:
                     if prop.find("Enable") is not None:
                         note.effect.hammer = True
                 elif name == "LeftHandTapped":
-                    # GP7+ fretting-hand strike (circled T in the score).
+                    # GPIF fretting-hand strike (circled T in the score).
                     # Presence of the property alone is enough; alphaTab's
                     # reference reader does the same check.
                     note.effect.leftHandTapped = True
                 elif name == "Tapped":
-                    # GP7+ stores right-hand tap at the note level; alphaTab
+                    # GPIF stores right-hand tap at the note level; alphaTab
                     # hoists it onto the containing beat. Use the closest
                     # pre-existing PyGuitarPro concept: SlapEffect.tapping.
                     # Preserve any stronger beat-level slap/pop already set.
@@ -1543,7 +1580,7 @@ class GP7File:
                 if fp is not None:
                     note.effect.rightHandFinger = fp
             elif tag == "InstrumentArticulation":
-                # Percussion articulation index (GP7+). For pitched tracks
+                # Percussion articulation index (GPIF). For pitched tracks
                 # this is typically 0 and ignored; on percussion tracks it
                 # identifies which drum / cymbal is struck.
                 try:
@@ -1551,7 +1588,7 @@ class GP7File:
                 except ValueError:
                     pass
             elif tag == "Ornament":
-                # GP7+ ornament glyph — Turn / InvertedTurn / UpperMordent /
+                # GPIF ornament glyph — Turn / InvertedTurn / UpperMordent /
                 # LowerMordent. Unknown values leave the default (none).
                 ornament_map = {
                     "InvertedTurn": gp.NoteOrnament.invertedTurn,
@@ -1644,7 +1681,7 @@ class GP7File:
             elif txt == "Thumb":
                 eff.golpe = gp.GolpeType.thumb
 
-        # <Wah>Open|Closed</Wah> — GP7 wah pedal state annotation.
+        # <Wah>Open|Closed</Wah> — GPIF wah pedal state annotation.
         # Distinct from the GP5 WahEffect (numeric pedal position) — this
         # is a simple Open / Closed marker on the beat itself.
         wah = raw.find("Wah")
