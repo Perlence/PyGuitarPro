@@ -384,6 +384,36 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_ornaments_fixture_extracts_all_ornament_types(self):
+        """Regression test for `<Ornament>` sibling element in `_build_note`.
+
+        GP7 stores a note ornament (turn / inverted turn / mordent
+        variants) as a sibling of `<Note>`. Previously ignored;
+        `note.ornament` stayed at `NoteOrnament.none`.
+
+        The `ornaments.gp` fixture contains one instance of each of the
+        four ornament types.
+        """
+        path = FIXTURES_DIR / "ornaments.gp"
+        if not path.exists():
+            pytest.skip("ornaments.gp not present")
+        song = gp.parse(path)
+        ornaments = {
+            n.ornament
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            for n in b.notes
+            if n.ornament != gp.NoteOrnament.none
+        }
+        assert ornaments == {
+            gp.NoteOrnament.invertedTurn,
+            gp.NoteOrnament.turn,
+            gp.NoteOrnament.upperMordent,
+            gp.NoteOrnament.lowerMordent,
+        }, f"expected all 4 ornaments; got {ornaments}"
+
     def test_fermata_fixture_extracts_fermatas(self):
         """Regression test for `<Fermatas>` / `<Fermata>` handling.
 

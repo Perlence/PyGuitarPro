@@ -20,7 +20,7 @@ __all__ = [
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
     'GraceEffectTransition', 'Velocities', 'GraceEffect', 'TrillEffect',
     'TremoloPickingEffect', 'SlideType', 'Fingering', 'NoteEffect', 'NoteType',
-    'NoteAccidentalMode',
+    'NoteAccidentalMode', 'NoteOrnament',
     'Note', 'Chord', 'ChordType', 'Barre', 'ChordAlteration', 'ChordExtension',
     'PitchClass', 'MixTableItem', 'WahEffect', 'MixTableChange',
     'BendType', 'BendPoint', 'BendEffect', 'RSEMasterEffect', 'RSEEqualizer',
@@ -1155,6 +1155,19 @@ class NoteType(LenientEnum):
     dead = 3
 
 
+class NoteOrnament(Enum):
+    """Ornament symbol attached to a note (GP7+).
+
+    Mirrors alphaTab's ``NoteOrnament`` enum.
+    """
+
+    none = 0
+    invertedTurn = 1
+    turn = 2
+    upperMordent = 3
+    lowerMordent = 4
+
+
 class NoteAccidentalMode(Enum):
     """How the accidental sign of a note is displayed.
 
@@ -1197,6 +1210,8 @@ class Note:
     #: On percussion tracks, references an entry of the track's articulation
     #: list or a GP7 built-in articulation number.
     percussionArticulation: int = -1
+    #: GP7+ ornament glyph (turn / inverted turn / mordent variants).
+    ornament: NoteOrnament = NoteOrnament.none
 
     @property
     def realValue(self):

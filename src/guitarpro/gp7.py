@@ -1395,6 +1395,18 @@ class GP7File:
                     note.percussionArticulation = int((child.text or "0").strip())
                 except ValueError:
                     pass
+            elif tag == "Ornament":
+                # GP7+ ornament glyph — Turn / InvertedTurn / UpperMordent /
+                # LowerMordent. Unknown values leave the default (none).
+                ornament_map = {
+                    "InvertedTurn": gp.NoteOrnament.invertedTurn,
+                    "Turn":         gp.NoteOrnament.turn,
+                    "UpperMordent": gp.NoteOrnament.upperMordent,
+                    "LowerMordent": gp.NoteOrnament.lowerMordent,
+                }
+                txt = (child.text or "").strip()
+                if txt in ornament_map:
+                    note.ornament = ornament_map[txt]
 
         # ── Assemble bend curve ──
         if bended:
