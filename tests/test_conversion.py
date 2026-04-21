@@ -126,6 +126,37 @@ def testChord(tmpdir, caplog, filename):
     assert song == song2
 
 
+@pytest.mark.parametrize('filename', ['Effects.gp3', 'Effects.gp4', 'Effects.gp5'])
+def testNoteAccentuationRoundtrip(tmpdir, filename):
+    """Regression test for GP3/GP4 note accent flag extraction.
+
+    `GP3File.readNote` historically did not extract flag bits 0x02 (heavy
+    accent) and 0x40 (normal accent), while `writeNote` *does* write them.
+    GP4 inherits the broken read path; only GP5 read them correctly.
+
+    This caused a reader/writer asymmetry: accent flags were silently
+    dropped on every parse, even though PGP could write them.
+    """
+    filepath = LOCATION / filename
+    song = gp.parse(filepath)
+    note = song.tracks[0].measures[0].voices[0].beats[0].notes[0]
+
+    note.effect.accentuatedNote = True
+    note.effect.heavyAccentuatedNote = True
+
+    destpath = str(tmpdir.join(filename))
+    gp.write(song, destpath)
+    song2 = gp.parse(destpath)
+    note2 = song2.tracks[0].measures[0].voices[0].beats[0].notes[0]
+
+    assert note2.effect.accentuatedNote is True, (
+        f'{filename}: accentuatedNote not preserved on round-trip'
+    )
+    assert note2.effect.heavyAccentuatedNote is True, (
+        f'{filename}: heavyAccentuatedNote not preserved on round-trip'
+    )
+
+
 @pytest.mark.parametrize('version', ['gp3', 'gp4', 'gp5'])
 def testReadErrorAnnotation(version):
     def writeToBytesIO(song):
