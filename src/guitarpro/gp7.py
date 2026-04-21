@@ -1209,6 +1209,8 @@ class GP7File:
         # Harmonic accumulators.
         harmonic_type = None
         harmonic_fret = 0.0
+        # Accidental-mode precedence: TransposedPitch wins over ConcertPitch.
+        has_transposed_pitch = False
 
         props = raw.find("Properties")
         if props is not None:
@@ -1276,6 +1278,17 @@ class GP7File:
                     v = _float(prop.find("Float"))
                     if v:  # keep default 60 if unset
                         bend_destination["offset"] = int(v / _BEND_OFFSET_SCALE)
+                elif name == "ConcertPitch":
+                    # Only apply if TransposedPitch hasn't already set it —
+                    # TransposedPitch takes precedence per alphaTab's
+                    # GpifParser._parseNoteProperties logic.
+                    if not has_transposed_pitch:
+                        self._apply_concert_pitch(prop, note)
+                elif name == "TransposedPitch":
+                    # TransposedPitch overrides any ConcertPitch that came before.
+                    note.accidentalMode = gp.NoteAccidentalMode.default
+                    self._apply_concert_pitch(prop, note)
+                    has_transposed_pitch = True
 
         # ── Sibling elements of <Note>: top-level effect flags ──
         finger_map = {
@@ -1539,6 +1552,30 @@ class GP7File:
                     bar.points.append(gp.BendPoint(position=whammy_middle_offset2, value=whammy_middle_value))
             bar.points.append(gp.BendPoint(position=dest["offset"], value=dest["value"]))
             eff.tremoloBar = bar
+
+    @staticmethod
+    def _apply_concert_pitch(prop: ET.Element, note: gp.Note) -> None:
+        """Read a ``<Pitch>`` sub-element's ``<Accidental>`` text and set
+        ``note.accidentalMode``. Mirrors alphaTab's
+        ``GpifParser._parseConcertPitch``; only the accidental sign matters
+        (the pitch letter/octave are redundant with string+fret+tuning for
+        fretted instruments)."""
+        pitch = prop.find("Pitch")
+        if pitch is None:
+            return
+        accidental = pitch.find("Accidental")
+        if accidental is None:
+            return
+        text = accidental.text or ""
+        mapping = {
+            "":   gp.NoteAccidentalMode.forceNatural,
+            "x":  gp.NoteAccidentalMode.forceDoubleSharp,
+            "#":  gp.NoteAccidentalMode.forceSharp,
+            "b":  gp.NoteAccidentalMode.forceFlat,
+            "bb": gp.NoteAccidentalMode.forceDoubleFlat,
+        }
+        if text in mapping:
+            note.accidentalMode = mapping[text]
 
     @staticmethod
     def _apply_slide_flags(note: gp.Note, flags: int) -> None:

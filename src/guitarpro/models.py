@@ -19,6 +19,7 @@ __all__ = [
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
     'GraceEffectTransition', 'Velocities', 'GraceEffect', 'TrillEffect',
     'TremoloPickingEffect', 'SlideType', 'Fingering', 'NoteEffect', 'NoteType',
+    'NoteAccidentalMode',
     'Note', 'Chord', 'ChordType', 'Barre', 'ChordAlteration', 'ChordExtension',
     'PitchClass', 'MixTableItem', 'WahEffect', 'MixTableChange',
     'BendType', 'BendPoint', 'BendEffect', 'RSEMasterEffect', 'RSEEqualizer',
@@ -1109,6 +1110,30 @@ class NoteType(LenientEnum):
     dead = 3
 
 
+class NoteAccidentalMode(Enum):
+    """How the accidental sign of a note is displayed.
+
+    Mirrors alphaTab's ``NoteAccidentalMode``. GP7+ stores the display
+    choice separately from the pitch so that e.g. E♭ and D♯ can be
+    distinguished in notation even though they sound the same.
+    """
+
+    #: Accidentals are calculated automatically from key signature.
+    default = 0
+    #: Force no accidental sign.
+    forceNone = 1
+    #: Force a natural sign (♮).
+    forceNatural = 2
+    #: Force a sharp sign (♯).
+    forceSharp = 3
+    #: Force a double-sharp sign (𝄪).
+    forceDoubleSharp = 4
+    #: Force a flat sign (♭).
+    forceFlat = 5
+    #: Force a double-flat sign (𝄫).
+    forceDoubleFlat = 6
+
+
 @hashableAttrs
 class Note:
     """Describes a single note."""
@@ -1121,6 +1146,8 @@ class Note:
     durationPercent: float = 1.0
     swapAccidentals: bool = False
     type: NoteType = NoteType.rest
+    #: GP7+: explicit choice how the accidental is rendered (e.g. E♭ vs D♯).
+    accidentalMode: NoteAccidentalMode = NoteAccidentalMode.default
 
     @property
     def realValue(self):

@@ -384,6 +384,33 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_chords_fixture_extracts_accidental_mode(self):
+        """Regression test for `_apply_concert_pitch`: GP7 stores an
+        explicit ``<Accidental>`` choice in each note's ``ConcertPitch`` /
+        ``TransposedPitch`` that decides how the note is rendered — e.g.
+        E♭ vs D♯, both sounding the same but written differently.
+
+        The `chords.gp` fixture contains at least one explicitly flattened
+        and one explicitly sharpened note. Before this fix every note's
+        `accidentalMode` was left at its default regardless of file content.
+        """
+        path = FIXTURES_DIR / "chords.gp"
+        if not path.exists():
+            pytest.skip("chords.gp not present")
+        song = gp.parse(path)
+        modes = {
+            n.accidentalMode
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            for n in b.notes
+        }
+        # At minimum these three must appear in the fixture.
+        assert gp.NoteAccidentalMode.forceNatural in modes
+        assert gp.NoteAccidentalMode.forceFlat in modes
+        assert gp.NoteAccidentalMode.forceSharp in modes
+
     def test_left_hand_tap_fixture_extracts_left_hand_tapped(self):
         """Regression test for `_build_note` ignoring the `LeftHandTapped`
         note property. This GP7-only articulation (circled "T" in the
