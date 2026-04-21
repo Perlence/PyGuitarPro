@@ -384,6 +384,39 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_accent_tenuto_bit_parsed_independently(self):
+        """Regression test for `<Accent>` bit `0x10` (Tenuto).
+
+        The handler used to silently skip bit ``0x10``. AlphaTab maps it
+        to ``AccentuationType.Tenuto``; PGP now has a dedicated
+        ``NoteEffect.tenuto: bool`` that is set independently of the
+        other accent bits.
+
+        The public GP7 test corpus does not exercise Tenuto, so this
+        test locks the parser's behaviour on existing accent-bearing
+        fixtures: the new field must default to ``False`` everywhere,
+        and existing accent bits (``0x01`` staccato, ``0x04`` heavy,
+        ``0x08`` normal) must keep their semantics.
+        """
+        path = FIXTURES_DIR / "accentuations.gp"
+        if not path.exists():
+            pytest.skip("accentuations.gp not present")
+        song = gp.parse(path)
+        notes = [
+            n
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            for n in b.notes
+        ]
+        # The fixture has normal + heavy accents; they must still be set.
+        assert any(n.effect.accentuatedNote for n in notes)
+        assert any(n.effect.heavyAccentuatedNote for n in notes)
+        # Tenuto is absent from the fixture; every note must have the
+        # new field defaulted to False (and not AttributeError).
+        assert all(n.effect.tenuto is False for n in notes)
+
     def test_tremolo_vibrato_fixture_distinguishes_slight_and_wide(self):
         """Regression test for the `<Vibrato>` note sibling element.
 

@@ -190,7 +190,7 @@ _CLEF_MAP = {
 _ACCENT_STACCATO      = 0x01
 _ACCENT_HEAVY         = 0x04
 _ACCENT_NORMAL        = 0x08
-# 0x10 = tenuto (not represented in PyGuitarPro)
+_ACCENT_TENUTO        = 0x10
 
 # Slide flag bits (<Property name="Slide">/<Flags>)
 _SLIDE_SHIFT           = 0x01
@@ -1371,8 +1371,8 @@ class GP7File:
                     note.effect.heavyAccentuatedNote = True
                 if flags & _ACCENT_NORMAL:
                     note.effect.accentuatedNote = True
-                # bit 0x10 = tenuto — PyGuitarPro's closest match is
-                # letRing; leaving unset to avoid over-translation.
+                if flags & _ACCENT_TENUTO:
+                    note.effect.tenuto = True
             elif tag == "Trill":
                 try:
                     trill_fret = int((child.text or "0").strip())

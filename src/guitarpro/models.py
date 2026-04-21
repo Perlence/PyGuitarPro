@@ -1115,6 +1115,10 @@ class NoteEffect:
     rightHandFinger: Fingering = Fingering.open
     slides: list[SlideType] = attr.Factory(list)
     staccato: bool = False
+    #: GP7+ tenuto articulation — hold the note its full written value.
+    #: Independent from :attr:`letRing`; corresponds to alphaTab's
+    #: ``AccentuationType.Tenuto``.
+    tenuto: bool = False
     tremoloPicking: Optional[TremoloPickingEffect] = None
     trill: Optional[TrillEffect] = None
     vibrato: bool = False
