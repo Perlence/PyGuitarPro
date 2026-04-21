@@ -192,6 +192,33 @@ def _split_tokens(text: str) -> list[str]:
 
 # ── Enum mappings (GPIF → PyGuitarPro) ────────────────────────────────
 
+# GPIF <Rasgueado><Rasgueado>text</Rasgueado></Rasgueado> tokens →
+# alphaTab's Rasgueado enum (18 fingering patterns, names mirrored on
+# PGP's RasgueadoType). Tokens are lowercase with a 1-based variant
+# number suffix: ``mii_1`` = triplet m-i-i, ``mii_2`` = anapaest m-i-i,
+# etc. Ported verbatim from alphaTab's GpifParser switch.
+_RASGUEADO_MAP = {
+    "ii_1":    "ii",
+    "mi_1":    "mi",
+    "mii_1":   "miiTriplet",
+    "mii_2":   "miiAnapaest",
+    "pmp_1":   "pmpTriplet",
+    "pmp_2":   "pmpAnapaest",
+    "pei_1":   "peiTriplet",
+    "pei_2":   "peiAnapaest",
+    "pai_1":   "paiTriplet",
+    "pai_2":   "paiAnapaest",
+    "ami_1":   "amiTriplet",
+    "ami_2":   "amiAnapaest",
+    "ppp_1":   "ppp",
+    "amii_1":  "amii",
+    "amip_1":  "amip",
+    "eami_1":  "eami",
+    "eamii_1": "eamii",
+    "peami_1": "peami",
+}
+
+
 _DURATION_MAP = {
     "Whole":   1,
     "Half":    2,
@@ -1859,6 +1886,15 @@ class GP7File:
                 if prop.find("Enable") is not None:
                     eff.slapEffect = gp.SlapEffect.popping
             elif name == "Rasgueado":
+                # Inside <Property name="Rasgueado"> the variant token
+                # lives in an inner <Rasgueado> child (same name). When
+                # present and recognised, set the enum; always flip the
+                # legacy cross-version bool so callers that only consult
+                # ``hasRasgueado`` still see the mark.
+                token = _text(prop.find("Rasgueado")).lower()
+                variant = _RASGUEADO_MAP.get(token)
+                if variant is not None:
+                    eff.rasgueado = gp.RasgueadoType[variant]
                 eff.hasRasgueado = True
             elif name == "VibratoWTremBar":
                 strength = _text(prop.find("Strength"))

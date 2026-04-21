@@ -17,6 +17,7 @@ __all__ = [
     'SimileMark',
     'Measure', 'VoiceDirection', 'Voice', 'BeatStrokeDirection', 'BeatStroke',
     'SlapEffect', 'FadeType', 'CrescendoType', 'GolpeType', 'WahPedal',
+    'RasgueadoType',
     'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
@@ -943,12 +944,53 @@ class WahPedal(Enum):
     closed = 2
 
 
+class RasgueadoType(Enum):
+    """Fingering pattern for a flamenco rasgueado strum.
+
+    GPIF encodes the specific right-hand fingering pattern as an 18-value
+    enum. GP3/4/5 only encode "has rasgueado" as a boolean
+    (:attr:`BeatEffect.hasRasgueado`), so this enum is populated only by
+    the GPIF reader. Names mirror alphaTab's ``Rasgueado`` enum:
+    single-finger strokes (``ii``, ``mi``), triplet and anapaest
+    variants of multi-finger combinations (``MiiTriplet``,
+    ``MiiAnapaest`` = m-i-i), and longer patterns (``Ppp``, ``Amii``,
+    ``Eamii``, ``Peami``).
+    """
+
+    none = 0
+    ii = 1
+    mi = 2
+    miiTriplet = 3
+    miiAnapaest = 4
+    pmpTriplet = 5
+    pmpAnapaest = 6
+    peiTriplet = 7
+    peiAnapaest = 8
+    paiTriplet = 9
+    paiAnapaest = 10
+    amiTriplet = 11
+    amiAnapaest = 12
+    ppp = 13
+    amii = 14
+    amip = 15
+    eami = 16
+    eamii = 17
+    peami = 18
+
+
 @hashableAttrs
 class BeatEffect:
     """This class contains all beat effects."""
 
     stroke: BeatStroke = attr.Factory(BeatStroke)
+    #: GP3/4/5 encode rasgueado as a bare boolean. GPIF refines this into
+    #: an 18-variant enum (:attr:`rasgueado`). ``hasRasgueado`` stays the
+    #: canonical cross-version flag — it is kept ``True`` whenever
+    #: ``rasgueado`` is anything other than :attr:`RasgueadoType.none`.
     hasRasgueado: bool = False
+    #: GPIF rasgueado fingering pattern. Stays :attr:`RasgueadoType.none`
+    #: for GP3/4/5 files (which can still set :attr:`hasRasgueado`).
+    rasgueado: RasgueadoType = RasgueadoType.none
     pickStroke: BeatStrokeDirection = BeatStrokeDirection.none
     chord: Optional['Chord'] = None
     fadeIn: bool = False

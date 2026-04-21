@@ -844,6 +844,48 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_rasgueado_fixture_extracts_fingering_pattern_enum(self):
+        """Regression test for the full `<Rasgueado>` enum. GP3/4/5
+        encode rasgueado as a bare boolean (`beat.effect.hasRasgueado`),
+        but GPIF refines it into an 18-value enum naming the specific
+        right-hand fingering pattern (e.g. ii, mi, miiTriplet,
+        miiAnapaest, peami). PyGuitarPro previously dropped the variant,
+        reducing every rasgueado to the cross-version boolean.
+
+        `rasgueado.gp` is synthesised from `effects.gp` with three
+        beats carrying different variant tokens (``ii_1``, ``mii_2``,
+        ``peami_1``). All three must round-trip into the new
+        `RasgueadoType` enum; the legacy `hasRasgueado` bool must still
+        be `True` alongside so cross-version code doesn't break.
+        """
+        path = FIXTURES_DIR / "rasgueado.gp"
+        if not path.exists():
+            pytest.skip("rasgueado.gp not present")
+        song = gp.parse(path)
+        variants = {
+            b.effect.rasgueado
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            if b.effect.rasgueado != gp.RasgueadoType.none
+        }
+        assert variants == {
+            gp.RasgueadoType.ii,
+            gp.RasgueadoType.miiAnapaest,
+            gp.RasgueadoType.peami,
+        }, variants
+        # hasRasgueado must stay in sync for cross-version callers.
+        also_legacy = [
+            b
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            if b.effect.rasgueado != gp.RasgueadoType.none
+        ]
+        assert all(b.effect.hasRasgueado for b in also_legacy)
+
     def test_note_octave_tone_fixture_extracts_gp6_pitch_encoding(self):
         """Regression test for three note-level AT-parity items PGP was
         silently dropping:
