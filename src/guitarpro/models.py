@@ -1118,6 +1118,11 @@ class Beat:
     #: GPIF backing-track synchronisation timestamp in milliseconds.
     #: ``None`` means no timer is displayed on this beat.
     timer: Optional[int] = None
+    #: GPIF beat-level lyrics — one string per lyric line attached to
+    #: this beat (GPIF supports multiple verses stacked on the same
+    #: beat). Empty for GP3/4/5 (those formats attach lyrics to the
+    #: track, not to individual beats; see :class:`LyricLine`).
+    lyrics: list[str] = attr.Factory(list)
 
     @property
     def startInMeasure(self):

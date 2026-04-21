@@ -844,6 +844,32 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_beat_lyrics_fixture_extracts_per_beat_syllables(self):
+        """Regression test for per-beat lyrics. GPIF attaches lyric
+        syllables to individual beats via a `<Lyrics><Line>…</Line></Lyrics>`
+        wrapper (multiple `<Line>` children stack verses on the same
+        beat). GP3/4/5 attach lyrics to the track as `LyricLine`
+        objects, not to individual beats; PyGuitarPro's reader
+        previously dropped the beat-level form entirely.
+
+        `beat-lyrics.gp` carries the phrase "This is a test file for
+        lyrics" spread across six beats of the first track, with an
+        empty second verse (5 lines per beat, only line 0 populated).
+        """
+        path = FIXTURES_DIR / "beat-lyrics.gp"
+        if not path.exists():
+            pytest.skip("beat-lyrics.gp not present")
+        song = gp.parse(path)
+        first_lines = [
+            beat.lyrics[0]
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for beat in v.beats
+            if beat.lyrics
+        ]
+        assert first_lines == ["This", "is", "a", "test file", "for", "lyrics"], first_lines
+
     def test_barre_fixture_extracts_beat_level_barre(self):
         """Regression test for GPIF's beat-level barre encoding.
 

@@ -1746,6 +1746,15 @@ class GP7File:
             except ValueError:
                 pass
 
+        # <Lyrics><Line>syllable</Line>…</Lyrics> — beat-level lyrics.
+        # Multiple <Line> children stack verse lines on the same beat.
+        # Empty <Line/> elements remain present (as empty strings) so the
+        # verse column stays aligned with the other beats. Mirrors
+        # alphaTab's GpifParser._parseBeatLyrics.
+        lyr = raw.find("Lyrics")
+        if lyr is not None:
+            beat.lyrics = [(line.text or "") for line in lyr.findall("Line")]
+
         # <TransposedPitchStemOrientation>Upward|Downward</...> and the
         # <UserTransposedPitchStemOrientation> override together set the
         # preferred stem / beam direction on the beat. alphaTab stores the
