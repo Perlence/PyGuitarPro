@@ -499,6 +499,35 @@ class GP7File:
             if iset_type == "drumKit":
                 track.isPercussionTrack = True
 
+        # GP6-era GPIF carried an <Instrument ref="..."> with the soundbank
+        # id (e.g. s-gtr6, e-bass4, drmkt, or a *-gs grand-staff variant).
+        # Modern GP7/GP8 exports omit it (instrument type lives in
+        # <InstrumentSet> instead), but preserving it is needed for
+        # round-trip fidelity with older sources.
+        inst_el = node.find("Instrument")
+        if inst_el is not None:
+            track.instrumentRef = inst_el.get("ref", "")
+
+        # <NotationPatch><LineCount> — non-standard staff line count
+        # (1 for percussion cue line, 4 for bass-clef, 5 default). Keeps
+        # the renderer on a matching staff after round-trip.
+        notation_patch = node.find("NotationPatch")
+        if notation_patch is not None:
+            line_count = notation_patch.find("LineCount")
+            if line_count is not None and (line_count.text or "").strip():
+                track.staffLineCount = _int(line_count, default=5)
+
+        # <SystemsDefautLayout> (GPIF typo, preserved verbatim) and
+        # <SystemsLayout> — bars-per-system layout hints. Unknown values
+        # fall back to GP's documented defaults.
+        default_layout = node.find("SystemsDefautLayout")
+        if default_layout is not None and (default_layout.text or "").strip():
+            track.defaultSystemsLayout = _int(default_layout, default=4)
+
+        layout_el = node.find("SystemsLayout")
+        if layout_el is not None and layout_el.text:
+            track.systemsLayout = _split_ints(layout_el.text)
+
         for midi_tag in ("GeneralMidi", "MidiConnection", "MIDISettings"):
             midi = node.find(midi_tag)
             if midi is None:
@@ -567,10 +596,11 @@ class GP7File:
                     except ValueError:
                         pass
 
-        # Track-level flags that live as direct children.
-        # <Muted/PlaybackState> are tri-state element+text; <PlayingStyle>,
-        # <SystemsDefautLayout> etc. aren't represented in PyGuitarPro so
-        # they're ignored.
+        # PlaybackState is a tri-state element+text child. Remaining
+        # track children (<PlayingStyle>, <UseOneChannelPerString>,
+        # <IconId>, <PalmMute>, <ForcedSound>, <AudioEngineState>,
+        # <AutoBrush>, <AutoAccentuation>) are captured in subsequent
+        # parity PRs.
         state = _text(node.find("PlaybackState"))
         if state == "Solo":
             track.isSolo = True

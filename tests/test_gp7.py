@@ -814,6 +814,26 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_effects_fixture_extracts_systems_layout(self):
+        """Regression test for `<SystemsLayout>` and `<SystemsDefautLayout>`
+        (typo preserved in GPIF). Every GP7/GP8 track carries these two
+        layout hints; PyGuitarPro previously dropped both, so a saved file
+        would lose the user's chosen bars-per-system arrangement.
+
+        `effects.gp` was authored with the non-default layout
+        ``3 4 6 4 4 3 4 4`` and a default-bars-per-system of ``3``.
+        Asserting on the non-default value guarantees the reader is
+        actually parsing the element rather than returning the field
+        default (``4``).
+        """
+        path = FIXTURES_DIR / "effects.gp"
+        if not path.exists():
+            pytest.skip("effects.gp not present")
+        song = gp.parse(path)
+        t = song.tracks[0]
+        assert t.systemsLayout == [3, 4, 6, 4, 4, 3, 4, 4], t.systemsLayout
+        assert t.defaultSystemsLayout == 3, t.defaultSystemsLayout
+
     def test_bank_change_fixture_combines_msb_and_lsb(self):
         """Regression test for the MIDI Bank Select encoding. GPIF stores
         the 14-bit bank as two children inside ``<MIDI>``: ``<MSB>``

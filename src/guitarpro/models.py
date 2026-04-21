@@ -704,6 +704,25 @@ class Track:
     #: mirrored onto ``channel.instrument``/``channel.bank`` for
     #: back-compat with code that only consults :class:`MidiChannel`.
     sounds: list['GpifSound'] = attr.Factory(list)
+    #: GPIF ``<Instrument ref="...">`` — a soundbank identifier such as
+    #: ``s-gtr6`` (6-string steel guitar), ``e-gtr6`` (6-string electric),
+    #: ``e-bass4``, ``drmkt`` (drum kit), or a grand-staff variant
+    #: ending in ``-gs`` / ``GrandStaff``. Empty string when the file
+    #: doesn't carry this element (typical for GP7/GP8 exports, which
+    #: put the instrument type in ``<InstrumentSet>`` instead; live for
+    #: GP6-era GPIF files).
+    instrumentRef: str = ''
+    #: GPIF ``<SystemsLayout>`` — bars-per-system for this track, in
+    #: score order. Empty list when the element isn't present.
+    systemsLayout: list[int] = attr.Factory(list)
+    #: GPIF ``<SystemsDefautLayout>`` (the typo is in the GPIF format
+    #: itself) — default bars-per-system used when ``systemsLayout``
+    #: runs out. Guitar Pro's own default is 4.
+    defaultSystemsLayout: int = 4
+    #: GPIF ``<NotationPatch><LineCount>`` — number of lines in the
+    #: standard-notation staff (5 for standard, often 1 for percussion
+    #: single-line cue). Default follows alphaTab's fallback of 5.
+    staffLineCount: int = 5
 
 
 @hashableAttrs
