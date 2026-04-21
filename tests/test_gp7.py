@@ -844,6 +844,39 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_note_octave_tone_fixture_extracts_gp6_pitch_encoding(self):
+        """Regression test for three note-level AT-parity items PGP was
+        silently dropping:
+
+          - `<Property name="Octave"><Number>`  → `note.octave`
+            (GP6-era absolute octave number, replaced by ConcertPitch
+            in current GP7/GP8 exports)
+          - `<Property name="Tone"><Step>`  → `note.tone`
+            (GP6-era diatonic step, 0=C … 6=B)
+          - `<HarmonicType><HType>Feedback</HType>`  → `FeedbackHarmonic`
+            (missing from the 5-type harmonic mapping)
+
+        No `.gp` in alphaTab's GP7/GP8 corpus uses any of these, but all
+        three are live parse paths in alphaTab (for GP6 files and
+        backwards-compat exports). `note-octave-tone.gp` is synthesised
+        from `effects.gp` with the three elements injected.
+        """
+        path = FIXTURES_DIR / "note-octave-tone.gp"
+        if not path.exists():
+            pytest.skip("note-octave-tone.gp not present")
+        song = gp.parse(path)
+        notes = [
+            n
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            for n in b.notes
+        ]
+        assert notes[0].octave == 4
+        assert notes[0].tone == 2  # diatonic step E within octave 4
+        assert isinstance(notes[1].effect.harmonic, gp.FeedbackHarmonic)
+
     def test_tuning_sounding_fixture_extracts_tuning_name_and_part_sounding(self):
         """Regression test for three track-level AT-parity fields the reader
         was silently discarding:

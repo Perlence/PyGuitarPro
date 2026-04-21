@@ -20,6 +20,7 @@ __all__ = [
     'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
+    'FeedbackHarmonic',
     'GraceEffectTransition', 'Velocities', 'GraceEffect', 'TrillEffect',
     'TremoloPickingEffect', 'SlideType', 'VibratoType', 'Fingering', 'NoteEffect', 'NoteType',
     'NoteAccidentalMode', 'NoteOrnament',
@@ -1110,6 +1111,18 @@ class SemiHarmonic(HarmonicEffect):
         self.type = 5
 
 
+@hashableAttrs
+class FeedbackHarmonic(HarmonicEffect):
+    """GPIF "feedback" harmonic — amp-feedback style harmonic sustain.
+
+    Mirrors alphaTab's ``HarmonicType.Feedback``. Binary GP3/4/5 have
+    no equivalent; only set by the GPIF (GP6/7/8) reader.
+    """
+
+    def __attrs_post_init__(self):
+        self.type = 6
+
+
 class GraceEffectTransition(Enum):
     """All transition types for grace notes."""
 
@@ -1365,6 +1378,17 @@ class Note:
     #: Explicit request to display this note's string number beside it.
     #: GPIF marks this per note; older binary formats have no equivalent.
     showStringNumber: bool = False
+    #: GPIF ``<Octave>`` — GP6-era pitch encoding, absolute octave number.
+    #: Current GP7/GP8 exports encode pitch via :attr:`accidentalMode` +
+    #: :attr:`value` instead, but GP6 files (and backwards-compatible
+    #: exports from newer GP) may still carry this.
+    octave: int = 0
+    #: GPIF ``<Tone>`` — GP6-era pitch encoding, diatonic step within
+    #: the octave (0=C, 1=D, 2=E, …, 6=B). ``-1`` means unset — the
+    #: GP6→GP7 export pipeline may drop Tone while keeping Octave, so
+    #: alphaTab treats encountering ``<Octave>`` alone as resetting
+    #: tone to 0; PyGuitarPro's reader mirrors that behaviour.
+    tone: int = -1
 
     @property
     def realValue(self):

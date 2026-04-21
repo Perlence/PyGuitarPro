@@ -1519,6 +1519,17 @@ class GP7File:
                     element = _int(prop.find("Element"))
                 elif name == "Variation":
                     variation = _int(prop.find("Variation"))
+                elif name == "Octave":
+                    # GP6-era absolute octave number. AlphaTab: when we
+                    # see <Octave> but Tone is still at its -1 sentinel
+                    # (GP7-exports-of-GP6 may drop <Tone>), reset tone
+                    # to 0 so the pair is always internally consistent.
+                    note.octave = _int(prop.find("Number"))
+                    if note.tone == -1:
+                        note.tone = 0
+                elif name == "Tone":
+                    # GP6-era diatonic step (0=C … 6=B) within the octave.
+                    note.tone = _int(prop.find("Step"))
 
         # ── Sibling elements of <Note>: top-level effect flags ──
         finger_map = {
@@ -1632,6 +1643,8 @@ class GP7File:
             note.effect.harmonic = gp.SemiHarmonic()
         elif harmonic_type == "tap":
             note.effect.harmonic = gp.TappedHarmonic(fret=int(harmonic_fret))
+        elif harmonic_type == "feedback":
+            note.effect.harmonic = gp.FeedbackHarmonic()
         elif harmonic_type == "artificial":
             # ArtificialHarmonic needs pitch + octave; harmonic_fret is a
             # float semitone offset that encodes both.
