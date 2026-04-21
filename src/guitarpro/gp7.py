@@ -356,6 +356,15 @@ class GP7File:
         song.album = _text(score.find("Album"))
         song.words = _text(score.find("Words"))
         song.music = _text(score.find("Music"))
+        # GPIF additionally stores a shared "words & music" credit via
+        # <WordsAndMusic>. When the dedicated Words / Music fields are
+        # empty we fall back to it — same precedence as alphaTab.
+        words_and_music = _text(score.find("WordsAndMusic"))
+        if words_and_music:
+            if not song.words:
+                song.words = words_and_music
+            if not song.music:
+                song.music = words_and_music
         song.copyright = _text(score.find("Copyright"))
         song.tab = _text(score.find("Tabber"))
         song.instructions = _text(score.find("Instructions"))

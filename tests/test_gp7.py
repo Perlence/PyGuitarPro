@@ -384,6 +384,25 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_lyrics_null_fixture_falls_back_to_words_and_music(self):
+        """Regression test for `<WordsAndMusic>` score-level fallback.
+
+        GPIF stores a shared "Words & Music" credit in
+        `<WordsAndMusic>`. AlphaTab fills `score.words` and
+        `score.music` from it when the dedicated fields are empty.
+        The reader previously ignored the element, losing the credit.
+
+        `lyrics-null.gp` has `<Words/>` and `<Music/>` empty with
+        `<WordsAndMusic>Septo</WordsAndMusic>`. After the fix both
+        fields reflect "Septo".
+        """
+        path = FIXTURES_DIR / "lyrics-null.gp"
+        if not path.exists():
+            pytest.skip("lyrics-null.gp not present")
+        song = gp.parse(path)
+        assert song.words == "Septo"
+        assert song.music == "Septo"
+
     def test_effects_fixture_extracts_wah_pedal(self):
         """Regression test for beat-level `<Wah>` Open/Closed element.
 
