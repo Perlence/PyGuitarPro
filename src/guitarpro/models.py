@@ -1010,6 +1010,10 @@ class SlideType(Enum):
     legatoSlideTo = 2
     outDownwards = 3
     outUpwards = 4
+    #: Downward pick slide — introduced in Guitar Pro 7.
+    pickSlideDown = 5
+    #: Upward pick slide — introduced in Guitar Pro 7.
+    pickSlideUp = 6
 
 
 class Fingering(LenientEnum):

@@ -199,6 +199,8 @@ _SLIDE_OUT_DOWN        = 0x04
 _SLIDE_OUT_UP          = 0x08
 _SLIDE_IN_FROM_BELOW   = 0x10
 _SLIDE_IN_FROM_ABOVE   = 0x20
+_SLIDE_PICK_DOWN       = 0x40
+_SLIDE_PICK_UP         = 0x80
 # 0x40/0x80 = pick slides (no direct PyGuitarPro mapping)
 
 # GPIF Target → PyGuitarPro direction-sign names (Coda/Segno/Fine "destinations")
@@ -1549,6 +1551,10 @@ class GP7File:
             slides.append(gp.SlideType.intoFromBelow)
         if flags & _SLIDE_IN_FROM_ABOVE:
             slides.append(gp.SlideType.intoFromAbove)
+        if flags & _SLIDE_PICK_DOWN:
+            slides.append(gp.SlideType.pickSlideDown)
+        if flags & _SLIDE_PICK_UP:
+            slides.append(gp.SlideType.pickSlideUp)
         if slides:
             note.effect.slides = slides
 

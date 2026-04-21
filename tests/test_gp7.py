@@ -383,3 +383,29 @@ class TestKnownTrackFixtures:
         t = pitched[0]
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
+
+    def test_pick_slide_fixture_extracts_pick_slides(self):
+        """Regression test for `_apply_slide_flags` and the `SlideType`
+        enum: bits 0x40 (PickSlideDown) and 0x80 (PickSlideUp) introduced
+        in GP7 used to be silently discarded. `pick-slide.gp` contains 13
+        notes with these flags."""
+        path = FIXTURES_DIR / "pick-slide.gp"
+        if not path.exists():
+            pytest.skip("pick-slide.gp not present")
+        song = gp.parse(path)
+        pick_types = {gp.SlideType.pickSlideDown, gp.SlideType.pickSlideUp}
+        pick_notes = [
+            n
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            for n in b.notes
+            if n.effect.slides and any(s in pick_types for s in n.effect.slides)
+        ]
+        assert len(pick_notes) == 13, (
+            f"expected 13 pick-slide notes, got {len(pick_notes)}"
+        )
+        # Both variants must appear — the fixture exercises down and up slides.
+        seen = {s for n in pick_notes for s in n.effect.slides if s in pick_types}
+        assert seen == pick_types
