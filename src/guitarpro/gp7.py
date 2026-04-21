@@ -1265,6 +1265,9 @@ class GP7File:
                 name = prop.get("name")
                 if name == "Fret":
                     fret = _int(prop.find("Fret"))
+                elif name == "ShowStringNumber":
+                    if prop.find("Enable") is not None:
+                        note.showStringNumber = True
                 elif name == "String":
                     gpif_idx = _int(prop.find("String"))
                     n_strings = len(beat.voice.measure.track.strings)

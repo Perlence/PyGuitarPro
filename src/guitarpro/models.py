@@ -1254,6 +1254,9 @@ class Note:
     percussionArticulation: int = -1
     #: GP7+ ornament glyph (turn / inverted turn / mordent variants).
     ornament: NoteOrnament = NoteOrnament.none
+    #: Explicit request to display this note's string number beside it.
+    #: GPIF marks this per note; older binary formats have no equivalent.
+    showStringNumber: bool = False
 
     @property
     def realValue(self):

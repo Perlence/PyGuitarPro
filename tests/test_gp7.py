@@ -384,6 +384,28 @@ class TestKnownTrackFixtures:
         pitches = [s.value for s in t.strings]
         assert pitches[0] > pitches[-1]  # string 1 is highest pitch in our convention
 
+    def test_show_string_number_field_exists_and_defaults_false(self):
+        """Regression test for the `<Property name="ShowStringNumber">`
+        note property. The handler is a small additive change; the
+        alphaTab test corpus does not contain fixtures exercising it,
+        so this test locks in the default behaviour: every note exposes
+        the field and it is ``False`` unless the property is set.
+        """
+        path = FIXTURES_DIR / "effects.gp"
+        if not path.exists():
+            pytest.skip("effects.gp not present")
+        song = gp.parse(path)
+        notes = [
+            n
+            for t in song.tracks
+            for m in t.measures
+            for v in m.voices
+            for b in v.beats
+            for n in b.notes
+        ]
+        assert notes, "effects.gp must contain at least one note"
+        assert all(n.showStringNumber is False for n in notes)
+
     def test_simile_mark_fixture_extracts_all_types(self):
         """Regression test for bar `<SimileMark>` element. GPIF marks
         repeat-previous-bar shorthand with one of three values (`Simple`,
