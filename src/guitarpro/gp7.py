@@ -104,24 +104,19 @@ individual fields.
     ``<Ornament>`` (Turn/InvertedTurn/UpperMordent/LowerMordent),
     ``ShowStringNumber`` display toggle.
 
-Deliberately skipped (upstream gaps; see tracking issue #9)
------------------------------------------------------------
-  * Note ``<Octave>`` / ``<Tone>`` — GP6-era pitch encoding (0 corpus
-    occurrences in GP7/GP8).
-  * Beat ``<Rasgueado>`` enum variants (18 values) — currently only
-    captured as boolean ``hasRasgueado``.
-  * Beat ``<BarreFret>`` / ``<BarreShape>`` — barre info per beat.
-  * Per-beat ``<Lyrics>`` (``<Lyrics>`` inside ``<Beat>``).
-  * Beat / Bar / MasterBar ``<XProperties>`` (beamingMode, invert beam
-    direction, brush duration, display scale).
-  * MasterBar ``<FreeTime>`` cadenza marker.
-  * ``<BackingTrack>`` external audio asset and ``<SyncPoint>``
-    automations.
-  * ``<SustainPedal>`` markers per bar.
-  * HarmonicType ``feedback`` (5 of 7 AT types handled).
+Deliberately skipped (see ``tests/test_gp7_at_parity_gate.py`` for the
+authoritative list maintained alongside the coverage gate)
+-----------------------------------------------------------------------
+  * AlphaTab no-ops: ``<HopoDestination>`` (auto-calculated from
+    HopoOrigin), ``<WhammyBarExtend>`` (AT comment: "not clear what
+    this is used for").
   * Grand-staff multi-stave tracks — ``Track.instrumentRef`` preserves
     the ``-gs`` marker for round-trip but PyGuitarPro's Track flattens
     strings into a single list.
+  * Chord-diagram barre detection from same-finger-across-strings —
+    AT infers barre frets from the Fingering positions. PyGuitarPro
+    stores the raw fingering list; barre inference is left to the
+    renderer / writer.
   * Partial capo (per-string capo).
   * Channel strip EQ/compressor parameters (indices 0–10) — only the
     volume/balance entries at indices 11/12 map onto PyGuitarPro.
