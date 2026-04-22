@@ -884,6 +884,12 @@ class Measure:
     #: (independent of :attr:`MeasureHeader.displayScale`, which is the
     #: master-bar / score-wide scale). ``1.0`` means default.
     displayScale: float = 1.0
+    #: GPIF ``<Bar><Ottavia>`` — clef-level octave annotation (e.g.
+    #: ``"8vb"`` for a treble-8 clef). Distinct from :attr:`Beat.octave`
+    #: which affects a single beat's rendered pitch. Stored as the raw
+    #: GPIF token (``"8va"`` / ``"15ma"`` / ``"8vb"`` / ``"15mb"``);
+    #: empty string means "no clef octave". Rendering-only metadata.
+    clefOttava: str = ''
     #: GPIF sustain-pedal markers within this bar, each with a
     #: ``ratioPosition`` in ``[0, 1]``. Empty for GP3/4/5 (no sub-bar
     #: pedal concept) and for GPIF bars without pedal automations.

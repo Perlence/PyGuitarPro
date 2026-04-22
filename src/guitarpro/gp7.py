@@ -1297,11 +1297,22 @@ class GP7File:
             chord.name = item.get("name", "")
             diag = item.find("Diagram")
             if diag is not None:
+                # GPIF ``baseFret`` is 0-indexed (0 = "diagram starts
+                # at fret 1"). PyGuitarPro's :attr:`Chord.firstFret`
+                # follows GP3/4/5 binary convention: 1-indexed. Add 1
+                # to match alphaTab's ``chord.firstFret = baseFret+1``
+                # and keep consistency with the binary readers.
                 try:
-                    chord.firstFret = int(diag.get("baseFret") or "0")
+                    base_fret = int(diag.get("baseFret") or "0")
                 except ValueError:
-                    chord.firstFret = 0
+                    base_fret = 0
+                chord.firstFret = base_fret + 1
                 # Strings default to -1 (not played); Fret entries override.
+                # GPIF stores ``fret`` as an offset within the diagram
+                # window; PyGuitarPro (like alphaTab and GP3/4/5 binary)
+                # stores *absolute* fret positions. Add baseFret so the
+                # round-trip ``firstFret + relative_position`` matches
+                # the absolute value other readers produce.
                 chord.strings = [-1] * n_strings
                 for fe in diag.findall("Fret"):
                     try:
@@ -1311,7 +1322,11 @@ class GP7File:
                         f_val = int(fe.get("fret") or "-1")
                         pg_idx = n_strings - 1 - s_idx
                         if 0 <= pg_idx < n_strings:
-                            chord.strings[pg_idx] = f_val
+                            # Preserve -1 sentinel for "not played";
+                            # shift everything else by baseFret.
+                            chord.strings[pg_idx] = (
+                                f_val if f_val < 0 else base_fret + f_val
+                            )
                     except ValueError:
                         pass
                 # Fingerings
@@ -1732,6 +1747,13 @@ class GP7File:
             simile_txt = _text(bar.find("SimileMark"))
             if simile_txt in simile_map:
                 measure.simileMark = simile_map[simile_txt]
+
+            # <Ottavia> at bar level adjusts the clef-octave annotation
+            # ("8va"/"15ma"/"8vb"/"15mb"). Distinct from the beat-level
+            # <Ottavia> which shifts one beat's rendered pitch.
+            ottavia_txt = _text(bar.find("Ottavia"))
+            if ottavia_txt in ("8va", "15ma", "8vb", "15mb"):
+                measure.clefOttava = ottavia_txt
 
             # Bar <XProperties>: currently only 1124139520 (displayScale)
             # is documented in alphaTab; anything else is tolerated and
