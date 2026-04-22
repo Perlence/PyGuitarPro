@@ -1,6 +1,19 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+**Changes:**
+
+- Added Guitar Pro 6 (``.gpx`` / BCFZ + BCFS) read support via a port of
+  AlphaTab's ``GpxFileSystem`` + ``BitReader``. Containers are unpacked
+  and the embedded ``score.gpif`` is parsed via the existing GP7/GP8
+  GPIF code path — no duplicate parser. The port is byte-for-byte
+  verified against AlphaTab on 3,768 real-world GP6 files (entry
+  ``fileName`` + ``fileSize`` + SHA-256 match on every entry).
+
+
 Version 0.10.2
 -------------
 

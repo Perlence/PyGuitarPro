@@ -445,10 +445,18 @@ class GP7File:
 
     def _load_score_gpif(self) -> ET.Element:
         data = self._fp.read()
-        try:
-            archive = zipfile.ZipFile(io.BytesIO(data))
-        except zipfile.BadZipFile as e:
-            raise gp.GPException(f"not a GP7/GP8 file (bad zip): {e}") from e
+        # Magic-byte dispatch: GP7/GP8 use a standard ZIP container; GP6 uses
+        # AT's proprietary GPX (BCFZ compressed or BCFS uncompressed). Both
+        # embed the same score.gpif entry, so once unpacked the rest of the
+        # parser is shared.
+        if len(data) >= 4 and data[:3] == b"BCF" and data[3:4] in (b"Z", b"S"):
+            from .gpx import GpxArchive
+            archive = GpxArchive(data)
+        else:
+            try:
+                archive = zipfile.ZipFile(io.BytesIO(data))
+            except zipfile.BadZipFile as e:
+                raise gp.GPException(f"not a GP6/7/8 file (bad zip): {e}") from e
 
         # Keep the archive handle alive for later reads (BackingTrack
         # embedded audio, PartConfiguration, etc.). ``io.BytesIO`` is

@@ -51,8 +51,15 @@ _EXT_VERSIONS = {
 }
 
 # ZIP magic bytes mark a GP7/GP8 file (GPIF format). GP3/4/5 start with a
-# byte-size-string ("FICHIER GUITAR PRO...").
+# byte-size-string ("FICHIER GUITAR PRO..."). GP6 uses AT's proprietary GPX
+# container prefixed by "BCFZ" (compressed) or "BCFS" (uncompressed); both
+# eventually yield a GPIF XML handled by GP7File via the GpxArchive adapter.
 _ZIP_MAGIC = b"PK\x03\x04"
+_GPX_PREFIX = b"BCF"  # fourth byte is 'Z' or 'S'
+
+
+def _is_gpx_magic(magic: bytes) -> bool:
+    return len(magic) >= 4 and magic[:3] == _GPX_PREFIX and magic[3:4] in (b"Z", b"S")
 
 
 def parse(stream, encoding='cp1252') -> Song:
@@ -102,13 +109,17 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
         filename = getattr(fp, 'name', '<file>')
 
     if mode == 'rb':
-        # GP7/GP8 files are ZIP archives; peek at the first 4 bytes to route.
-        magic = fp.read(len(_ZIP_MAGIC))
+        # Route by magic bytes:
+        #   - "PK\x03\x04"  → GP7/GP8 (ZIP + score.gpif)
+        #   - "BCFZ"/"BCFS" → GP6 (GPX container; shared GPIF parser via adapter)
+        #   - otherwise     → legacy GP3/4/5 binary format
+        magic = fp.read(max(len(_ZIP_MAGIC), len(_GPX_PREFIX) + 1))
         fp.seek(0)
-        if magic == _ZIP_MAGIC:
-            # Version tuple is refined by GP7File.readSong() from the
-            # <GPVersion> element in score.gpif.
+        if magic[: len(_ZIP_MAGIC)] == _ZIP_MAGIC:
             gpfile = GP7File(fp, encoding or 'utf-8', version='GPIF', versionTuple=(7, 0, 0))
+            return gpfile, shouldClose
+        if _is_gpx_magic(magic):
+            gpfile = GP7File(fp, encoding or 'utf-8', version='GPIF', versionTuple=(6, 0, 0))
             return gpfile, shouldClose
         gpfilebase = GPFileBase(fp, encoding)
         versionString = gpfilebase.readVersion()
