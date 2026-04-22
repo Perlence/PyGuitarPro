@@ -20,6 +20,7 @@ __all__ = [
     'RasgueadoType', 'BarreShape', 'BeatBeamingMode',
     'SustainPedalMarker', 'SustainPedalMarkerType',
     'BackingTrack', 'SyncPointData',
+    'MusicFontSymbol', 'TechniqueSymbolPlacement', 'PercussionArticulation',
     'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
@@ -809,6 +810,12 @@ class Track:
     #: written in (e.g. ``"Bb"``, ``"Eb"``). Used by the renderer to
     #: transpose key signatures. Empty when not specified.
     nominalKey: str = ''
+    #: GPIF percussion articulation table — one entry per drum-kit
+    #: slot defined in ``<InstrumentSet><Elements>``. Populated only
+    #: for percussion tracks; the later ``<NotationPatch>`` may update
+    #: entries' :attr:`PercussionArticulation.staffLine`. Empty for
+    #: pitched tracks.
+    percussionArticulations: 'list[PercussionArticulation]' = attr.Factory(list)
 
 
 @hashableAttrs
@@ -1019,6 +1026,103 @@ class WahPedal(Enum):
     none = 0
     open = 1
     closed = 2
+
+
+class MusicFontSymbol(Enum):
+    """Music-font glyph identifier used in GPIF notation patches.
+
+    Mirrors alphaTab's ``MusicFontSymbol`` subset actually referenced
+    inside ``<Noteheads>`` / ``<TechniqueSymbol>`` payloads. Extra
+    values alphaTab defines but GPIF never emits aren't listed — when
+    alphaTab's decoder encounters a token it doesn't know, it falls
+    back to :attr:`none`, and so do we.
+
+    The SMuFL / alphaTab enum names are preserved (CamelCase suffix
+    after ``Notehead`` / ``Artic`` / ``Pict`` / ``Strings`` / ``Guitar``)
+    so a reader can match on the exact strings GPIF stores.
+    """
+
+    none = 0
+    # <Noteheads> glyphs
+    noteheadDoubleWholeSquare = 1
+    noteheadDoubleWhole = 2
+    noteheadWhole = 3
+    noteheadHalf = 4
+    noteheadBlack = 5
+    noteheadNull = 6
+    noteheadXOrnate = 7
+    noteheadTriangleUpWhole = 8
+    noteheadTriangleUpHalf = 9
+    noteheadTriangleUpBlack = 10
+    noteheadDiamondBlackWide = 11
+    noteheadDiamondWhite = 12
+    noteheadDiamondWhiteWide = 13
+    noteheadCircleX = 14
+    noteheadCircleSlash = 15
+    noteheadXBlack = 16
+    noteheadXHalf = 17
+    noteheadXWhole = 18
+    noteheadHeavyX = 19
+    noteheadHeavyXHat = 20
+    noteheadParenthesis = 21
+    # <TechniqueSymbol> glyphs
+    pictEdgeOfCymbal = 100
+    articStaccatoAbove = 101
+    stringsUpBow = 102
+    stringsDownBow = 103
+    guitarGolpe = 104
+
+
+class TechniqueSymbolPlacement(Enum):
+    """Where the technique-symbol glyph is drawn relative to the note.
+
+    Mirrors alphaTab's ``TechniqueSymbolPlacement`` enum.
+    """
+
+    outside = 0
+    inside = 1
+    above = 2
+    below = 3
+
+
+@hashableAttrs
+class PercussionArticulation:
+    """A single drum-kit articulation entry from GPIF.
+
+    GPIF enumerates each way a drum or percussion instrument is
+    struck (e.g. Snare "hit" / "rim" / "side stick") under
+    ``<InstrumentSet><Elements><Element><Articulations><Articulation>``,
+    and a later ``<NotationPatch>`` may override ``staffLine``.
+
+    Mirrors alphaTab's ``InstrumentArticulation``. PyGuitarPro never
+    synthesises audio, so these fields are preserved for round-trip
+    and for consumers that do actually render drum staves (e.g. the
+    future GP7/GP8 writer).
+    """
+
+    #: ``<Element><Name>`` — the kit slot (e.g. "Kick", "Snare", "Hihat").
+    elementType: str = ''
+    #: First integer of ``<InputMidiNumbers>`` — the incoming MIDI note
+    #: for this articulation (used to dispatch on import).
+    id: int = 0
+    #: ``<OutputMidiNumber>`` — the MIDI note alphaSynth plays back.
+    outputMidiNumber: int = -1
+    #: ``<TechniqueSymbol>`` glyph identifier.
+    techniqueSymbol: MusicFontSymbol = MusicFontSymbol.none
+    #: ``<TechniquePlacement>`` — where the technique-symbol renders.
+    techniqueSymbolPlacement: TechniqueSymbolPlacement = TechniqueSymbolPlacement.outside
+    #: First entry of ``<Noteheads>`` — notehead for quarter and shorter.
+    noteHeadDefault: MusicFontSymbol = MusicFontSymbol.none
+    #: Second entry — notehead for half notes. Falls back to
+    #: ``noteHeadDefault`` when the source token is "noteheadNone".
+    noteHeadHalf: MusicFontSymbol = MusicFontSymbol.none
+    #: Third entry — notehead for whole notes. Falls back to
+    #: ``noteHeadDefault`` when the source token is "noteheadNone".
+    noteHeadWhole: MusicFontSymbol = MusicFontSymbol.none
+    #: ``<StaffLine>`` — vertical staff-line position (0 = middle line,
+    #: negative = below, positive = above). NotationPatch entries
+    #: override this value on a previously-seen articulation.
+    staffLine: int = 0
 
 
 @hashableAttrs

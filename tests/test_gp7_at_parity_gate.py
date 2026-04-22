@@ -65,31 +65,20 @@ KNOWN_SKIPPED: dict[str, str] = {
     "EmbeddedFilePath":
         "Raw audio bytes — out of scope (see Asset).",
 
-    # NotationPatch render metadata subtree. AT captures these to draw
-    # custom percussion articulations (icons, notehead shapes, MIDI
-    # input/output mapping). They have no effect on notation/playback
-    # semantics; deferred until a writer PR needs round-trip fidelity
-    # for custom articulation kits.
-    "Articulation":
-        "NotationPatch render metadata (deferred).",
-    "Articulations":
-        "NotationPatch render metadata (deferred).",
-    "Elements":
-        "NotationPatch render metadata (deferred).",
-    "InputMidiNumbers":
-        "NotationPatch MIDI mapping (deferred with rest of subtree).",
-    "OutputMidiNumber":
-        "NotationPatch MIDI mapping (deferred with rest of subtree).",
-    "Noteheads":
-        "NotationPatch glyph definitions (deferred).",
-    "StaffLine":
-        "NotationPatch glyph placement (deferred).",
-    "TechniquePlacement":
-        "NotationPatch glyph placement (deferred).",
-    "TechniqueSymbol":
-        "NotationPatch glyph definitions (deferred).",
+    # NotationPatch / InstrumentSet Articulation subtree — see the
+    # PercussionArticulation handler in gp7.py which reads Articulation
+    # / Articulations / Elements / InputMidiNumbers / OutputMidiNumber /
+    # Noteheads / StaffLine / TechniqueSymbol / TechniquePlacement.
+
+    # Out-of-scope: Rank is a per-string fingering metadata token on
+    # GPIF chord-diagram fingerings. AT maps a handful of finger-name
+    # enums onto it but the containing <Rank> wrapper is metadata-only;
+    # PGP's Fingering enum is populated from the preceding <Position>
+    # finger attribute, same as AT, so the <Rank> wrapper has no
+    # additional data to capture.
     "Rank":
-        "NotationPatch finger rank metadata (deferred).",
+        "GPIF fingering metadata wrapper; AT uses the inner finger "
+        "name tokens which PGP captures via <Position finger='…'>.",
 }
 
 

@@ -847,6 +847,47 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_canon_extracts_percussion_articulation_table(self):
+        """Regression test for `<InstrumentSet><Elements>` and
+        `<NotationPatch><Elements>` handling. AlphaTab's
+        `track.percussionArticulations` is a flat list of
+        `InstrumentArticulation` entries describing how each drum-kit
+        slot is notated (notehead glyph, staff-line position, technique
+        symbol) and sounds (input/output MIDI numbers).
+
+        `canon-audio-track.gp` has two percussion tracks (Drums,
+        Percussion) each with 95 articulations. The Snare slot's three
+        standard variants — hit (MIDI 38, black notehead), side stick
+        (MIDI 37, X notehead), rim shot (MIDI 91 → 38, diamond
+        notehead) — must round-trip with their specific notehead
+        glyphs.
+        """
+        path = FIXTURES_DIR / "canon-audio-track.gp"
+        if not path.exists():
+            pytest.skip("canon-audio-track.gp not present")
+        song = gp.parse(path)
+        drums = next(t for t in song.tracks if t.name == "Drums")
+        # Every kit slot is expanded to hit + rim + etc. variants — 95
+        # is the exact count on this fixture, so anything less means
+        # parsing lost entries.
+        assert len(drums.percussionArticulations) == 95, len(drums.percussionArticulations)
+
+        # Three canonical snare articulations by MIDI id.
+        snares = {
+            a.id: a for a in drums.percussionArticulations
+            if a.elementType == "Snare"
+        }
+        assert snares[38].noteHeadDefault == gp.MusicFontSymbol.noteheadBlack
+        assert snares[37].noteHeadDefault == gp.MusicFontSymbol.noteheadXBlack
+        assert snares[91].noteHeadDefault == gp.MusicFontSymbol.noteheadDiamondWhite
+        # Rim shot outputs MIDI 38 (same as plain hit — rim is purely a
+        # notational distinction for the default soundbank).
+        assert snares[91].outputMidiNumber == 38
+        # Default staffLine is 3 for snare (middle-upper line on 5-line
+        # staff); the NotationPatch doesn't relocate any of them.
+        for s in snares.values():
+            assert s.staffLine == 3
+
     def test_effects_fixture_extracts_score_systems_layout(self):
         """Regression test for score-wide `<ScoreSystemsLayout>` and
         `<ScoreSystemsDefaultLayout>`. Distinct from `Track.systemsLayout`

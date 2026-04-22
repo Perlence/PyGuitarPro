@@ -219,6 +219,30 @@ _RASGUEADO_MAP = {
 }
 
 
+def _music_font_symbol(token: str) -> "gp.MusicFontSymbol":
+    """Map a GPIF music-font token (``noteheadHalf``, ``guitarGolpe``,
+    …) onto PyGuitarPro's ``MusicFontSymbol`` enum.
+
+    PGP's enum member names deliberately match the GPIF tokens verbatim,
+    so membership lookup is a one-liner. Unknown tokens fall back to
+    ``MusicFontSymbol.none`` — alphaTab does the same (``None``
+    default on the parser's ``switch``).
+    """
+    try:
+        return gp.MusicFontSymbol[token]
+    except KeyError:
+        return gp.MusicFontSymbol.none
+
+
+def _technique_symbol_placement(token: str) -> "gp.TechniqueSymbolPlacement":
+    """GPIF ``<TechniquePlacement>`` token → enum. Unknown tokens fall
+    back to ``outside`` (alphaTab's default)."""
+    try:
+        return gp.TechniqueSymbolPlacement[token]
+    except KeyError:
+        return gp.TechniqueSymbolPlacement.outside
+
+
 _DURATION_MAP = {
     "DoubleWhole": -2,   # Breve; represented with AT's negative sentinel
     "Whole":   1,
@@ -377,6 +401,11 @@ class GP7File:
         song.tempoName = ""
 
         self._backing_track_padding_ms: float = 0.0
+        # Percussion articulation lookup — populated from
+        # <InstrumentSet><Elements>, consulted by <NotationPatch><Elements>
+        # to patch a previously-registered entry's staffLine. Key is
+        # ``"<elementType>.<name>"`` matching alphaTab's convention.
+        self._articulation_by_name: dict[str, gp.PercussionArticulation] = {}
 
         self._read_version(root, song)
         self._read_score_info(root, song)
@@ -677,6 +706,19 @@ class GP7File:
             iset_type = _text(iset.find("Type"))
             if iset_type == "drumKit":
                 track.isPercussionTrack = True
+            # <InstrumentSet><Elements> carries the drum-kit articulation
+            # table (Kick / Snare / Hihat etc., each with hit / rim / etc.
+            # variants). Populate track.percussionArticulations.
+            iset_elements = iset.find("Elements")
+            if iset_elements is not None:
+                self._parse_articulation_elements(
+                    iset_elements, track, is_instrument_set=True
+                )
+            # <InstrumentSet><LineCount> carries the drum staff line
+            # count the same way NotationPatch does.
+            iset_lc = iset.find("LineCount")
+            if iset_lc is not None and (iset_lc.text or "").strip():
+                track.staffLineCount = _int(iset_lc, default=5)
 
         # GP6-era GPIF carried an <Instrument ref="..."> with the soundbank
         # id (e.g. s-gtr6, e-bass4, drmkt, or a *-gs grand-staff variant).
@@ -687,14 +729,20 @@ class GP7File:
         if inst_el is not None:
             track.instrumentRef = inst_el.get("ref", "")
 
-        # <NotationPatch><LineCount> — non-standard staff line count
-        # (1 for percussion cue line, 4 for bass-clef, 5 default). Keeps
-        # the renderer on a matching staff after round-trip.
+        # <NotationPatch> — non-standard staff line count (1 for
+        # percussion cue line, 4 for bass-clef, 5 default) plus
+        # per-articulation staffLine overrides that patch the drum-kit
+        # table populated earlier from <InstrumentSet><Elements>.
         notation_patch = node.find("NotationPatch")
         if notation_patch is not None:
             line_count = notation_patch.find("LineCount")
             if line_count is not None and (line_count.text or "").strip():
                 track.staffLineCount = _int(line_count, default=5)
+            np_elements = notation_patch.find("Elements")
+            if np_elements is not None:
+                self._parse_articulation_elements(
+                    np_elements, track, is_instrument_set=False
+                )
 
         # <SystemsDefautLayout> (GPIF typo, preserved verbatim) and
         # <SystemsLayout> — bars-per-system layout hints. Unknown values
@@ -943,6 +991,101 @@ class GP7File:
             text = _text(line.find("Text"))
             out.append((starting, text))
         return out
+
+    def _parse_articulation_elements(
+        self,
+        elements_node: ET.Element,
+        track: gp.Track,
+        is_instrument_set: bool,
+    ) -> None:
+        """Iterate ``<Element>`` children of an ``<Elements>`` container.
+
+        Two entry points:
+
+          * ``<InstrumentSet><Elements>`` (``is_instrument_set=True``)
+            populates :attr:`Track.percussionArticulations` fresh.
+          * ``<NotationPatch><Elements>`` (``is_instrument_set=False``)
+            finds a previously-added articulation by
+            ``elementType.name`` and copies its :attr:`staffLine` on
+            top. AlphaTab's same split, only the ``staffLine`` is
+            patch-applied in the NotationPatch path.
+        """
+        for element in elements_node.findall("Element"):
+            element_name = _text(element.find("Name"))
+            # AT quirks: <Articulations> appears as a direct child of
+            # <Element>, but the switch falls through "Name" into the
+            # Articulations branch, so a malformed file with the
+            # articulations nested under <Name> would still parse. We
+            # stick to the canonical structure — no robustness hack.
+            articulations = element.find("Articulations")
+            if articulations is None:
+                continue
+            for art_node in articulations.findall("Articulation"):
+                art = self._parse_articulation(art_node, element_name)
+                full_name = f"{element_name}.{_text(art_node.find('Name'))}"
+                if is_instrument_set:
+                    track.percussionArticulations.append(art)
+                    self._articulation_by_name[full_name] = art
+                else:
+                    # NotationPatch override — only staffLine survives.
+                    existing = self._articulation_by_name.get(full_name)
+                    if existing is not None:
+                        existing.staffLine = art.staffLine
+
+    @staticmethod
+    def _parse_articulation(
+        node: ET.Element, element_type: str
+    ) -> gp.PercussionArticulation:
+        """Parse a single ``<Articulation>`` block into a dataclass.
+
+        Mirrors alphaTab's ``GpifParser._parseArticulation`` one-for-one:
+        ``<InputMidiNumbers>`` is read as the first whitespace-separated
+        integer; the ``<Noteheads>`` list feeds default / half / whole
+        positions, with missing-trailing falling back to the default as
+        alphaTab does.
+        """
+        art = gp.PercussionArticulation(
+            elementType=element_type,
+            outputMidiNumber=-1,
+        )
+        for c in node:
+            tag = c.tag
+            txt = (c.text or "").strip()
+            if tag == "InputMidiNumbers":
+                first = txt.split()[0] if txt else ""
+                try:
+                    art.id = int(first)
+                except ValueError:
+                    art.id = 0
+            elif tag == "OutputMidiNumber":
+                try:
+                    art.outputMidiNumber = int(txt)
+                except ValueError:
+                    pass
+            elif tag == "TechniqueSymbol":
+                art.techniqueSymbol = _music_font_symbol(txt)
+            elif tag == "TechniquePlacement":
+                art.techniqueSymbolPlacement = _technique_symbol_placement(txt)
+            elif tag == "Noteheads":
+                tokens = txt.split() if txt else []
+                if len(tokens) >= 1:
+                    art.noteHeadDefault = _music_font_symbol(tokens[0])
+                if len(tokens) >= 2:
+                    art.noteHeadHalf = _music_font_symbol(tokens[1])
+                if len(tokens) >= 3:
+                    art.noteHeadWhole = _music_font_symbol(tokens[2])
+                # AT's "noteheadNone" fallback — when the half/whole
+                # tokens map to `none`, inherit the default.
+                if art.noteHeadHalf == gp.MusicFontSymbol.none:
+                    art.noteHeadHalf = art.noteHeadDefault
+                if art.noteHeadWhole == gp.MusicFontSymbol.none:
+                    art.noteHeadWhole = art.noteHeadDefault
+            elif tag == "StaffLine":
+                try:
+                    art.staffLine = int(txt)
+                except ValueError:
+                    pass
+        return art
 
     @staticmethod
     def _read_sound(node: ET.Element) -> gp.GpifSound:
