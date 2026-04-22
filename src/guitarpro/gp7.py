@@ -2083,11 +2083,16 @@ class GP7File:
 
         # <GraceNotes>OnBeat|BeforeBeat</GraceNotes> — whole beat is a
         # grace note group; PyGuitarPro attaches GraceEffect per-note.
+        # Mirrors alphaTab: only "OnBeat" and "BeforeBeat" are recognised.
         grace = raw.find("GraceNotes")
         if grace is not None:
             txt = (grace.text or "").strip()
-            beat._grace_on_beat = txt == "OnBeat"  # type: ignore[attr-defined]
-            beat._grace_active = True  # type: ignore[attr-defined]
+            if txt == "OnBeat":
+                beat._grace_on_beat = True  # type: ignore[attr-defined]
+                beat._grace_active = True  # type: ignore[attr-defined]
+            elif txt == "BeforeBeat":
+                beat._grace_on_beat = False  # type: ignore[attr-defined]
+                beat._grace_active = True  # type: ignore[attr-defined]
 
         # <Arpeggio>Up|Down</Arpeggio> → brush stroke
         arpeggio = raw.find("Arpeggio")
