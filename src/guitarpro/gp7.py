@@ -1486,6 +1486,12 @@ class GP7File:
         root_doc = None
         for mb in self._iter_master_bars(song):
             pass  # no-op; iteration finalises the list
+        # alphaTab's _buildModel clears hasDoubleBar on the last master
+        # bar (a score-end double bar is implicit in standard notation;
+        # a <DoubleBar/> on the last bar is redundant and AT normalises
+        # by unsetting). Mirror that so round-trip stays consistent.
+        if song.measureHeaders:
+            song.measureHeaders[-1].hasDoubleBar = False
 
     def _iter_master_bars(self, song: gp.Song):
         """Yield master bar nodes while populating `self._master_bars` and
