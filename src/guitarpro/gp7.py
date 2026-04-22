@@ -2288,30 +2288,47 @@ class GP7File:
                 beat._grace_on_beat = False  # type: ignore[attr-defined]
                 beat._grace_active = True  # type: ignore[attr-defined]
 
-        # <Arpeggio>Up|Down</Arpeggio> → brush stroke
+        # <Arpeggio>Up|Down</Arpeggio> → brush stroke.
+        # alphaTab uses `Up` vs everything-else (so empty / unknown
+        # tokens collapse to Down). Mirror that so a degenerate
+        # <Arpeggio/> without a direction still registers the stroke.
         arpeggio = raw.find("Arpeggio")
         if arpeggio is not None:
             direction = (arpeggio.text or "").strip()
-            if direction == "Up":
-                eff.stroke = gp.BeatStroke(
-                    direction=gp.BeatStrokeDirection.up, value=0,
-                )
-            elif direction == "Down":
-                eff.stroke = gp.BeatStroke(
-                    direction=gp.BeatStrokeDirection.down, value=0,
-                )
+            eff.stroke = gp.BeatStroke(
+                direction=(
+                    gp.BeatStrokeDirection.up
+                    if direction == "Up"
+                    else gp.BeatStrokeDirection.down
+                ),
+                value=0,
+            )
 
-        # <Whammy> element describes a whammy-bar curve on this beat.
+        # <Whammy originValue="" originOffset="" middleValue=""
+        #         middleOffset1="" middleOffset2="" destinationValue=""
+        #         destinationOffset=""/>
+        # Attribute-form whammy-bar curve (distinct from the Property-
+        # form <Properties><Property name="WhammyBar*"> below). Both
+        # encodings appear in real files; alphaTab reads them separately.
+        # Four curve points total: origin, middle×2 (same value, two
+        # positions), destination. Offsets scale down to PyGuitarPro's
+        # internal 0..BendEffect.maxPosition (12) range via
+        # _BEND_OFFSET_SCALE.
         whammy = raw.find("Whammy")
         if whammy is not None:
             origin_v = int(_float_attr(whammy, "originValue") / _BEND_VALUE_SCALE)
+            origin_o = int(_float_attr(whammy, "originOffset") / _BEND_OFFSET_SCALE)
             middle_v = int(_float_attr(whammy, "middleValue") / _BEND_VALUE_SCALE)
+            middle_o1 = int(_float_attr(whammy, "middleOffset1") / _BEND_OFFSET_SCALE)
+            middle_o2 = int(_float_attr(whammy, "middleOffset2") / _BEND_OFFSET_SCALE)
             dest_v = int(_float_attr(whammy, "destinationValue") / _BEND_VALUE_SCALE)
+            dest_o = int(_float_attr(whammy, "destinationOffset") / _BEND_OFFSET_SCALE)
             bar = gp.BendEffect(type=gp.BendType.bend, value=dest_v)
             bar.points = [
-                gp.BendPoint(position=0, value=origin_v),
-                gp.BendPoint(position=6, value=middle_v),
-                gp.BendPoint(position=12, value=dest_v),
+                gp.BendPoint(position=origin_o, value=origin_v),
+                gp.BendPoint(position=middle_o1, value=middle_v),
+                gp.BendPoint(position=middle_o2, value=middle_v),
+                gp.BendPoint(position=dest_o, value=dest_v),
             ]
             eff.tremoloBar = bar
 
