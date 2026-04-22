@@ -993,6 +993,40 @@ class TestKnownTrackFixtures:
         assert first_beat.duration.value == gp.Duration.doubleWhole == -2
         assert first_beat.duration.time == gp.Duration.quarterTime * 8
 
+    def test_canon_backing_track_raw_audio_loaded(self):
+        """Regression test for <Assets><Asset> raw-audio-bytes pipeline.
+
+        GPIF scores carry the backing-track audio payload as a ZIP
+        entry referenced by path from the score XML:
+
+            <BackingTrack><AssetId>0</AssetId>…
+            <Assets><Asset id="0"><EmbeddedFilePath>Content/Assets/…</EmbeddedFilePath></Asset></Assets>
+
+        AlphaTab resolves the path through a loadAsset() callback and
+        stores the bytes on score.backingTrack.rawAudioFile. PyGuitarPro
+        reads the ZIP entry directly — no decoder or external callback
+        needed because the archive is already open for the score.gpif
+        extraction.
+
+        `canon-audio-track.gp` bundles a ~937 KB OGG Vorbis track
+        ("Canon Rock (JerryC) - The Original"). Asserts the bytes
+        round-trip in full, with the correct OGG magic header.
+        """
+        path = FIXTURES_DIR / "canon-audio-track.gp"
+        if not path.exists():
+            pytest.skip("canon-audio-track.gp not present")
+        song = gp.parse(path)
+        bt = song.backingTrack
+        assert bt is not None
+        assert bt.embeddedFilePath.startswith("Content/Assets/")
+        assert bt.embeddedFilePath.endswith(".ogg")
+        assert bt.rawAudioFile is not None
+        # OGG Vorbis magic number.
+        assert bt.rawAudioFile[:4] == b"OggS"
+        # The fixture ships ~937 KB; test a size window rather than the
+        # exact byte count (so repackaging the fixture doesn't break it).
+        assert 900_000 < len(bt.rawAudioFile) < 1_000_000
+
     def test_canon_backing_track_and_sync_points_captured(self):
         """Regression test for the GPIF backing-track subsystem.
 

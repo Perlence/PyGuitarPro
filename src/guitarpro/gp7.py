@@ -454,6 +454,11 @@ class GP7File:
         except zipfile.BadZipFile as e:
             raise gp.GPException(f"not a GP7/GP8 file (bad zip): {e}") from e
 
+        # Keep the archive handle alive for later reads (BackingTrack
+        # embedded audio, PartConfiguration, etc.). ``io.BytesIO`` is
+        # in-memory so holding the reference is cheap.
+        self._zip = archive
+
         gpif_name = next(
             (n for n in archive.namelist() if n.endswith("score.gpif")),
             None,
@@ -548,12 +553,36 @@ class GP7File:
             frame_padding / self._BACKING_TRACK_SAMPLE_RATE
         ) * 1000.0
 
+        asset_id = _text(bt.find("AssetId"))
         song.backingTrack = gp.BackingTrack(
             name=_text(bt.find("Name")),
             shortName=_text(bt.find("ShortName")),
             paddingMs=self._backing_track_padding_ms,
-            assetId=_text(bt.find("AssetId")),
+            assetId=asset_id,
         )
+
+        # Match <Assets><Asset id="X"> to the BackingTrack's AssetId and
+        # pull the raw audio bytes out of the ZIP entry referenced by
+        # <EmbeddedFilePath>. Mirrors alphaTab's _parseAssets +
+        # _parseBackingTrackAsset, minus the external loadAsset()
+        # callback — we read the ZIP directly.
+        assets = root.find("Assets")
+        if assets is not None:
+            for asset in assets.findall("Asset"):
+                if asset.get("id") != asset_id:
+                    continue
+                path = _text(asset.find("EmbeddedFilePath"))
+                if not path:
+                    continue
+                song.backingTrack.embeddedFilePath = path
+                try:
+                    song.backingTrack.rawAudioFile = self._zip.read(path)
+                except KeyError:
+                    # AT drops the whole BackingTrack when the asset
+                    # is missing from the ZIP. We keep the metadata so
+                    # a writer can emit the reference back.
+                    song.backingTrack.rawAudioFile = None
+                break
 
     def _attach_sync_points(self, song: gp.Song) -> None:
         """Collect master-track ``SyncPoint`` automations into

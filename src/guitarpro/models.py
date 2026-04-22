@@ -1145,11 +1145,21 @@ class BackingTrack:
     #: Frame padding converted to milliseconds (GPIF stores it as an
     #: integer frame count at the alphaTab sample rate).
     paddingMs: float = 0.0
-    #: AssetId referenced inside the ZIP; the actual audio bytes live in
-    #: a separate Asset subtree which PyGuitarPro does not decode (it
-    #: would drag in non-trivial audio-decoder code). Preserved so a
-    #: future writer can pair the BackingTrack with its Asset entry.
+    #: AssetId referenced inside the ZIP; matches the id attribute on
+    #: the ``<Asset id="...">`` child inside ``<Assets>``.
     assetId: str = ''
+    #: GPIF ``<Asset><EmbeddedFilePath>`` — the raw-audio ZIP entry
+    #: path (typically ``Content/Assets/<uuid>.ogg``). Preserved so a
+    #: future writer can repair the ``<Asset>`` element and emit the
+    #: audio payload back into the archive.
+    embeddedFilePath: str = ''
+    #: The audio payload itself — the raw bytes of the file at
+    #: :attr:`embeddedFilePath`. ``None`` when the score has a
+    #: ``<BackingTrack>`` reference but the ZIP doesn't actually
+    #: contain the asset (edge case; alphaTab discards the whole
+    #: BackingTrack in that case — we keep the metadata so the writer
+    #: can at least regenerate the reference).
+    rawAudioFile: Optional[bytes] = attr.ib(default=None, hash=False, eq=False, repr=False)
 
 
 @hashableAttrs

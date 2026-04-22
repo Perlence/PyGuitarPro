@@ -53,18 +53,6 @@ KNOWN_SKIPPED: dict[str, str] = {
     "WhammyBarExtend":
         "AT skips with comment 'not clear what this is used for'.",
 
-    # BackingTrack raw audio pipeline — intentionally out of scope.
-    # PyGuitarPro preserves BackingTrack.assetId so a future writer can
-    # pair it with the asset; decoding audio bytes would drag in a full
-    # audio stack, which is beyond the scope of #9.
-    "Asset":
-        "Raw audio bytes — out of scope. BackingTrack.assetId preserves "
-        "the pairing for a future writer.",
-    "Assets":
-        "Raw audio bytes — out of scope (see Asset).",
-    "EmbeddedFilePath":
-        "Raw audio bytes — out of scope (see Asset).",
-
     # NotationPatch / InstrumentSet Articulation subtree — see the
     # PercussionArticulation handler in gp7.py which reads Articulation
     # / Articulations / Elements / InputMidiNumbers / OutputMidiNumber /
