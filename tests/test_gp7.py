@@ -150,10 +150,10 @@ class TestPhase3Measures:
                 for v in m.voices:
                     for b in v.beats:
                         assert b.duration is not None
-                        # -2 is the GPIF DoubleWhole (breve) sentinel;
-                        # everything else is a standard power-of-two
-                        # division of a whole note.
-                        assert b.duration.value in (-2, 1, 2, 4, 8, 16, 32, 64, 128, 256)
+                        # -4 is GPIF Long (QuadrupleWhole); -2 is
+                        # DoubleWhole (breve). Everything else is a
+                        # standard power-of-two division of a whole note.
+                        assert b.duration.value in (-4, -2, 1, 2, 4, 8, 16, 32, 64, 128, 256)
 
     def test_beat_status_valid(self, fixture):
         song = gp.parse(fixture)

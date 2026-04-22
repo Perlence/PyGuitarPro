@@ -452,6 +452,11 @@ class Duration:
 
     quarterTime = 960
 
+    #: Longa / quadruple-whole note — four whole notes long. GPIF
+    #: ``NoteValue=Long``. Sentinel-encoded negative value, same
+    #: scheme as :attr:`doubleWhole`.
+    quadrupleWhole = -4
+
     #: Breve / double-whole note — two whole notes long. GPIF-only
     #: (GP3/4/5 binary formats have no breve). Encoded with a sentinel
     #: negative value so the existing power-of-two ``value`` scheme
@@ -477,7 +482,10 @@ class Duration:
 
     @property
     def time(self):
-        if self.value == self.doubleWhole:
+        if self.value == self.quadrupleWhole:
+            # Longa = 4 whole notes = 16 quarter-notes.
+            result = self.quarterTime * 16
+        elif self.value == self.doubleWhole:
             # Breve = 2 whole notes = 8 quarter-notes.
             result = self.quarterTime * 8
         else:

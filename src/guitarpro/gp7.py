@@ -244,6 +244,7 @@ def _technique_symbol_placement(token: str) -> "gp.TechniqueSymbolPlacement":
 
 
 _DURATION_MAP = {
+    "Long":        -4,   # Longa / QuadrupleWhole (4 whole notes)
     "DoubleWhole": -2,   # Breve; represented with AT's negative sentinel
     "Whole":   1,
     "Half":    2,
@@ -641,6 +642,13 @@ class GP7File:
         master = root.find("MasterTrack")
         if master is None:
             return
+
+        # <MasterTrack><Anacrusis/> — first-bar anacrusis flag (NOT on
+        # individual MasterBars, contrary to an earlier misreading).
+        # alphaTab sets _hasAnacrusis here and then copies to the first
+        # MasterBar in _parseMasterBar. Mirror that.
+        self._has_anacrusis = master.find("Anacrusis") is not None
+
         automations = master.find("Automations")
         if automations is None:
             return
@@ -834,6 +842,15 @@ class GP7File:
         staves = node.find("Staves")
         if staves is not None:
             self._read_track_staves(staves, track)
+
+        # GPIF may also place <Properties> directly under <Track>
+        # (legacy path alphaTab covers in _parseTrackProperties).
+        # Modern GP7/GP8 exports put them inside <Staves><Staff>;
+        # this branch mirrors alphaTab's double-level dispatch so
+        # older files don't lose their tuning / capo / chord diagrams.
+        track_props = node.find("Properties")
+        if track_props is not None:
+            self._apply_track_properties(track_props, track)
 
         # <Transpose><Chromatic>N</Chromatic><Octave>M</Octave></Transpose>
         # Total offset in semitones = octave*12 + chromatic.
@@ -1151,37 +1168,47 @@ class GP7File:
     def _read_track_staves(self, staves_node: ET.Element, track: gp.Track) -> None:
         for staff in staves_node.findall("Staff"):
             props = staff.find("Properties")
-            if props is None:
-                continue
-            for prop in props.findall("Property"):
-                name = prop.get("name")
-                if name == "Tuning":
-                    pitches = prop.find("Pitches")
-                    if pitches is not None and pitches.text:
-                        # GPIF: low-to-high. PyGuitarPro: string 1 = highest.
-                        values = list(reversed(_split_ints(pitches.text)))
-                        if values:
-                            track.strings = [
-                                gp.GuitarString(number=i + 1, value=v)
-                                for i, v in enumerate(values)
-                            ]
-                    # <Label> carries the tuning's human name (e.g.
-                    # "Drop D", "DADGAD"). AlphaTab stores it on
-                    # staff.stringTuning.name; mirror onto the track.
-                    label = prop.find("Label")
-                    if label is not None and (label.text or "").strip():
-                        track.tuningName = label.text.strip()
-                elif name == "CapoFret":
-                    fret = prop.find("Fret")
-                    if fret is not None:
-                        track.capo = _int(fret)
-                elif name == "FretCount":
-                    n = prop.find("Number")
-                    if n is not None:
-                        track.fretCount = _int(n)
-                elif name in ("DiagramCollection", "ChordCollection"):
-                    self._read_chord_diagrams(prop, track)
+            if props is not None:
+                self._apply_track_properties(props, track)
             break
+
+    def _apply_track_properties(
+        self, props: ET.Element, track: gp.Track
+    ) -> None:
+        """Process a ``<Properties>`` block that lives either inside a
+        ``<Staff>`` (current GP7/GP8 exports) or directly inside a
+        ``<Track>`` (legacy GP6 exports). alphaTab's
+        ``_parseTrackProperty`` and ``_parseStaffProperty`` share the
+        same enum of property names (Tuning / DiagramCollection /
+        ChordCollection / CapoFret etc.), so one helper covers both."""
+        for prop in props.findall("Property"):
+            name = prop.get("name")
+            if name == "Tuning":
+                pitches = prop.find("Pitches")
+                if pitches is not None and pitches.text:
+                    # GPIF: low-to-high. PyGuitarPro: string 1 = highest.
+                    values = list(reversed(_split_ints(pitches.text)))
+                    if values:
+                        track.strings = [
+                            gp.GuitarString(number=i + 1, value=v)
+                            for i, v in enumerate(values)
+                        ]
+                # <Label> carries the tuning's human name (e.g.
+                # "Drop D", "DADGAD"). AlphaTab stores it on
+                # staff.stringTuning.name; mirror onto the track.
+                label = prop.find("Label")
+                if label is not None and (label.text or "").strip():
+                    track.tuningName = label.text.strip()
+            elif name == "CapoFret":
+                fret = prop.find("Fret")
+                if fret is not None:
+                    track.capo = _int(fret)
+            elif name == "FretCount":
+                n = prop.find("Number")
+                if n is not None:
+                    track.fretCount = _int(n)
+            elif name in ("DiagramCollection", "ChordCollection"):
+                self._read_chord_diagrams(prop, track)
 
     @staticmethod
     def _fill_chord_degrees(chord: gp.Chord, chord_info: ET.Element) -> None:
@@ -1486,11 +1513,12 @@ class GP7File:
         else:
             header.start = previous.start + previous.length
 
-        # Anacrusis (partial first bar) — GPIF flags it on the first MasterBar
-        # only, and AlphaTab tracks it via parent-level _hasAnacrusis. For
-        # our purposes the presence of <Anacrusis/> is sufficient — no
-        # exact PyGuitarPro field exists so we stash it for downstream use.
-        if mb.find("Anacrusis") is not None:
+        # Anacrusis (partial first bar) — GPIF flags it on <MasterTrack>,
+        # not on individual <MasterBar>s. alphaTab's _parseMasterTrackNode
+        # stashes a _hasAnacrusis flag and copies it into the first
+        # MasterBar in _parseMasterBar (line 1354-1356). Mirror that.
+        # Use the flag collected by _read_master_track.
+        if index == 0 and getattr(self, "_has_anacrusis", False):
             header._anacrusis = True  # type: ignore[attr-defined]
 
         time_el = mb.find("Time")
@@ -2119,11 +2147,33 @@ class GP7File:
         if bended:
             bend = gp.BendEffect(type=gp.BendType.bend, value=bend_destination["value"])
             bend.points.append(gp.BendPoint(position=0, value=bend_origin["value"]))
+            # Middle-point assembly mirrors alphaTab's
+            # _parseNoteProperties: emit offset-1 / offset-2 points
+            # only when their respective offsets are set, with the
+            # fallback of a single midpoint at maxPosition/2 when
+            # neither is. The old implementation would leak a
+            # spurious midpoint at the fallback position whenever
+            # offset1 was missing but offset2 was set.
             if bend_middle_value is not None:
-                pos1 = bend_middle_offset1 if bend_middle_offset1 is not None else 6
-                bend.points.append(gp.BendPoint(position=pos1, value=bend_middle_value))
-                if bend_middle_offset2 is not None and bend_middle_offset2 != bend_middle_offset1:
-                    bend.points.append(gp.BendPoint(position=bend_middle_offset2, value=bend_middle_value))
+                if bend_middle_offset1 is not None:
+                    bend.points.append(gp.BendPoint(
+                        position=bend_middle_offset1, value=bend_middle_value,
+                    ))
+                if (
+                    bend_middle_offset2 is not None
+                    and bend_middle_offset2 != bend_middle_offset1
+                ):
+                    bend.points.append(gp.BendPoint(
+                        position=bend_middle_offset2, value=bend_middle_value,
+                    ))
+                if (
+                    bend_middle_offset1 is None
+                    and bend_middle_offset2 is None
+                ):
+                    bend.points.append(gp.BendPoint(
+                        position=gp.BendEffect.maxPosition // 2,
+                        value=bend_middle_value,
+                    ))
             bend.points.append(gp.BendPoint(
                 position=bend_destination["offset"],
                 value=bend_destination["value"],
@@ -2479,14 +2529,37 @@ class GP7File:
 
         if is_whammy or whammy_origin or whammy_middle_value is not None or whammy_destination:
             origin = whammy_origin or {"value": 0, "offset": 0}
-            dest = whammy_destination or {"value": 0, "offset": 12}
+            dest = whammy_destination or {"value": 0, "offset": gp.BendEffect.maxPosition}
             bar = gp.BendEffect(type=gp.BendType.bend, value=dest["value"])
             bar.points.append(gp.BendPoint(position=0, value=origin["value"]))
+            # Middle-point assembly mirrors alphaTab's
+            # _parseBeatProperties: add the offset-1 point iff offset1
+            # is set; add the offset-2 point iff offset2 is set; fall
+            # back to a single point at the curve midpoint iff neither
+            # offset is present but a middle value was emitted. The old
+            # implementation leaked a spurious midpoint whenever offset1
+            # was missing but offset2 was set.
             if whammy_middle_value is not None:
-                pos1 = whammy_middle_offset1 if whammy_middle_offset1 is not None else 6
-                bar.points.append(gp.BendPoint(position=pos1, value=whammy_middle_value))
-                if whammy_middle_offset2 is not None and whammy_middle_offset2 != whammy_middle_offset1:
-                    bar.points.append(gp.BendPoint(position=whammy_middle_offset2, value=whammy_middle_value))
+                if whammy_middle_offset1 is not None:
+                    bar.points.append(gp.BendPoint(
+                        position=whammy_middle_offset1, value=whammy_middle_value,
+                    ))
+                if (
+                    whammy_middle_offset2 is not None
+                    and whammy_middle_offset2 != whammy_middle_offset1
+                ):
+                    bar.points.append(gp.BendPoint(
+                        position=whammy_middle_offset2, value=whammy_middle_value,
+                    ))
+                if (
+                    whammy_middle_offset1 is None
+                    and whammy_middle_offset2 is None
+                ):
+                    # Fallback: single midpoint at half of maxPosition.
+                    bar.points.append(gp.BendPoint(
+                        position=gp.BendEffect.maxPosition // 2,
+                        value=whammy_middle_value,
+                    ))
             bar.points.append(gp.BendPoint(position=dest["offset"], value=dest["value"]))
             eff.tremoloBar = bar
 
