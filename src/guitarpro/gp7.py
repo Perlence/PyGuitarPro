@@ -1318,12 +1318,18 @@ class GP7File:
                 fingering = diag.find("Fingering")
                 if fingering is not None:
                     mapping = {
-                        "Thumb": gp.Fingering.thumb,
-                        "Index": gp.Fingering.index,
+                        "Thumb":  gp.Fingering.thumb,
+                        "Index":  gp.Fingering.index,
                         "Middle": gp.Fingering.middle,
-                        "Ring": gp.Fingering.annular,
-                        "Pinky": gp.Fingering.little,
-                        "None": gp.Fingering.open,
+                        "Ring":   gp.Fingering.annular,
+                        # alphaTab also accepts "Rank" as a legacy
+                        # GPIF token for the ring finger (older Guitar
+                        # Pro exports). Current GP7/GP8 files emit
+                        # "Ring"; keeping both avoids silent data loss
+                        # on older files.
+                        "Rank":   gp.Fingering.annular,
+                        "Pinky":  gp.Fingering.little,
+                        "None":   gp.Fingering.open,
                     }
                     chord.fingerings = [gp.Fingering.open] * n_strings
                     for pos in fingering.findall("Position"):
@@ -1874,7 +1880,11 @@ class GP7File:
         bend_middle_value = None
         bend_middle_offset1 = None
         bend_middle_offset2 = None
-        bend_destination = {"value": 0, "offset": 60}
+        # Default destination reaches BendEffect.maxPosition (12 on
+        # PyGuitarPro's internal scale; 60 in GPIF space, which the
+        # scale divides down to 12). A GPIF file without an explicit
+        # <BendDestinationOffset> means "bend by end of note".
+        bend_destination = {"value": 0, "offset": gp.BendEffect.maxPosition}
         # Harmonic accumulators.
         harmonic_type = None
         harmonic_fret = 0.0
@@ -1961,9 +1971,13 @@ class GP7File:
                     v = _float(prop.find("Float"))
                     bend_destination["value"] = int(v / _BEND_VALUE_SCALE)
                 elif name == "BendDestinationOffset":
+                    # A <Float>0</Float> payload is valid — it means
+                    # "bend reaches destination at the start of the
+                    # note". The old `if v:` falsy-check silently
+                    # dropped that case; unconditionally assigning
+                    # matches alphaTab's unconditional assignment.
                     v = _float(prop.find("Float"))
-                    if v:  # keep default 60 if unset
-                        bend_destination["offset"] = int(v / _BEND_OFFSET_SCALE)
+                    bend_destination["offset"] = int(v / _BEND_OFFSET_SCALE)
                 elif name == "ConcertPitch":
                     # Only apply if TransposedPitch hasn't already set it —
                     # TransposedPitch takes precedence per alphaTab's
@@ -2399,11 +2413,13 @@ class GP7File:
                 whammy_middle_offset2 = int(_float(prop.find("Float")) / _BEND_OFFSET_SCALE)
             elif name == "WhammyBarDestinationValue":
                 if whammy_destination is None:
-                    whammy_destination = {"value": 0, "offset": 60}
+                    # "End of note" sentinel on PGP's 0..maxPosition (12)
+                    # scale, matching the bend-destination default.
+                    whammy_destination = {"value": 0, "offset": gp.BendEffect.maxPosition}
                 whammy_destination["value"] = int(_float(prop.find("Float")) / _BEND_VALUE_SCALE)
             elif name == "WhammyBarDestinationOffset":
                 if whammy_destination is None:
-                    whammy_destination = {"value": 0, "offset": 0}
+                    whammy_destination = {"value": 0, "offset": gp.BendEffect.maxPosition}
                 whammy_destination["offset"] = int(_float(prop.find("Float")) / _BEND_OFFSET_SCALE)
 
         if is_whammy or whammy_origin or whammy_middle_value is not None or whammy_destination:

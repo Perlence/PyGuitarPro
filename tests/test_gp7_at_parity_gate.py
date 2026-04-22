@@ -53,20 +53,11 @@ KNOWN_SKIPPED: dict[str, str] = {
     "WhammyBarExtend":
         "AT skips with comment 'not clear what this is used for'.",
 
-    # NotationPatch / InstrumentSet Articulation subtree — see the
-    # PercussionArticulation handler in gp7.py which reads Articulation
-    # / Articulations / Elements / InputMidiNumbers / OutputMidiNumber /
-    # Noteheads / StaffLine / TechniqueSymbol / TechniquePlacement.
-
-    # Out-of-scope: Rank is a per-string fingering metadata token on
-    # GPIF chord-diagram fingerings. AT maps a handful of finger-name
-    # enums onto it but the containing <Rank> wrapper is metadata-only;
-    # PGP's Fingering enum is populated from the preceding <Position>
-    # finger attribute, same as AT, so the <Rank> wrapper has no
-    # additional data to capture.
-    "Rank":
-        "GPIF fingering metadata wrapper; AT uses the inner finger "
-        "name tokens which PGP captures via <Position finger='…'>.",
+    # NotationPatch / InstrumentSet Articulation subtree — all 10
+    # labels (Articulation, Articulations, Elements, InputMidiNumbers,
+    # OutputMidiNumber, Noteheads, StaffLine, TechniqueSymbol,
+    # TechniquePlacement) are handled by the PercussionArticulation
+    # parser in gp7.py. See PR #40.
 }
 
 
