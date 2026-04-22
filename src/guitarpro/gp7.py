@@ -819,6 +819,12 @@ class GP7File:
             sec = midi.find("SecondaryChannel")
             if sec is not None and (sec.text or "").strip():
                 track.channel.effectChannel = _int(sec)
+            # AlphaTab also reads <Program> from here as a fallback
+            # when no <Sounds><Sound><MIDI><Program> is present. Any
+            # later Sound override wins (handled below).
+            prog = midi.find("Program")
+            if prog is not None and (prog.text or "").strip():
+                track.channel.instrument = _int(prog)
 
         sounds_node = node.find("Sounds")
         if sounds_node is not None:
