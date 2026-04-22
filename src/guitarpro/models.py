@@ -1317,6 +1317,18 @@ class BeatEffect:
     mixTableChange: Optional['MixTableChange'] = None
     slapEffect: SlapEffect = SlapEffect.none
     vibrato: bool = False
+    #: GPIF beat-level vibrato intensity from ``<Property
+    #: name="VibratoWTremBar">`` — whammy-bar vibrato strength. The
+    #: :attr:`vibrato` bool stays the canonical cross-version flag;
+    #: ``vibratoType`` carries the Slight/Wide enum distinction that
+    #: GPIF introduces. ``VibratoType.none`` for GP3/4/5 (those
+    #: binary formats don't distinguish intensities at beat level).
+    vibratoType: 'VibratoType' = attr.ib(
+        # VibratoType is defined later in this module; use a factory
+        # so the default value resolves at instantiation (after the
+        # enum class exists) instead of at class-definition time.
+        factory=lambda: VibratoType.none,
+    )
     #: GPIF hairpin (crescendo / decrescendo) annotation.
     crescendo: CrescendoType = CrescendoType.none
     #: GPIF slashed-rhythm notation marker.

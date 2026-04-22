@@ -2438,8 +2438,16 @@ class GP7File:
                 shape_map = {0: gp.BarreShape.full, 1: gp.BarreShape.half}
                 eff.barreShape = shape_map.get(_int(prop.find("String"), default=-1), gp.BarreShape.none)
             elif name == "VibratoWTremBar":
+                # alphaTab stores the Slight/Wide distinction as an
+                # enum on beat.vibrato. PyGuitarPro mirrors that via
+                # BeatEffect.vibratoType while keeping the canonical
+                # .vibrato bool in sync for cross-version callers.
                 strength = _text(prop.find("Strength"))
-                if strength in ("Wide", "Slight"):
+                if strength == "Slight":
+                    eff.vibratoType = gp.VibratoType.slight
+                    eff.vibrato = True
+                elif strength == "Wide":
+                    eff.vibratoType = gp.VibratoType.wide
                     eff.vibrato = True
             # Whammy bar curve points (may override simpler Whammy element).
             elif name == "WhammyBar":
