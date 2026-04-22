@@ -2109,7 +2109,15 @@ class GP7File:
             note.effect.bend = bend
 
         # ── Assemble harmonic ──
-        if harmonic_type == "natural":
+        # alphaTab maps "noharmonic" to HarmonicType.None (explicit
+        # "no harmonic" marker). PyGuitarPro doesn't carry a separate
+        # HarmonicType field — the absence of note.effect.harmonic IS
+        # "no harmonic", so the equivalent is to leave it None. Handled
+        # explicitly (instead of falling through) so the coverage gate
+        # can verify the token is processed.
+        if harmonic_type == "noharmonic":
+            note.effect.harmonic = None
+        elif harmonic_type == "natural":
             note.effect.harmonic = gp.NaturalHarmonic()
         elif harmonic_type == "pinch":
             note.effect.harmonic = gp.PinchHarmonic()

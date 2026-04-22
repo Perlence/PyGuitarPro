@@ -1065,6 +1065,7 @@ class MusicFontSymbol(Enum):
     noteheadHeavyX = 19
     noteheadHeavyXHat = 20
     noteheadParenthesis = 21
+    noteheadSlashedBlack2 = 22
     # <TechniqueSymbol> glyphs
     pictEdgeOfCymbal = 100
     articStaccatoAbove = 101

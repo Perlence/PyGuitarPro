@@ -38,6 +38,7 @@ from pathlib import Path
 REPO = Path(__file__).parent.parent
 SNAPSHOT_PATH = Path(__file__).parent / "gp7_at_case_labels.txt"
 GP7_PATH = REPO / "src" / "guitarpro" / "gp7.py"
+MODELS_PATH = REPO / "src" / "guitarpro" / "models.py"
 
 
 # Labels alphaTab parses but PyGuitarPro intentionally does not handle.
@@ -62,36 +63,57 @@ KNOWN_SKIPPED: dict[str, str] = {
 
 
 def test_every_alphatab_case_has_a_pgp_handler() -> None:
-    """Every GPIF element in the snapshot must either appear as a
-    quoted literal in ``gp7.py`` (= has a handler) or be explicitly
-    listed in ``KNOWN_SKIPPED`` with a reason.
+    """Every GPIF element in the snapshot must be referenced somewhere
+    in the reader chain, or listed in ``KNOWN_SKIPPED`` with a reason.
+
+    Three match paths (all legitimate):
+
+      1. **Quoted literal in gp7.py** — normal sibling / property
+         branch (e.g. ``if name == "Fret":``).
+      2. **Quoted literal in models.py** — when the label names an
+         enum *value token* that's mapped via a module-level dict
+         (e.g. the rasgueado tokens in ``_RASGUEADO_MAP``, chord-
+         ``Ring``/``Rank`` in ``_read_chord_diagrams``'s inline map).
+      3. **Enum member name in models.py** — when the reader does a
+         dynamic ``gp.MusicFontSymbol[token]`` lookup against an enum
+         whose members are named verbatim after the GPIF tokens
+         (noteheads, technique symbols, technique placements).
 
     If this test fails:
-      - Missing handler: add a branch in ``gp7.py`` that matches the
-        label as a quoted string.
+      - Missing handler: add a branch / enum member / dict entry.
       - Intentional skip: add the label to ``KNOWN_SKIPPED`` above
         with a justification comment.
     """
     snapshot = SNAPSHOT_PATH.read_text().splitlines()
     gp7_text = GP7_PATH.read_text()
+    models_text = MODELS_PATH.read_text()
 
     labels = [ln.strip() for ln in snapshot if ln.strip()]
     missing = []
     for label in labels:
         if label in KNOWN_SKIPPED:
             continue
-        # Match the label wrapped in single or double quotes. Don't
-        # use Python's `or` on re.search results (they're Match objects
-        # but we only care about truthiness).
-        pattern = rf'["\']{re.escape(label)}["\']'
-        if not re.search(pattern, gp7_text):
-            missing.append(label)
+        # Match 1: quoted literal in either source file.
+        quoted_pattern = rf'["\']{re.escape(label)}["\']'
+        if re.search(quoted_pattern, gp7_text):
+            continue
+        if re.search(quoted_pattern, models_text):
+            continue
+        # Match 2: enum member name in models.py (dynamic lookup
+        # via ``EnumName[token]``). Enum member definitions take the
+        # form ``<identifier> = <int>`` at the start of a line
+        # (with indent), so require a word-boundary match that
+        # starts at the beginning of a line (ignoring leading
+        # whitespace).
+        if re.search(rf'^\s+{re.escape(label)}\s*=\s*\d', models_text, re.MULTILINE):
+            continue
+        missing.append(label)
 
     assert not missing, (
         "alphaTab parses these GPIF elements but no handler was found "
-        "in gp7.py. Either add a branch that matches the label as a "
-        "quoted string, or add the label to KNOWN_SKIPPED with a "
-        "rationale comment:\n  - " + "\n  - ".join(missing)
+        "in gp7.py or models.py. Either add a handler (branch / dict "
+        "entry / enum member), or add the label to KNOWN_SKIPPED with "
+        "a rationale comment:\n  - " + "\n  - ".join(missing)
     )
 
 
