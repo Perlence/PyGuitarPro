@@ -479,6 +479,16 @@ class GP7File:
         if notice is not None and notice.text:
             song.notice = [notice.text.strip()]
 
+        # Score-wide layout hints — distinct from the per-track
+        # SystemsLayout captured in _read_track. Mirrors alphaTab's
+        # GpifParser handling at lines 320-327.
+        ssdl = score.find("ScoreSystemsDefaultLayout")
+        if ssdl is not None and (ssdl.text or "").strip():
+            song.defaultSystemsLayout = _int(ssdl, default=4)
+        ssl = score.find("ScoreSystemsLayout")
+        if ssl is not None and ssl.text:
+            song.systemsLayout = _split_ints(ssl.text)
+
     # alphaTab's hard-coded sample rate for converting BackingTrack
     # frame counts into milliseconds. If real-world files ever ship a
     # different rate, this is the one knob to adjust.
@@ -585,10 +595,15 @@ class GP7File:
         for automation in automations.findall("Automation"):
             kind = _text(automation.find("Type"))
             value = automation.find("Value")
+            vis_el = automation.find("Visible")
+            visible = True
+            if vis_el is not None and vis_el.text is not None:
+                visible = vis_el.text.strip().lower() == "true"
             entry = {
                 "type":     kind,
                 "bar":      _int(automation.find("Bar"), -1),
                 "position": _float(automation.find("Position"), 0.0),
+                "visible":  visible,
             }
             if kind == "SyncPoint" and value is not None:
                 # <Value> is structured, not plain text.
@@ -803,18 +818,27 @@ class GP7File:
         """Extract master/track <Automation> entries — mid-song parameter
         changes (Tempo/Volume/Sound/Balance/SustainPedal/etc.).
 
-        Returns list of {type, bar, position, value, linear} dicts. Mapping to
-        PyGuitarPro's per-beat MixTableChange / Measure.sustainPedals happens
+        Returns list of ``{type, bar, position, value, linear, visible}``
+        dicts. Mapping to PyGuitarPro's per-beat ``MixTableChange`` /
+        ``Measure.sustainPedals`` / ``MeasureHeader.syncPoints`` happens
         after beats are built, in the relevant attach step.
+
+        ``visible`` defaults to ``True`` — alphaTab treats a missing
+        ``<Visible>`` child as visible.
         """
         out: list[dict] = []
         for a in node.findall("Automation"):
+            vis_el = a.find("Visible")
+            visible = True
+            if vis_el is not None and vis_el.text is not None:
+                visible = vis_el.text.strip().lower() == "true"
             entry = {
                 "type":     _text(a.find("Type")),
                 "bar":      _int(a.find("Bar"), -1),
                 "position": _float(a.find("Position"), 0.0),
                 "value":    _text(a.find("Value")),
                 "linear":   _text(a.find("Linear")).lower() == "true",
+                "visible":  visible,
             }
             out.append(entry)
         return out
@@ -1145,6 +1169,23 @@ class GP7File:
             chord_info = item.find("Chord")
             if chord_info is not None:
                 self._fill_chord_degrees(chord, chord_info)
+
+            # <Diagram>/<Property name="ShowName|ShowDiagram|ShowFingering"
+            # value="true|false"/> — display-toggle flags for the
+            # chord diagram. `Chord.show` already existed (used as the
+            # catch-all display flag); we keep it aligned with
+            # ShowDiagram and add two dedicated fields for the others.
+            if diag is not None:
+                for p in diag.findall("Property"):
+                    pname = p.get("name", "")
+                    pval = (p.get("value", "") or "").lower() == "true"
+                    if pname == "ShowDiagram":
+                        chord.show = pval
+                    elif pname == "ShowName":
+                        chord.showName = pval
+                    elif pname == "ShowFingering":
+                        chord.showFingering = pval
+
             # Defaults matching GP3/4/5 new-format chords
             if chord.newFormat is None:
                 chord.newFormat = True

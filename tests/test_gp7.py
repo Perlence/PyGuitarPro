@@ -847,6 +847,73 @@ class TestKnownTrackFixtures:
         # Back-compat: first sound mirrored onto channel.
         assert track.channel.instrument == 25
 
+    def test_effects_fixture_extracts_score_systems_layout(self):
+        """Regression test for score-wide `<ScoreSystemsLayout>` and
+        `<ScoreSystemsDefaultLayout>`. Distinct from `Track.systemsLayout`
+        captured in PR #25 — the Score-level ones live under `<Score>`
+        and control the whole rendered output, not one track.
+
+        `effects.gp` carries the authored values
+        `<ScoreSystemsLayout>3 3 3 3 3 3 3 3 3 3 2</ScoreSystemsLayout>`
+        and `<ScoreSystemsDefaultLayout>3</ScoreSystemsDefaultLayout>`.
+        """
+        path = FIXTURES_DIR / "effects.gp"
+        if not path.exists():
+            pytest.skip("effects.gp not present")
+        song = gp.parse(path)
+        assert song.systemsLayout == [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2]
+        assert song.defaultSystemsLayout == 3
+
+    def test_automation_invisible_fixture_preserves_visible_flag(self):
+        """Regression test for `<Automation><Visible>false</Visible>`.
+
+        AlphaTab stores the value on each Automation it builds (used to
+        hide tempo markers etc.). PyGuitarPro doesn't expose Automation
+        as a first-class class — we flow through a dict; this test
+        verifies the dict preserves `visible` so a future writer can
+        round-trip it.
+
+        `automation-invisible.gp` is synthesised from `effects.gp` with
+        `<Visible>false</Visible>` injected on the first master-track
+        automation.
+        """
+        path = FIXTURES_DIR / "automation-invisible.gp"
+        if not path.exists():
+            pytest.skip("automation-invisible.gp not present")
+        song = gp.parse(path)
+        master_autos = getattr(song, "_masterTrackAutomations", [])
+        assert master_autos, "expected master-track automations"
+        assert master_autos[0]["visible"] is False, master_autos[0]
+
+    def test_chords_fixture_extracts_show_name_diagram_fingering_flags(self):
+        """Regression test for GPIF chord display-toggle properties.
+
+        `<Diagram><Property name="ShowDiagram|ShowName|ShowFingering"
+        value="true|false"/></Diagram>` controls whether the chord's
+        diagram, name text and finger numbers render. PyGuitarPro's
+        reader previously ignored all three and left the defaults.
+
+        `chords.gp` ships all three flags set to ``true`` on every
+        chord — asserting we actually read them (not just default to
+        True) requires that they're *not* the Python defaults.
+        """
+        path = FIXTURES_DIR / "chords.gp"
+        if not path.exists():
+            pytest.skip("chords.gp not present")
+        song = gp.parse(path)
+        track = song.tracks[0]
+        chord_dicts = []
+        for m in track.measures:
+            for v in m.voices:
+                for b in v.beats:
+                    if b.effect.chord is not None:
+                        chord_dicts.append(b.effect.chord)
+        assert chord_dicts, "expected chord diagrams in chords.gp"
+        # All three flags populated from the XML (not from defaults).
+        assert any(c.show is True for c in chord_dicts)
+        assert all(c.showName is True for c in chord_dicts)
+        assert all(c.showFingering is True for c in chord_dicts)
+
     def test_triplet_feel_fixture_covers_full_seven_variant_enum(self):
         """Regression test for the full `<TripletFeel>` enum. alphaTab
         has 7 values (NoTripletFeel / Triplet8th / Triplet16th /

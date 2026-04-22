@@ -350,6 +350,14 @@ class Song:
     #: backing track is remote / YouTube (alphaTab only decodes local
     #: backing tracks). Empty for GP3/4/5.
     backingTrack: Optional['BackingTrack'] = None
+    #: GPIF ``<ScoreSystemsLayout>`` — score-wide bars-per-system list.
+    #: Distinct from :attr:`Track.systemsLayout`, which is per-track.
+    #: Empty list means "use defaults".
+    systemsLayout: list[int] = attr.Factory(list)
+    #: GPIF ``<ScoreSystemsDefaultLayout>`` — fallback bars-per-system
+    #: used when :attr:`systemsLayout` runs out. Matches alphaTab's
+    #: documented default of 4.
+    defaultSystemsLayout: int = 4
 
     _currentRepeatGroup: RepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, eq=False, repr=False)
 
@@ -1670,6 +1678,13 @@ class Chord:
     fingerings: list[Fingering] = attr.Factory(list)
     show: Optional[bool] = None
     newFormat: Optional[bool] = None
+    #: GPIF ``<Property name="ShowName" value="true|false"/>`` — render
+    #: the chord's name text above the diagram. Default ``True``
+    #: matches alphaTab's ``Chord`` constructor.
+    showName: bool = True
+    #: GPIF ``<Property name="ShowFingering" value="true|false"/>`` —
+    #: render finger numbers on the diagram.
+    showFingering: bool = True
 
     @property
     def notes(self):
