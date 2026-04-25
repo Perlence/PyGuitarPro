@@ -131,7 +131,6 @@ from __future__ import annotations
 
 import io
 import zipfile
-from typing import Optional
 from xml.etree import ElementTree as ET
 
 from . import models as gp
@@ -139,20 +138,20 @@ from . import models as gp
 
 # ── XML helpers ───────────────────────────────────────────────────────
 
-def _text(elem: Optional[ET.Element], default: str = "") -> str:
+def _text(elem: ET.Element | None, default: str = "") -> str:
     if elem is None or elem.text is None:
         return default
     return elem.text.strip()
 
 
-def _int(elem: Optional[ET.Element], default: int = 0) -> int:
+def _int(elem: ET.Element | None, default: int = 0) -> int:
     try:
         return int(_text(elem, str(default)))
     except ValueError:
         return default
 
 
-def _float(elem: Optional[ET.Element], default: float = 0.0) -> float:
+def _float(elem: ET.Element | None, default: float = 0.0) -> float:
     if elem is None or elem.text is None:
         return default
     try:
@@ -214,7 +213,7 @@ _RASGUEADO_MAP = {
 }
 
 
-def _music_font_symbol(token: str) -> "gp.MusicFontSymbol":
+def _music_font_symbol(token: str) -> gp.MusicFontSymbol:
     """Map a GPIF music-font token (``noteheadHalf``, ``guitarGolpe``,
     …) onto PyGuitarPro's ``MusicFontSymbol`` enum.
 
@@ -229,7 +228,7 @@ def _music_font_symbol(token: str) -> "gp.MusicFontSymbol":
         return gp.MusicFontSymbol.none
 
 
-def _technique_symbol_placement(token: str) -> "gp.TechniqueSymbolPlacement":
+def _technique_symbol_placement(token: str) -> gp.TechniqueSymbolPlacement:
     """GPIF ``<TechniquePlacement>`` token → enum. Unknown tokens fall
     back to ``outside`` (alphaTab's default)."""
     try:
@@ -239,53 +238,53 @@ def _technique_symbol_placement(token: str) -> "gp.TechniqueSymbolPlacement":
 
 
 _DURATION_MAP = {
-    "Long":        -4,   # Longa / QuadrupleWhole (4 whole notes)
+    "Long": -4,   # Longa / QuadrupleWhole (4 whole notes)
     "DoubleWhole": -2,   # Breve; represented with AT's negative sentinel
-    "Whole":   1,
-    "Half":    2,
+    "Whole": 1,
+    "Half": 2,
     "Quarter": 4,
-    "Eighth":  8,
-    "16th":    16,
-    "32nd":    32,
-    "64th":    64,
-    "128th":   128,
-    "256th":   256,
+    "Eighth": 8,
+    "16th": 16,
+    "32nd": 32,
+    "64th": 64,
+    "128th": 128,
+    "256th": 256,
 }
 
 _DYNAMIC_VELOCITY = {
     "PPP": 15,
-    "PP":  31,
-    "P":   47,
-    "MP":  63,
-    "MF":  79,
-    "F":   95,
-    "FF":  111,
+    "PP": 31,
+    "P": 47,
+    "MP": 63,
+    "MF": 79,
+    "F": 95,
+    "FF": 111,
     "FFF": 127,
 }
 
 _CLEF_MAP = {
-    "G2":      0,  # treble
-    "F4":      1,  # bass
-    "C4":      2,  # tenor
-    "C3":      3,  # alto
+    "G2": 0,  # treble
+    "F4": 1,  # bass
+    "C4": 2,  # tenor
+    "C3": 3,  # alto
     "Neutral": 0,  # neutral — use treble as default
 }
 
 # Accent flag bits (<Accent>N</Accent> inside <Note>)
-_ACCENT_STACCATO      = 0x01
-_ACCENT_HEAVY         = 0x04
-_ACCENT_NORMAL        = 0x08
-_ACCENT_TENUTO        = 0x10
+_ACCENT_STACCATO = 0x01
+_ACCENT_HEAVY = 0x04
+_ACCENT_NORMAL = 0x08
+_ACCENT_TENUTO = 0x10
 
 # Slide flag bits (<Property name="Slide">/<Flags>)
-_SLIDE_SHIFT           = 0x01
-_SLIDE_LEGATO          = 0x02
-_SLIDE_OUT_DOWN        = 0x04
-_SLIDE_OUT_UP          = 0x08
-_SLIDE_IN_FROM_BELOW   = 0x10
-_SLIDE_IN_FROM_ABOVE   = 0x20
-_SLIDE_PICK_DOWN       = 0x40
-_SLIDE_PICK_UP         = 0x80
+_SLIDE_SHIFT = 0x01
+_SLIDE_LEGATO = 0x02
+_SLIDE_OUT_DOWN = 0x04
+_SLIDE_OUT_UP = 0x08
+_SLIDE_IN_FROM_BELOW = 0x10
+_SLIDE_IN_FROM_ABOVE = 0x20
+_SLIDE_PICK_DOWN = 0x40
+_SLIDE_PICK_UP = 0x80
 # 0x40/0x80 = pick slides (no direct PyGuitarPro mapping)
 
 # GP6 percussion mapping: (element, variation) → MIDI articulation number.
@@ -325,6 +324,7 @@ def _gp6_percussion_articulation(element: int, variation: int) -> int:
         if 0 <= variation < len(row):
             return row[variation]
     return 38  # default: Snare (hit)
+
 
 # GPIF Target → PyGuitarPro direction-sign names (Coda/Segno/Fine "destinations")
 _DIRECTION_TARGETS = {
@@ -1233,7 +1233,8 @@ class GpifFile:
         from <Chord>/<KeyNote>/<BassNote>/<Degree> GPIF structure."""
         # Root and bass note
         step_map = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
-        def make_pitch(node: Optional[ET.Element]) -> Optional[gp.PitchClass]:
+
+        def make_pitch(node: ET.Element | None) -> gp.PitchClass | None:
             if node is None:
                 return None
             step = node.get("step", "")
@@ -1493,8 +1494,6 @@ class GpifFile:
 
     def _read_master_bars(self, song: gp.Song) -> None:
         """Build `song.measureHeaders` from <MasterBars>/<MasterBar>."""
-        # Cache nodes for later per-track walk.
-        root_doc = None
         for mb in self._iter_master_bars(song):
             pass  # no-op; iteration finalises the list
         # alphaTab's _buildModel clears hasDoubleBar on the last master
@@ -1521,7 +1520,7 @@ class GpifFile:
             previous_header = header
             yield mb
 
-    def _root_from_song(self, song: gp.Song) -> Optional[ET.Element]:
+    def _root_from_song(self, song: gp.Song) -> ET.Element | None:
         """The reader kept the root element alive via closure — we need it
         for master-bar/bar walks. Stash it on the instance instead."""
         return getattr(self, "_root", None)
@@ -1779,7 +1778,7 @@ class GpifFile:
                 measure = self._build_measure(track, header, bar_id)
                 track.measures.append(measure)
 
-    def _build_measure(self, track: gp.Track, header: gp.MeasureHeader, bar_id: Optional[str]) -> gp.Measure:
+    def _build_measure(self, track: gp.Track, header: gp.MeasureHeader, bar_id: str | None) -> gp.Measure:
         measure = gp.Measure(track=track, header=header)
         measure.voices = []
 
@@ -1934,7 +1933,7 @@ class GpifFile:
 
         return beat
 
-    def _build_note(self, beat: gp.Beat, note_id: str, velocity: int) -> Optional[gp.Note]:
+    def _build_note(self, beat: gp.Beat, note_id: str, velocity: int) -> gp.Note | None:
         raw = self._notes_raw.get(note_id)
         if raw is None:
             return None

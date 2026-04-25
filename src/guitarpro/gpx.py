@@ -15,7 +15,7 @@ same XML this module's caller hands to :mod:`guitarpro.gp7`.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Callable
 
 
 class EndOfReader(Exception):
@@ -140,7 +140,7 @@ class _ByteBuffer:
         start = max(0, offset)
         actual = max(0, min(count, len(source) - start))
         if actual > 0:
-            self._buf.extend(source[start : start + actual])
+            self._buf.extend(source[start:start + actual])
         pad = count - actual
         if pad > 0:
             self._buf.extend(b"\x00" * pad)
@@ -157,7 +157,7 @@ class GpxFile:
 
     file_name: str = ""
     file_size: int = 0
-    data: Optional[bytes] = None
+    data: bytes | None = None
 
 
 class GpxFileSystem:
@@ -216,7 +216,7 @@ class GpxFileSystem:
         buffer = uncompressed.get_buffer()
         result_offset = 4 if skip_header else 0
         result_size = uncompressed.length - result_offset
-        return bytes(buffer[result_offset : result_offset + result_size])
+        return bytes(buffer[result_offset:result_offset + result_size])
 
     def _read_block(self, data: _BitReader) -> None:
         header = self.read_header(data)
