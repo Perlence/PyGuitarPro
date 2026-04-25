@@ -522,7 +522,7 @@ class GP7File:
         # GpifParser handling at lines 320-327.
         ssdl = score.find("ScoreSystemsDefaultLayout")
         if ssdl is not None and (ssdl.text or "").strip():
-            song.defaultSystemsLayout = _int(ssdl, default=4)
+            song.defaultSystemsLayout = _int(ssdl, default=3)
         ssl = score.find("ScoreSystemsLayout")
         if ssl is not None and ssl.text:
             song.systemsLayout = _split_ints(ssl.text)
@@ -789,7 +789,7 @@ class GP7File:
         # fall back to GP's documented defaults.
         default_layout = node.find("SystemsDefautLayout")
         if default_layout is not None and (default_layout.text or "").strip():
-            track.defaultSystemsLayout = _int(default_layout, default=4)
+            track.defaultSystemsLayout = _int(default_layout, default=3)
 
         layout_el = node.find("SystemsLayout")
         if layout_el is not None and layout_el.text:

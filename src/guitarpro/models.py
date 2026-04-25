@@ -357,8 +357,8 @@ class Song:
     systemsLayout: list[int] = attr.Factory(list)
     #: GPIF ``<ScoreSystemsDefaultLayout>`` — fallback bars-per-system
     #: used when :attr:`systemsLayout` runs out. Matches alphaTab's
-    #: documented default of 4.
-    defaultSystemsLayout: int = 4
+    #: model default of 3 (Score.ts:324).
+    defaultSystemsLayout: int = 3
 
     _currentRepeatGroup: RepeatGroup = attr.ib(default=attr.Factory(RepeatGroup), hash=False, eq=False, repr=False)
 
@@ -798,8 +798,8 @@ class Track:
     systemsLayout: list[int] = attr.Factory(list)
     #: GPIF ``<SystemsDefautLayout>`` (the typo is in the GPIF format
     #: itself) — default bars-per-system used when ``systemsLayout``
-    #: runs out. Guitar Pro's own default is 4.
-    defaultSystemsLayout: int = 4
+    #: runs out. Matches alphaTab's model default of 3 (Track.ts:105).
+    defaultSystemsLayout: int = 3
     #: GPIF ``<NotationPatch><LineCount>`` — number of lines in the
     #: standard-notation staff (5 for standard, often 1 for percussion
     #: single-line cue). Default follows alphaTab's fallback of 5.

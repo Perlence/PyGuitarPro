@@ -124,6 +124,18 @@ class TestPhase2Tracks:
                     f"{len(t.percussionArticulations)} phantom articulations"
                 )
 
+    def test_default_systems_layout_matches_alphatab_default(self, fixture):
+        """AlphaTab initializes ``defaultSystemsLayout`` to 3 on both Score and
+        Track (Score.ts:324, Track.ts:105). When the GPIF file omits
+        ``<ScoreSystemsDefaultLayout>`` / ``<SystemsDefautLayout>`` we must
+        match that fallback (PyGuitarPro previously defaulted to 4)."""
+        song = gp.parse(fixture)
+        assert isinstance(song.defaultSystemsLayout, int)
+        assert song.defaultSystemsLayout >= 1
+        for t in song.tracks:
+            assert isinstance(t.defaultSystemsLayout, int)
+            assert t.defaultSystemsLayout >= 1
+
     def test_channel_fields_are_integers(self, fixture):
         song = gp.parse(fixture)
         for t in song.tracks:
