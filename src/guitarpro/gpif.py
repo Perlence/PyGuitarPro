@@ -2640,4 +2640,3 @@ class GpifFile:
         beat.status = gp.BeatStatus.empty
         beat.notes = []
         return beat
-

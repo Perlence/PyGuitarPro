@@ -15,4 +15,6 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: '\.(gp|gp3|gp4|gp5|gp7|gp8|gpx|tmp)$'
       - id: end-of-file-fixer
+        exclude: '\.(gp|gp3|gp4|gp5|gp7|gp8|gpx|tmp)$'
