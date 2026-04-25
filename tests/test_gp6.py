@@ -35,7 +35,7 @@ class TestPhase1ParseSmoke:
         song = gp.parse(fixture)
         assert song is not None
         assert song.versionTuple is not None
-        # BCFZ/BCFS fixtures are routed to GP7File with a GP6 initial tuple;
+        # BCFZ/BCFS fixtures are routed to GpifFile with a GP6 initial tuple;
         # the parser may refine to (7,0,0)/(8,0,0) from <GPVersion> if present.
         assert song.versionTuple[0] in (6, 7, 8)
 
@@ -50,7 +50,7 @@ class TestPhase1ParseSmoke:
 
 class TestDispatcher:
     """``io.parse()`` must route BCFZ/BCFS files through ``GpxArchive`` into
-    ``GP7File._load_score_gpif``."""
+    ``GpifFile._load_score_gpif``."""
 
     def test_bcfz_magic_routes_to_gp7_path(self):
         path = FIXTURES_DIR / "bends.gpx"

@@ -66,7 +66,7 @@ class TestPhase1KnownFixture:
 
 
 class TestDispatcher:
-    """io.parse() must route GP7/GP8 files (zip magic) to GP7File."""
+    """io.parse() must route GP7/GP8 files (zip magic) to GpifFile."""
 
     def test_zip_magic_detected(self):
         path = FIXTURES_DIR / "effects.gp"

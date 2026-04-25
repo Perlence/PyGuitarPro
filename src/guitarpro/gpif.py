@@ -363,7 +363,7 @@ _BEND_OFFSET_SCALE = 100.0 / 12.0
 
 # ── Reader ────────────────────────────────────────────────────────────
 
-class GP7File:
+class GpifFile:
     """Reader for Guitar Pro 7/8 (ZIP+XML) files."""
 
     def __init__(self, fp, encoding: str = "utf-8", version: str = "", versionTuple: tuple = (7, 0, 0)):

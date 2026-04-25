@@ -11,13 +11,13 @@ Mechanics:
      from ``packages/alphatab/src/importer/GpifParser.ts``. It is
      updated manually when we re-sync against a new alphaTab release.
   2. The gate asserts every snapshot label is referenced as a quoted
-     string somewhere in ``gp7.py`` — the PGP reader.
+     string somewhere in ``gpif.py`` — the PGP reader.
   3. Labels we intentionally don't handle live in the ``KNOWN_SKIPPED``
      allowlist below with explicit reasons, so the test stays green
      while the gaps are visible and reviewable.
 
 When you add a new alphaTab-parity handler:
-  - Add the quoted literal to ``gp7.py`` (the gate will detect it).
+  - Add the quoted literal to ``gpif.py`` (the gate will detect it).
   - Do NOT add the label to ``KNOWN_SKIPPED``.
 
 When you add a new intentional skip:
@@ -37,7 +37,7 @@ from pathlib import Path
 
 REPO = Path(__file__).parent.parent
 SNAPSHOT_PATH = Path(__file__).parent / "gp7_at_case_labels.txt"
-GP7_PATH = REPO / "src" / "guitarpro" / "gp7.py"
+GPIF_PATH = REPO / "src" / "guitarpro" / "gpif.py"
 MODELS_PATH = REPO / "src" / "guitarpro" / "models.py"
 
 
@@ -58,7 +58,7 @@ KNOWN_SKIPPED: dict[str, str] = {
     # labels (Articulation, Articulations, Elements, InputMidiNumbers,
     # OutputMidiNumber, Noteheads, StaffLine, TechniqueSymbol,
     # TechniquePlacement) are handled by the PercussionArticulation
-    # parser in gp7.py. See PR #40.
+    # parser in gpif.py. See PR #40.
 }
 
 
@@ -68,7 +68,7 @@ def test_every_alphatab_case_has_a_pgp_handler() -> None:
 
     Three match paths (all legitimate):
 
-      1. **Quoted literal in gp7.py** — normal sibling / property
+      1. **Quoted literal in gpif.py** — normal sibling / property
          branch (e.g. ``if name == "Fret":``).
       2. **Quoted literal in models.py** — when the label names an
          enum *value token* that's mapped via a module-level dict
@@ -85,7 +85,7 @@ def test_every_alphatab_case_has_a_pgp_handler() -> None:
         with a justification comment.
     """
     snapshot = SNAPSHOT_PATH.read_text().splitlines()
-    gp7_text = GP7_PATH.read_text()
+    gpif_text = GPIF_PATH.read_text()
     models_text = MODELS_PATH.read_text()
 
     labels = [ln.strip() for ln in snapshot if ln.strip()]
@@ -95,7 +95,7 @@ def test_every_alphatab_case_has_a_pgp_handler() -> None:
             continue
         # Match 1: quoted literal in either source file.
         quoted_pattern = rf'["\']{re.escape(label)}["\']'
-        if re.search(quoted_pattern, gp7_text):
+        if re.search(quoted_pattern, gpif_text):
             continue
         if re.search(quoted_pattern, models_text):
             continue
@@ -111,7 +111,7 @@ def test_every_alphatab_case_has_a_pgp_handler() -> None:
 
     assert not missing, (
         "alphaTab parses these GPIF elements but no handler was found "
-        "in gp7.py or models.py. Either add a handler (branch / dict "
+        "in gpif.py or models.py. Either add a handler (branch / dict "
         "entry / enum member), or add the label to KNOWN_SKIPPED with "
         "a rationale comment:\n  - " + "\n  - ".join(missing)
     )
