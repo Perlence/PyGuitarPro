@@ -914,6 +914,14 @@ class GP7File:
         if lyrics_node is not None:
             track._lyrics_lines = self._read_lyrics_lines(lyrics_node)  # type: ignore[attr-defined]
 
+        # Mirrors alphaTab GpifParser:2853-2855 — non-percussion tracks still
+        # carry an <InstrumentSet><Elements> entry (a single "Pitched"
+        # articulation) which is meaningless once parsing is complete.
+        # Drop it so that percussionArticulations stays empty for pitched
+        # tracks, matching alphaTab's post-parse cleanup.
+        if not track.isPercussionTrack:
+            track.percussionArticulations = []
+
         return track
 
     @staticmethod

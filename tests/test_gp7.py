@@ -109,6 +109,21 @@ class TestPhase2Tracks:
         for t in song.tracks:
             assert isinstance(t.isPercussionTrack, bool)
 
+    def test_non_percussion_tracks_have_no_percussion_articulations(self, fixture):
+        """Non-percussion tracks still carry an ``<InstrumentSet><Elements>``
+        entry in GPIF (a single ``Pitched`` articulation), but it is meaningful
+        only for drum kits. AlphaTab's ``GpifParser._buildScore`` clears it
+        on non-percussion tracks (GpifParser.ts:2853-2855); we mirror that
+        cleanup at the end of ``_read_track``. Regression guard: pitched
+        tracks must end up with an empty ``percussionArticulations``."""
+        song = gp.parse(fixture)
+        for t in song.tracks:
+            if not t.isPercussionTrack:
+                assert t.percussionArticulations == [], (
+                    f"non-percussion track {t.name!r} carried "
+                    f"{len(t.percussionArticulations)} phantom articulations"
+                )
+
     def test_channel_fields_are_integers(self, fixture):
         song = gp.parse(fixture)
         for t in song.tracks:
