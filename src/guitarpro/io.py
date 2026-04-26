@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 from .iobase import GPFileBase
 from .gp3 import GP3File
@@ -63,7 +62,7 @@ def parse(stream, encoding='cp1252') -> Song:
             gpfile.close()
 
 
-def write(song: Song, stream, version: Optional[tuple] = None, encoding='cp1252'):
+def write(song: Song, stream, version: tuple | None = None, encoding='cp1252'):
     """Write a song into GP file.
 
     :param song: a song to write.

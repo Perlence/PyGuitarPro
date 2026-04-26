@@ -3,7 +3,7 @@ from enum import Enum, IntEnum
 from fractions import Fraction
 from functools import partial
 from math import log
-from typing import Any, Optional, TypeVar, Union, overload
+from typing import Any, TypeVar, overload
 
 import attr
 
@@ -61,7 +61,7 @@ def __dataclass_transform__(
     eq_default: bool = True,
     order_default: bool = False,
     kw_only_default: bool = False,
-    field_descriptors: tuple[Union[type, Callable[..., Any]], ...] = (()),
+    field_descriptors: tuple[type | Callable[..., Any], ...] = (),
 ) -> Callable[[_T], _T]:
     return lambda a: a
 
@@ -316,8 +316,8 @@ class Song:
     """
 
     # TODO: Store file format version here
-    versionTuple: Optional[tuple[int, int, int]] = attr.ib(default=None, hash=False, eq=False)
-    clipboard: Optional[Clipboard] = None
+    versionTuple: tuple[int, int, int] | None = attr.ib(default=None, hash=False, eq=False)
+    clipboard: Clipboard | None = None
     title: str = ''
     subtitle: str = ''
     artist: str = ''
@@ -521,13 +521,13 @@ class MeasureHeader:
     hasDoubleBar: bool = False
     keySignature: KeySignature = KeySignature.CMajor
     timeSignature: TimeSignature = attr.Factory(TimeSignature)
-    marker: Optional['Marker'] = None
+    marker: 'Marker | None' = None
     isRepeatOpen: bool = False
     repeatAlternative: int = 0
     repeatClose: int = -1
     tripletFeel: TripletFeel = TripletFeel.none
-    direction: Optional[DirectionSign] = None
-    fromDirection: Optional[DirectionSign] = None
+    direction: DirectionSign | None = None
+    fromDirection: DirectionSign | None = None
 
     @property
     def length(self):
@@ -791,10 +791,10 @@ class BeatEffect:
     stroke: BeatStroke = attr.Factory(BeatStroke)
     hasRasgueado: bool = False
     pickStroke: BeatStrokeDirection = BeatStrokeDirection.none
-    chord: Optional['Chord'] = None
+    chord: 'Chord | None' = None
     fadeIn: bool = False
-    tremoloBar: Optional['BendEffect'] = None
-    mixTableChange: Optional['MixTableChange'] = None
+    tremoloBar: 'BendEffect | None' = None
+    mixTableChange: 'MixTableChange | None' = None
     slapEffect: SlapEffect = SlapEffect.none
     vibrato: bool = False
 
@@ -868,8 +868,8 @@ class Beat:
     voice: Voice = attr.ib(hash=False, eq=False, repr=False)
     notes: list['Note'] = attr.Factory(list)
     duration: Duration = attr.Factory(Duration)
-    text: Optional[str] = None
-    start: Optional[int] = attr.ib(default=None, hash=False, eq=False)
+    text: str | None = None
+    start: int | None = attr.ib(default=None, hash=False, eq=False)
     effect: BeatEffect = attr.Factory(BeatEffect)
     octave: Octave = Octave.none
     display: BeatDisplay = attr.Factory(BeatDisplay)
@@ -909,8 +909,8 @@ class NaturalHarmonic(HarmonicEffect):
 
 @hashableAttrs
 class ArtificialHarmonic(HarmonicEffect):
-    pitch: Optional['PitchClass'] = None
-    octave: Optional[int] = None
+    pitch: 'PitchClass | None' = None
+    octave: int | None = None
 
     def __attrs_post_init__(self):
         self.type = 2
@@ -918,7 +918,7 @@ class ArtificialHarmonic(HarmonicEffect):
 
 @hashableAttrs
 class TappedHarmonic(HarmonicEffect):
-    fret: Optional[int] = None
+    fret: int | None = None
 
     def __attrs_post_init__(self):
         self.type = 3
@@ -1036,11 +1036,11 @@ class NoteEffect:
     """Contains all effects which can be applied to one note."""
 
     accentuatedNote: bool = False
-    bend: Optional['BendEffect'] = None
+    bend: 'BendEffect | None' = None
     ghostNote: bool = False
-    grace: Optional[GraceEffect] = None
+    grace: GraceEffect | None = None
     hammer: bool = False
-    harmonic: Optional[HarmonicEffect] = None
+    harmonic: HarmonicEffect | None = None
     heavyAccentuatedNote: bool = False
     leftHandFinger: Fingering = Fingering.open
     letRing: bool = False
@@ -1048,8 +1048,8 @@ class NoteEffect:
     rightHandFinger: Fingering = Fingering.open
     slides: list[SlideType] = attr.Factory(list)
     staccato: bool = False
-    tremoloPicking: Optional[TremoloPickingEffect] = None
-    trill: Optional[TrillEffect] = None
+    tremoloPicking: TremoloPickingEffect | None = None
+    trill: TrillEffect | None = None
     vibrato: bool = False
 
     @property
@@ -1125,24 +1125,24 @@ class Chord:
     """A chord annotation for beats."""
 
     length: int
-    sharp: Optional[bool] = None
-    root: Optional['PitchClass'] = None
-    type: Optional['ChordType'] = None
-    extension: Optional['ChordExtension'] = None
-    bass: Optional['PitchClass'] = None
-    tonality: Optional['ChordAlteration'] = None
-    add: Optional[bool] = None
+    sharp: bool | None = None
+    root: 'PitchClass | None' = None
+    type: 'ChordType | None' = None
+    extension: 'ChordExtension | None' = None
+    bass: 'PitchClass | None' = None
+    tonality: 'ChordAlteration | None' = None
+    add: bool | None = None
     name: str = ''
-    fifth: Optional['ChordAlteration'] = None
-    ninth: Optional['ChordAlteration'] = None
-    eleventh: Optional['ChordAlteration'] = None
-    firstFret: Optional[int] = None
+    fifth: 'ChordAlteration | None' = None
+    ninth: 'ChordAlteration | None' = None
+    eleventh: 'ChordAlteration | None' = None
+    firstFret: int | None = None
     strings: list[int] = attr.Factory(lambda self: [-1] * self.length, takes_self=True)
     barres: list['Barre'] = attr.Factory(list)
     omissions: list[bool] = attr.Factory(list)
     fingerings: list[Fingering] = attr.Factory(list)
-    show: Optional[bool] = None
-    newFormat: Optional[bool] = None
+    show: bool | None = None
+    newFormat: bool | None = None
 
     @property
     def notes(self):
@@ -1287,10 +1287,10 @@ class PitchClass:
     D#
     """
 
-    just: Union[str, int]
-    accidental: Optional[int] = None
-    value: Optional[int] = None
-    intonation: Optional[str] = None
+    just: str | int
+    accidental: int | None = None
+    value: int | None = None
+    intonation: str | None = None
 
     _notes = {
         'sharp': 'C C# D D# E F F# G G# A A# B'.split(),
@@ -1374,18 +1374,18 @@ WahEffect.none = WahEffect(-1)
 class MixTableChange:
     """A MixTableChange describes a change in mix parameters."""
 
-    instrument: Optional[MixTableItem] = None
+    instrument: MixTableItem | None = None
     rse: RSEInstrument = attr.Factory(RSEInstrument)
-    volume: Optional[MixTableItem] = None
-    balance: Optional[MixTableItem] = None
-    chorus: Optional[MixTableItem] = None
-    reverb: Optional[MixTableItem] = None
-    phaser: Optional[MixTableItem] = None
-    tremolo: Optional[MixTableItem] = None
+    volume: MixTableItem | None = None
+    balance: MixTableItem | None = None
+    chorus: MixTableItem | None = None
+    reverb: MixTableItem | None = None
+    phaser: MixTableItem | None = None
+    tremolo: MixTableItem | None = None
     tempoName: str = ''
-    tempo: Optional[MixTableItem] = None
+    tempo: MixTableItem | None = None
     hideTempo: bool = True
-    wah: Optional[WahEffect] = None
+    wah: WahEffect | None = None
     useRSE: bool = False
 
     @property
