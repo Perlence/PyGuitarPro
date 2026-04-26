@@ -72,6 +72,65 @@ def testConversion(tmpdir, source, targetExt):
     assert songA == songB
 
 
+def testNoteAccentuationConversion(tmpdir):
+    filepath = LOCATION / 'Effects.gp5'
+    song = gp.parse(filepath)
+    beats = song.tracks[0].measures[0].voices[0].beats
+    accentuatedNote = beats[3].notes[0]
+    heavyAccentuatedNote = beats[4].notes[0]
+
+    assert accentuatedNote.effect.accentuatedNote is True
+    assert accentuatedNote.effect.heavyAccentuatedNote is False
+    assert heavyAccentuatedNote.effect.accentuatedNote is False
+    assert heavyAccentuatedNote.effect.heavyAccentuatedNote is True
+
+    gp4path = str(tmpdir.join('Effects.gp4'))
+    gp.write(song, gp4path, version=(4, 0, 6))
+    song4 = gp.parse(gp4path)
+    beats4 = song4.tracks[0].measures[0].voices[0].beats
+    accentuatedNote4 = beats4[3].notes[0]
+    heavyAccentuatedNote4 = beats4[4].notes[0]
+
+    assert accentuatedNote4.effect.accentuatedNote is True
+    assert accentuatedNote4.effect.heavyAccentuatedNote is False
+    assert heavyAccentuatedNote4.effect.accentuatedNote is True
+    assert heavyAccentuatedNote4.effect.heavyAccentuatedNote is False
+
+    gp3path = str(tmpdir.join('Effects.gp3'))
+    gp.write(song, gp3path, version=(3, 0, 0))
+    song3 = gp.parse(gp3path)
+    beats3 = song3.tracks[0].measures[0].voices[0].beats
+    accentuatedNote3 = beats3[3].notes[0]
+    heavyAccentuatedNote3 = beats3[4].notes[0]
+
+    assert accentuatedNote3.effect.accentuatedNote is False
+    assert accentuatedNote3.effect.heavyAccentuatedNote is False
+    assert heavyAccentuatedNote3.effect.accentuatedNote is False
+    assert heavyAccentuatedNote3.effect.heavyAccentuatedNote is False
+
+
+def testLegacyAccentuationFlags():
+    song3 = gp.parse(LOCATION / 'Accent-force.gp3')
+    beats3 = song3.tracks[0].measures[0].voices[0].beats
+    accentuatedNote3 = beats3[1].notes[0]
+    heavyAccentuatedNote3 = beats3[2].notes[0]
+
+    assert accentuatedNote3.effect.accentuatedNote is True
+    assert accentuatedNote3.effect.heavyAccentuatedNote is False
+    assert heavyAccentuatedNote3.effect.accentuatedNote is False
+    assert heavyAccentuatedNote3.effect.heavyAccentuatedNote is False
+
+    song4 = gp.parse(LOCATION / 'Accent-force.gp4')
+    beats4 = song4.tracks[0].measures[0].voices[0].beats
+    accentuatedNote4 = beats4[1].notes[0]
+    heavyAccentuatedNote4 = beats4[2].notes[0]
+
+    assert accentuatedNote4.effect.accentuatedNote is True
+    assert accentuatedNote4.effect.heavyAccentuatedNote is False
+    assert heavyAccentuatedNote4.effect.accentuatedNote is False
+    assert heavyAccentuatedNote4.effect.heavyAccentuatedNote is False
+
+
 def testClipboard(tmpdir):
     filepath = LOCATION / '2 whole bars.tmp'
     songA = gp.parse(filepath)

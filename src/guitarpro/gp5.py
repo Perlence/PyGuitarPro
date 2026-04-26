@@ -136,7 +136,7 @@ class GP5File(gp4.GP4File):
         masterEffect = gp.RSEMasterEffect()
         if self.versionTuple > (5, 0, 0):
             masterEffect.volume = self.readI32()
-            self.readI32()  # ???
+            self.readI32()  # reserved
             masterEffect.equalizer = self.readEqualizer(11)
         return masterEffect
 
@@ -1310,6 +1310,8 @@ class GP5File(gp4.GP4File):
         flags = super().packNoteFlags(note)
         if abs(note.durationPercent - 1.0) >= 1e-3:
             flags |= 0x01
+        if note.effect.heavyAccentuatedNote:
+            flags |= 0x02
         return flags
 
     def writeGrace(self, grace):

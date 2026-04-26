@@ -655,7 +655,7 @@ class GP4File(gp3.GP3File):
 
     def packNoteFlags(self, note):
         flags = super().packNoteFlags(note)
-        if note.effect.accentuatedNote:
+        if note.effect.accentuatedNote or self.versionTuple[0] == 4 and note.effect.heavyAccentuatedNote:
             flags |= 0x40
         if note.effect.isFingering:
             flags |= 0x80

@@ -900,6 +900,7 @@ class GP3File(GPFileBase):
         flags = self.readU8()
         note.string = guitarString.number
         note.effect.ghostNote = bool(flags & 0x04)
+        note.effect.accentuatedNote = bool(flags & 0x40)
         if flags & 0x20:
             note.type = gp.NoteType(self.readU8())
         if flags & 0x01:
@@ -1434,8 +1435,6 @@ class GP3File(GPFileBase):
                 flags |= 0x01
         except AttributeError:
             pass
-        if note.effect.heavyAccentuatedNote:
-            flags |= 0x02
         if note.effect.ghostNote:
             flags |= 0x04
         if not note.effect.isDefault:
