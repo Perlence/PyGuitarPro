@@ -415,7 +415,29 @@ class GP5File(gp4.GP4File):
 
         - MIDI bank: :ref:`byte`.
 
-        - Track RSE. See :meth:`readTrackRSE`.
+        - Humanize: :ref:`byte`.
+
+        - Clef transpose: :ref:`int`. Signed clef-related transposition in steps
+          for standard notation. Known values include ``0`` (treble),
+          ``12`` (bass), ``10`` (baritone, F3 is placed on the third line),
+          and ``14`` (subbass, F3 is placed on the fifth line).
+
+        - Clef transpose secondary: :ref:`int`. Usually the same as clef
+          transpose. If they differ, Guitar Pro 5 shows two staves. For example,
+          ``clefTranspose = 0`` and ``clefTransposeSecondary = 12`` is a grand
+          staff.
+
+        - Unknown: :ref:`int`. Usually ``-1`` or ``100``.
+
+        - Unknown space: 12 bytes.
+
+        - RSE instrument. See :meth:`readRSEInstrument`.
+
+        In GuitarPro 5.1, it's followed by:
+
+        - 3-band track equalizer. See :meth:`readEqualizer`.
+
+        - RSE instrument effect. See :meth:`readRSEInstrumentEffect`.
         """
         if track.number == 1 or self.versionTuple == (5, 0, 0):
             # Always 0
@@ -462,32 +484,16 @@ class GP5File(gp4.GP4File):
         track.rse = gp.TrackRSE()
         track.rse.autoAccentuation = gp.Accentuation(self.readU8())
         track.channel.bank = self.readU8()
-        self.readTrackRSE(track.rse)
 
-    def readTrackRSE(self, trackRSE):
-        """Read track RSE.
-
-        In GuitarPro 5.1 track RSE is read as follows:
-
-        - Humanize: :ref:`byte`.
-
-        - Unknown space: 6 :ref:`Ints <int>`.
-
-        - RSE instrument. See :meth:`readRSEInstrument`.
-
-        - 3-band track equalizer. See :meth:`readEqualizer`.
-
-        - RSE instrument effect. See :meth:`readRSEInstrumentEffect`.
-        """
-        trackRSE.humanize = self.readU8()
-        for _ in range(3):
-            self.readI32()  # ???
+        track.rse.humanize = self.readU8()
+        track.clefTranspose = self.readI32()
+        track.clefTransposeSecondary = self.readI32()
+        self.readI32()  # ??? (typically -1 or 100)
         self.skip(12)  # ???
-        trackRSE.instrument = self.readRSEInstrument()
+        track.rse.instrument = self.readRSEInstrument()
         if self.versionTuple > (5, 0, 0):
-            trackRSE.equalizer = self.readEqualizer(4)
-            self.readRSEInstrumentEffect(trackRSE.instrument)
-        return trackRSE
+            track.rse.equalizer = self.readEqualizer(4)
+            self.readRSEInstrumentEffect(track.rse.instrument)
 
     def readRSEInstrument(self):
         """Read RSE instrument.
@@ -1079,7 +1085,7 @@ class GP5File(gp4.GP4File):
         super().writeTracks(tracks)
         self.placeholder(2 if self.versionTuple == (5, 0, 0) else 1)
 
-    def writeTrack(self, track, number):
+    def writeTrack(self, track: gp.Track, number: int) -> None:
         if number == 1 or self.versionTuple == (5, 0, 0):
             self.placeholder(1)
 
@@ -1148,18 +1154,24 @@ class GP5File(gp4.GP4File):
             self.writeU8(0)
         self.writeU8(track.channel.bank)
 
-        self.writeTrackRSE(track.rse)
-
-    def writeTrackRSE(self, trackRSE):
-        self.writeU8(trackRSE.humanize)
-        self.writeI32(0)
-        self.writeI32(0)
+        self.writeU8(track.rse.humanize)
+        self.writeClefTranspose(track, track.clefTranspose)
+        self.writeClefTranspose(track, track.clefTransposeSecondary)
         self.writeI32(100)
         self.placeholder(12)
-        self.writeRSEInstrument(trackRSE.instrument)
+        self.writeRSEInstrument(track.rse.instrument)
         if self.versionTuple > (5, 0, 0):
-            self.writeEqualizer(trackRSE.equalizer)
-            self.writeRSEInstrumentEffect(trackRSE.instrument)
+            self.writeEqualizer(track.rse.equalizer)
+            self.writeRSEInstrumentEffect(track.rse.instrument)
+
+    def writeClefTranspose(self, track: gp.Track, value: int | None) -> None:
+        if value is not None:
+            self.writeI32(value)
+            return
+
+        self.writeI32(12
+                      if track.strings[-1].value < 35  # A#2
+                      else 0)
 
     def writeRSEInstrument(self, instrument):
         self.writeI32(instrument.instrument)

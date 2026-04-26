@@ -72,6 +72,34 @@ def testConversion(tmpdir, source, targetExt):
     assert songA == songB
 
 
+def testClefTransposeConversion(tmpdir):
+    source = LOCATION / 'Clef.gp5'
+    songX = gp.parse(source)
+
+    assert songX.tracks[0].clefTranspose == 0
+    assert songX.tracks[0].clefTransposeSecondary == 0
+    assert songX.tracks[1].clefTranspose == 12
+    assert songX.tracks[1].clefTransposeSecondary == 12
+
+    gp4path = str(tmpdir.join('Clef.gp4'))
+    gp.write(songX, gp4path, version=(4, 0, 6))
+    songY = gp.parse(gp4path)
+
+    assert songY.tracks[0].clefTranspose is None
+    assert songY.tracks[0].clefTransposeSecondary is None
+    assert songY.tracks[1].clefTranspose is None
+    assert songY.tracks[1].clefTransposeSecondary is None
+
+    gp5path = str(tmpdir.join('Clef-roundtrip.gp5'))
+    gp.write(songY, gp5path, version=(5, 1, 0))
+    songZ = gp.parse(gp5path)
+
+    assert songZ.tracks[0].clefTranspose == 0
+    assert songZ.tracks[0].clefTransposeSecondary == 0
+    assert songZ.tracks[1].clefTranspose == 12
+    assert songZ.tracks[1].clefTransposeSecondary == 12
+
+
 def testNoteAccentuationConversion(tmpdir):
     filepath = LOCATION / 'Effects.gp5'
     song = gp.parse(filepath)

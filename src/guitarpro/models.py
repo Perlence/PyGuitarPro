@@ -650,6 +650,11 @@ class Track:
     settings: TrackSettings = attr.Factory(TrackSettings)
     useRSE: bool = False
     rse: TrackRSE = attr.Factory(TrackRSE)
+    #: Signed clef-related transposition in steps. The usual values are
+    #: 0 (treble) and 12 (bass).
+    clefTranspose: int | None = attr.ib(default=None, eq=False)
+    #: Secondary clef-related transposition.
+    clefTransposeSecondary: int | None = attr.ib(default=None, eq=False)
 
 
 @hashableAttrs
