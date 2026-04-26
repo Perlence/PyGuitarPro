@@ -12,8 +12,8 @@ __all__ = [
     'LyricLine', 'Lyrics', 'Point', 'Padding', 'HeaderFooterElements',
     'PageSetup', 'MidiChannel', 'DirectionSign', 'Tuplet', 'Duration',
     'TimeSignature', 'TripletFeel', 'MeasureHeader', 'Color', 'Marker',
-    'TrackSettings', 'Track', 'GuitarString', 'MeasureClef', 'LineBreak',
-    'Measure', 'VoiceDirection', 'Voice', 'BeatStrokeDirection', 'BeatStroke',
+    'TrackSettings', 'Track', 'GuitarString', 'LineBreak', 'Measure',
+    'VoiceDirection', 'Voice', 'BeatStrokeDirection', 'BeatStroke',
     'SlapEffect', 'BeatEffect', 'TupletBracket', 'BeatDisplay', 'Octave',
     'BeatStatus', 'Beat', 'HarmonicEffect', 'NaturalHarmonic',
     'ArtificialHarmonic', 'TappedHarmonic', 'PinchHarmonic', 'SemiHarmonic',
@@ -665,15 +665,6 @@ class GuitarString:
         return f'{notes[semitone]}{octave-1}'
 
 
-class MeasureClef(Enum):
-    """An enumeration of available clefs."""
-
-    treble = 0
-    bass = 1
-    tenor = 2
-    alto = 3
-
-
 class LineBreak(Enum):
     """A line break directive."""
 
@@ -691,7 +682,6 @@ class Measure:
 
     track: Track = attr.ib(hash=False, eq=False, repr=False)
     header: MeasureHeader = attr.ib(hash=False, eq=False, repr=False)
-    clef: MeasureClef = MeasureClef.treble
     voices: list['Voice'] = attr.Factory(lambda self: [Voice(self) for _ in range(self.maxVoices)], takes_self=True)
     lineBreak: LineBreak = LineBreak.none
 
