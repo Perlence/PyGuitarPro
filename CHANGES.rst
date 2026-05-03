@@ -1,6 +1,21 @@
 Changelog
 =========
 
+Version 0.11
+-------------
+
+*2026-05-03*
+
+**Backward-incompatible changes:**
+
+- Remove the unused ``MeasureClef`` enum.
+
+**Changes:**
+
+- Implemented reading and writing the track clef `#57 <https://github.com/Perlence/PyGuitarPro/pull/57>`_.
+- Fixed reading and writing accentuated note effects `#56 <https://github.com/Perlence/PyGuitarPro/pull/56>`_.
+
+
 Version 0.10.2
 -------------
 
