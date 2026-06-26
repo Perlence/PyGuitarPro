@@ -1,3 +1,5 @@
+import io
+import zipfile
 from pathlib import Path
 
 import guitarpro as gp
@@ -75,6 +77,23 @@ def test_parse_zero_padded_stream():
                for m in track.measures
                for v in m.voices
                for b in v.beats)
+
+
+def test_parse_gp7_zip_container():
+    # A GP7 (.gp) file is a ZIP archive with the score at
+    # Content/score.gpif. Repackage a .gpx score into that layout and
+    # confirm it produces the same song.
+    gpif = extractGPIF(SAMPLE.read_bytes())
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr('VERSION', '7.0')
+        archive.writestr('Content/score.gpif', gpif)
+    buf.seek(0)
+
+    song = gp.parse(buf)
+    reference = gp.parse(str(SAMPLE))
+    assert song.title == reference.title
+    assert song == reference
 
 
 def test_parse_counts():
