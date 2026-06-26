@@ -44,6 +44,44 @@ _DYNAMICS = {
 _NOTE_VALUE_NAMES = {value: name for name, value in _NOTE_VALUES.items()}
 _DYNAMIC_NAMES = {velocity: name for name, velocity in _DYNAMICS.items()}
 
+# Note effect encodings, after alphaTab's GpifParser.
+
+# Slide <Property name="Slide"><Flags>N</Flags>: bit -> SlideType.
+_SLIDE_FLAGS = {
+    1: gp.SlideType.shiftSlideTo,
+    2: gp.SlideType.legatoSlideTo,
+    4: gp.SlideType.outDownwards,
+    8: gp.SlideType.outUpwards,
+    16: gp.SlideType.intoFromBelow,
+    32: gp.SlideType.intoFromAbove,
+}
+_SLIDE_BITS = {slide: bit for bit, slide in _SLIDE_FLAGS.items()}
+
+# Note <Accent>N</Accent>: bit -> effect flag.
+_ACCENT_STACCATO = 0x01
+_ACCENT_HEAVY = 0x04
+_ACCENT_NORMAL = 0x08
+
+# LeftFingering / RightFingering text -> Fingering.
+_FINGERING = {
+    'P': gp.Fingering.thumb,
+    'I': gp.Fingering.index,
+    'M': gp.Fingering.middle,
+    'A': gp.Fingering.annular,
+    'C': gp.Fingering.little,
+}
+_FINGERING_NAMES = {finger: name for name, finger in _FINGERING.items()}
+
+# HarmonicType HType -> (HarmonicEffect class, stores a fret value).
+_HARMONICS = {
+    'natural': (gp.NaturalHarmonic, False),
+    'artificial': (gp.ArtificialHarmonic, False),
+    'pinch': (gp.PinchHarmonic, False),
+    'tap': (gp.TappedHarmonic, True),
+    'semi': (gp.SemiHarmonic, False),
+}
+_HARMONIC_NAMES = {cls: name for name, (cls, _) in _HARMONICS.items()}
+
 
 class GPIFParser:
     def __init__(self, data, versionTuple=None):
@@ -208,6 +246,7 @@ class GPIFParser:
             beat = gp.Beat(voice)
             beat.start = start
             beat.duration = self._readDuration(beatElement)
+            beat.text = beatElement.findtext('FreeText') or None
             self._readBeatNotes(beat, beatElement)
             beat.status = gp.BeatStatus.normal if beat.notes else gp.BeatStatus.rest
             voice.beats.append(beat)
@@ -258,7 +297,48 @@ class GPIFParser:
             note.string = int(string.findtext('String') or 0) + 1
         if noteElement.find('Tie') is not None:
             note.type = gp.NoteType.tie
+        self._readNoteEffects(note, noteElement)
         return note
+
+    def _readNoteEffects(self, note, noteElement):
+        effect = note.effect
+
+        accent = noteElement.findtext('Accent')
+        if accent is not None:
+            flags = int(accent)
+            effect.staccato = bool(flags & _ACCENT_STACCATO)
+            effect.heavyAccentuatedNote = bool(flags & _ACCENT_HEAVY)
+            effect.accentuatedNote = bool(flags & _ACCENT_NORMAL)
+
+        left = noteElement.findtext('LeftFingering')
+        if left in _FINGERING:
+            effect.leftHandFinger = _FINGERING[left]
+        right = noteElement.findtext('RightFingering')
+        if right in _FINGERING:
+            effect.rightHandFinger = _FINGERING[right]
+
+        if self._property(noteElement, 'HopoOrigin') is not None:
+            effect.hammer = True
+
+        slide = self._property(noteElement, 'Slide')
+        if slide is not None:
+            flags = int(slide.findtext('Flags') or 0)
+            effect.slides = [slideType
+                             for bit, slideType in _SLIDE_FLAGS.items()
+                             if flags & bit]
+
+        if self._property(noteElement, 'Harmonic') is not None:
+            harmonicType = self._property(noteElement, 'HarmonicType')
+            name = (harmonicType.findtext('HType') if harmonicType is not None else None)
+            entry = _HARMONICS.get((name or '').lower())
+            if entry is not None:
+                cls, hasFret = entry
+                harmonic = cls()
+                if hasFret:
+                    fret = self._property(noteElement, 'HarmonicFret')
+                    if fret is not None:
+                        harmonic.fret = int(float(fret.findtext('HFret') or 0))
+                effect.harmonic = harmonic
 
 
 class GPIFWriter:
@@ -400,6 +480,8 @@ class GPIFWriter:
         if beat.notes:
             velocity = beat.notes[0].velocity
             self._sub(element, 'Dynamic', _DYNAMIC_NAMES.get(velocity, 'F'))
+        if beat.text:
+            self._sub(element, 'FreeText', beat.text)
         rhythmId = self._writeRhythm(beat.duration)
         self._sub(element, 'Rhythm', ref=rhythmId)
         if beat.notes:
@@ -411,15 +493,51 @@ class GPIFWriter:
         noteId = len(self._notes)
         element = ET.Element('Note', id=str(noteId))
         self._notes.append(element)
+        self._writeNoteEffects(element, note)
         properties = self._sub(element, 'Properties')
         fret = self._sub(properties, 'Property', name='Fret')
         self._sub(fret, 'Fret', note.value)
         string = self._sub(properties, 'Property', name='String')
         # The model is 1-based from the highest string; GPIF is 0-based.
         self._sub(string, 'String', note.string - 1)
+        self._writeNoteProperties(properties, note)
         if note.type is gp.NoteType.tie:
             self._sub(element, 'Tie', origin='true')
         return noteId
+
+    def _writeNoteEffects(self, element, note):
+        """Write the note effects that are direct children of <Note>."""
+        effect = note.effect
+        if effect.leftHandFinger in _FINGERING_NAMES:
+            self._sub(element, 'LeftFingering', _FINGERING_NAMES[effect.leftHandFinger])
+        if effect.rightHandFinger in _FINGERING_NAMES:
+            self._sub(element, 'RightFingering', _FINGERING_NAMES[effect.rightHandFinger])
+        flags = ((_ACCENT_STACCATO if effect.staccato else 0)
+                 | (_ACCENT_HEAVY if effect.heavyAccentuatedNote else 0)
+                 | (_ACCENT_NORMAL if effect.accentuatedNote else 0))
+        if flags:
+            self._sub(element, 'Accent', flags)
+
+    def _writeNoteProperties(self, properties, note):
+        """Write the note effects stored under <Properties>."""
+        effect = note.effect
+        if effect.hammer:
+            hopo = self._sub(properties, 'Property', name='HopoOrigin')
+            self._sub(hopo, 'Enable')
+        if effect.slides:
+            flags = sum(_SLIDE_BITS[s] for s in effect.slides if s in _SLIDE_BITS)
+            slide = self._sub(properties, 'Property', name='Slide')
+            self._sub(slide, 'Flags', flags)
+        if effect.harmonic is not None:
+            name = _HARMONIC_NAMES.get(type(effect.harmonic))
+            if name is not None:
+                enable = self._sub(properties, 'Property', name='Harmonic')
+                self._sub(enable, 'Enable')
+                htype = self._sub(properties, 'Property', name='HarmonicType')
+                self._sub(htype, 'HType', name.capitalize())
+                fret = getattr(effect.harmonic, 'fret', None)
+                hfret = self._sub(properties, 'Property', name='HarmonicFret')
+                self._sub(hfret, 'HFret', f'{float(fret if fret is not None else note.value):.6f}')
 
     def _writeRhythm(self, duration):
         key = (duration.value, duration.isDotted,

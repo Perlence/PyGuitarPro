@@ -11,8 +11,11 @@ Unreleased
   ``score.gpif`` document into the ``Song`` model; ``guitarpro.write`` rebuilds
   the container when given ``version=(6, 0, 0)`` / ``(7, 0, 0)`` or a ``.gpx`` /
   ``.gp`` extension. Coverage is the core musical content (song info, tracks,
-  tunings, measures, voices, beats, durations and notes); advanced effects are
-  not yet translated.
+  tunings, measures, voices, beats, durations and notes).
+- Added GP6/GP7 note effects: hammer-on/pull-off, slides, harmonics (natural,
+  artificial, pinch, tap, semi), left/right-hand fingering, accentuation
+  (accent, heavy accent, staccato) and beat text. Bends, grace notes and
+  chord diagrams are not yet translated.
 
 
 Version 0.11
