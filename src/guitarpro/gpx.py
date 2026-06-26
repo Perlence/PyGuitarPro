@@ -36,6 +36,10 @@ class _BitReader:
         self.bit = 0
 
     def readBit(self):
+        # The final byte of the payload is zero-padded; past the end we
+        # keep yielding padding bits so the last token can be decoded.
+        if self.byte >= len(self.data):
+            return 0
         result = (self.data[self.byte] >> (7 - self.bit)) & 1
         self.bit += 1
         if self.bit == 8:

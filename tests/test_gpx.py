@@ -6,6 +6,8 @@ from guitarpro.gpx import decompress, extractGPIF
 
 LOCATION = Path(__file__).parent
 SAMPLE = LOCATION / 'A Simple Song.gpx'
+# Triggers the zero-padded final byte in the BCFZ stream.
+DEAR_SONG = LOCATION / 'Dear Song.gpx'
 
 
 def test_extract_gpif_returns_xml():
@@ -53,6 +55,26 @@ def test_parse_measures_and_beats():
     assert all(b.duration.value == gp.Duration.eighth for b in beats)
     assert beats[0].notes[0].value == 5
     assert beats[0].notes[0].string == 6
+
+
+def test_parse_zero_padded_stream():
+    # The BCFZ payload of this file ends mid-byte, exercising the
+    # zero-padding path in the bit reader.
+    song = gp.parse(str(DEAR_SONG))
+    assert song.title == 'Dear Song'
+    assert song.tempo == 55
+    track = song.tracks[0]
+    assert len(track.measures) == 22
+    # Compound and simple meters both appear.
+    signatures = {(m.timeSignature.numerator, m.timeSignature.denominator.value)
+                  for m in track.measures}
+    assert (3, 8) in signatures
+    assert (6, 8) in signatures
+    # A dotted duration is present.
+    assert any(b.duration.isDotted
+               for m in track.measures
+               for v in m.voices
+               for b in v.beats)
 
 
 def test_parse_counts():
