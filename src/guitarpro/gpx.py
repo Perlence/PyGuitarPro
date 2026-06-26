@@ -24,7 +24,7 @@ import zipfile
 from .gpif import GPIFParser, GPIFWriter
 from .models import GPException
 
-__all__ = ('GPXFile', 'decompress', 'compress', 'extractGPIF', 'buildGPX', 'buildGP')
+__all__ = ('GPXFile', 'decompress', 'compress', 'extractGPIF')
 
 _HEADER_BCFS = b'BCFS'
 _HEADER_BCFZ = b'BCFZ'
@@ -197,7 +197,11 @@ def extractGPIF(data):
     if data[:4] == _HEADER_BCFZ:
         data = decompress(data[4:])
     if data[:4] == _HEADER_BCFS:
-        return GPXFileSystem(data).read('score.gpif')
+        files = GPXFileSystem(data).files
+        try:
+            return files['score.gpif']
+        except KeyError:
+            raise GPException('no score.gpif found in GP6 container')
     raise GPException('not a Guitar Pro 6/7 container')
 
 

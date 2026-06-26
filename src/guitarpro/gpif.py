@@ -363,9 +363,9 @@ class GPIFWriter:
                     attrib['end'] = 'true'
                     attrib['count'] = str(header.repeatClose)
                 self._sub(masterBar, 'Repeat', **attrib)
+            # One bar per track; every track has a measure per header.
             barIds = [self._writeBar(track.measures[measureIndex])
-                      for track in self.song.tracks
-                      if measureIndex < len(track.measures)]
+                      for track in self.song.tracks]
             self._sub(masterBar, 'Bars', ' '.join(str(i) for i in barIds))
 
     def _writeBar(self, measure):

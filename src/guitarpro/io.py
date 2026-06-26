@@ -1,3 +1,4 @@
+import io
 import os
 
 from .iobase import GPFileBase
@@ -98,6 +99,9 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
         filename = getattr(fp, 'name', '<file>')
 
     if mode == 'rb':
+        if not (hasattr(fp, 'seekable') and fp.seekable()):
+            # The magic peek below needs to rewind; buffer non-seekable streams.
+            fp = io.BytesIO(fp.read())
         magic = fp.read(4)
         fp.seek(0)
         if magic in _GPX_MAGICS:

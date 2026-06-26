@@ -98,6 +98,30 @@ def test_parse_gp7_zip_container():
     assert song == reference
 
 
+def test_parse_non_seekable_stream():
+    class NonSeekable:
+        def __init__(self, data):
+            self._stream = io.BytesIO(data)
+
+        def read(self, size=-1):
+            return self._stream.read(size)
+
+        def seekable(self):
+            return False
+
+    song = gp.parse(NonSeekable(SAMPLE.read_bytes()))
+    assert song.title == 'A Simple Song'
+
+
+def test_missing_score_raises():
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w') as archive:
+        archive.writestr('VERSION', '7.0')
+    buf.seek(0)
+    with pytest.raises(gp.GPException):
+        gp.parse(buf)
+
+
 def test_compress_decompress_roundtrip():
     from guitarpro.gpx import compress, decompress
     gpif = extractGPIF(SAMPLE.read_bytes())
