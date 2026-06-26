@@ -130,6 +130,18 @@ def test_compress_decompress_roundtrip():
         assert decompress(compress(payload)) == payload
 
 
+def test_decompress_stops_at_end_of_stream():
+    # The declared length is only an upper bound; real GP6 streams end before
+    # reaching it. Decompression must stop at end-of-stream rather than loop
+    # forever on the zero-padded tail.
+    import struct
+    from guitarpro.gpx import compress, decompress
+    payload = b'the quick brown fox ' * 4
+    blob = bytearray(compress(payload))
+    struct.pack_into('<i', blob, 0, 10 ** 7)  # inflate the declared length
+    assert decompress(bytes(blob)) == payload
+
+
 @pytest.mark.parametrize('sample', [SAMPLE, DEAR_SONG])
 def test_write_gpx_roundtrip(tmp_path, sample):
     song = gp.parse(str(sample))
