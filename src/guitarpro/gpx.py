@@ -31,6 +31,10 @@ _HEADER_BCFZ = b'BCFZ'
 _SECTOR_SIZE = 0x1000
 
 
+class _EndOfStream(Exception):
+    """Raised when the BCFZ bitstream is exhausted."""
+
+
 class _BitReader:
     """Reads individual bits from a byte string, most significant first."""
 
@@ -40,10 +44,8 @@ class _BitReader:
         self.bit = 0
 
     def readBit(self):
-        # The final byte of the payload is zero-padded; past the end we
-        # keep yielding padding bits so the last token can be decoded.
         if self.byte >= len(self.data):
-            return 0
+            raise _EndOfStream
         result = (self.data[self.byte] >> (7 - self.bit)) & 1
         self.bit += 1
         if self.bit == 8:
@@ -75,21 +77,26 @@ def decompress(data):
     expectedLength, = struct.unpack_from('<i', data, 0)
     reader = _BitReader(data[4:])
     result = bytearray()
-    while len(result) < expectedLength:
-        flag = reader.readBit()
-        if flag:
-            # Back-reference into the already-decompressed output.
-            wordSize = reader.readBits(4)
-            offset = reader.readBitsReversed(wordSize)
-            size = reader.readBitsReversed(wordSize)
-            start = len(result) - offset
-            toRead = min(offset, size)
-            result += result[start:start + toRead]
-        else:
-            # Literal run; bytes flow through the bitstream, not byte-aligned.
-            size = reader.readBitsReversed(2)
-            for _ in range(size):
-                result.append(reader.readBits(8))
+    # expectedLength is an upper bound; the real end is signalled by the
+    # bitstream running out (the final byte is zero-padded), so stop on EOF.
+    try:
+        while len(result) < expectedLength:
+            flag = reader.readBit()
+            if flag:
+                # Back-reference into the already-decompressed output.
+                wordSize = reader.readBits(4)
+                offset = reader.readBitsReversed(wordSize)
+                size = reader.readBitsReversed(wordSize)
+                start = len(result) - offset
+                toRead = min(offset, size)
+                result += result[start:start + toRead]
+            else:
+                # Literal run; bytes flow through the bitstream, not byte-aligned.
+                size = reader.readBitsReversed(2)
+                for _ in range(size):
+                    result.append(reader.readBits(8))
+    except _EndOfStream:
+        pass
     return bytes(result)
 
 
