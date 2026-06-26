@@ -6,9 +6,13 @@ Unreleased
 
 **Changes:**
 
-- Added reading of GP6 (``.gpx``) and GP7 (``.gp``) files. ``guitarpro.parse`` now
-  detects the container format and maps the embedded ``score.gpif`` document into
-  the existing ``Song`` model. Writing these formats is not supported.
+- Added reading and writing of GP6 (``.gpx``) and GP7 (``.gp``) files.
+  ``guitarpro.parse`` detects the container format and maps the embedded
+  ``score.gpif`` document into the ``Song`` model; ``guitarpro.write`` rebuilds
+  the container when given ``version=(6, 0, 0)`` / ``(7, 0, 0)`` or a ``.gpx`` /
+  ``.gp`` extension. Coverage is the core musical content (song info, tracks,
+  tunings, measures, voices, beats, durations and notes); advanced effects are
+  not yet translated.
 
 
 Version 0.11

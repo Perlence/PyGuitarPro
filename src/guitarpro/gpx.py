@@ -9,18 +9,22 @@ Both formats wrap a ``score.gpif`` XML document inside a container:
 * GP7 ``.gp`` -- a plain ZIP archive with the score at
   ``Content/score.gpif``.
 
-This module exposes :class:`GPXFile`, which mirrors the ``readSong``
-interface of the binary readers and delegates the XML-to-:class:`Song`
-mapping to :mod:`guitarpro.gpif`.
+This module exposes :class:`GPXFile`, which mirrors the ``readSong`` and
+``writeSong`` interface of the binary readers and delegates the
+XML-to-:class:`Song` mapping to :mod:`guitarpro.gpif`.
+
+GP6 files can be written as well as read; the container is rebuilt as a
+``BCFZ``-compressed ``BCFS`` archive holding a single ``score.gpif``.  GP7
+files are written as a ZIP archive.
 """
 import io
 import struct
 import zipfile
 
-from .gpif import GPIFParser
+from .gpif import GPIFParser, GPIFWriter
 from .models import GPException
 
-__all__ = ('GPXFile', 'decompress', 'extractGPIF')
+__all__ = ('GPXFile', 'decompress', 'compress', 'extractGPIF', 'buildGPX', 'buildGP')
 
 _HEADER_BCFS = b'BCFS'
 _HEADER_BCFZ = b'BCFZ'
@@ -89,6 +93,62 @@ def decompress(data):
     return bytes(result)
 
 
+class _BitWriter:
+    """Writes individual bits to a byte string, most significant first."""
+
+    def __init__(self):
+        self.out = bytearray()
+        self.current = 0
+        self.count = 0
+
+    def writeBit(self, bit):
+        self.current = (self.current << 1) | (bit & 1)
+        self.count += 1
+        if self.count == 8:
+            self.out.append(self.current)
+            self.current = 0
+            self.count = 0
+
+    def writeBits(self, value, count):
+        """Write *count* bits of *value*, most significant first."""
+        for i in range(count - 1, -1, -1):
+            self.writeBit((value >> i) & 1)
+
+    def writeBitsReversed(self, value, count):
+        """Write *count* bits of *value*, least significant first."""
+        for i in range(count):
+            self.writeBit((value >> i) & 1)
+
+    def writeBytes(self, data):
+        for byte in data:
+            self.writeBits(byte, 8)
+
+    def getvalue(self):
+        if self.count:
+            # Flush the partial final byte, padding the low bits with zeros.
+            self.out.append(self.current << (8 - self.count))
+            self.current = 0
+            self.count = 0
+        return bytes(self.out)
+
+
+def compress(data):
+    """Compress *data* into a ``BCFZ`` payload (length prefix + bitstream).
+
+    The BCFZ scheme allows back-references, but a stream of plain literal
+    runs is equally valid and decodes identically.  Emitting literals only
+    keeps the encoder linear and simple; the modest size overhead (a 3-bit
+    header per three bytes) is acceptable for written files.
+    """
+    writer = _BitWriter()
+    for offset in range(0, len(data), 3):
+        chunk = data[offset:offset + 3]
+        writer.writeBit(0)
+        writer.writeBitsReversed(len(chunk), 2)
+        writer.writeBytes(chunk)
+    return struct.pack('<i', len(data)) + writer.getvalue()
+
+
 class GPXFileSystem:
     """Reads the ``BCFS`` sector archive into a name-to-bytes mapping."""
 
@@ -141,18 +201,81 @@ def extractGPIF(data):
     raise GPException('not a Guitar Pro 6/7 container')
 
 
+def buildBCFS(files):
+    """Build a ``BCFS`` image from a name-to-bytes mapping.
+
+    Layout (in coordinates after the 4-byte ``BCFS`` magic, which is how the
+    reader indexes the image): sector 0 is reserved, one entry sector per file
+    follows, then the file data sectors.  Entry sectors are tagged with type
+    ``2`` and list the absolute indices of their data sectors.
+    """
+    names = list(files)
+    sectors = [bytearray(_SECTOR_SIZE)]  # reserved header sector
+
+    # Assign contiguous data sectors to each file.
+    dataStart = 1 + len(names)
+    cursor = dataStart
+    blockMap = {}
+    dataSectors = []
+    for name in names:
+        payload = files[name]
+        sectorCount = max(1, -(-len(payload) // _SECTOR_SIZE))
+        blockMap[name] = list(range(cursor, cursor + sectorCount))
+        for k in range(sectorCount):
+            chunk = payload[k * _SECTOR_SIZE:(k + 1) * _SECTOR_SIZE]
+            dataSectors.append(chunk + b'\x00' * (_SECTOR_SIZE - len(chunk)))
+        cursor += sectorCount
+
+    # Entry sectors.
+    for name in names:
+        entry = bytearray(_SECTOR_SIZE)
+        struct.pack_into('<i', entry, 0x00, 2)
+        encoded = name.encode('cp1252')[:127]
+        entry[0x04:0x04 + len(encoded)] = encoded
+        struct.pack_into('<i', entry, 0x8C, len(files[name]))
+        for index, block in enumerate(blockMap[name]):
+            struct.pack_into('<i', entry, 0x94 + 4 * index, block)
+        sectors.append(entry)
+
+    sectors.extend(bytearray(s) for s in dataSectors)
+    return _HEADER_BCFS + b''.join(bytes(s) for s in sectors)
+
+
+def buildGPX(song):
+    """Serialize *song* into GP6 (``.gpx``) container bytes."""
+    gpif = GPIFWriter(song).write()
+    image = buildBCFS({'score.gpif': gpif})
+    return _HEADER_BCFZ + compress(image)
+
+
+def buildGP(song):
+    """Serialize *song* into GP7 (``.gp``) ZIP container bytes."""
+    gpif = GPIFWriter(song).write()
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr('VERSION', '7.0')
+        archive.writestr('Content/score.gpif', gpif)
+    return buffer.getvalue()
+
+
 class GPXFile:
-    """Wraps a GP6/GP7 container and produces a :class:`Song`."""
+    """Wraps a GP6/GP7 container, reading or writing a :class:`Song`."""
 
     def __init__(self, fp, encoding=None, version=None, versionTuple=None):
-        self.data = fp.read()
+        self.fp = fp
         self.encoding = encoding
         self.version = version
         self.versionTuple = versionTuple
 
     def readSong(self):
-        gpif = extractGPIF(self.data)
+        gpif = extractGPIF(self.fp.read())
         return GPIFParser(gpif, versionTuple=self.versionTuple).readSong()
+
+    def writeSong(self, song):
+        if self.version == 'gp':
+            self.fp.write(buildGP(song))
+        else:
+            self.fp.write(buildGPX(song))
 
     def close(self):
         pass

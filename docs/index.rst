@@ -4,7 +4,7 @@ PyGuitarPro
 ===========
 
 PyGuitarPro is a package to read, write and manipulate GP3, GP4 and GP5 files. GP6 (``.gpx``) and GP7 (``.gp``) files
-can also be read. Initially PyGuitarPro is a Python port
+can also be read and written. Initially PyGuitarPro is a Python port
 of `AlphaTab <https://www.alphatab.net/>`_ which is a Haxe port of `TuxGuitar <https://tuxguitar.herac.com.ar/>`_.
 
 To anyone wanting to create their own the best guitar tablature editor in Python this package will be the good thing to

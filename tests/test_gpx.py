@@ -2,6 +2,8 @@ import io
 import zipfile
 from pathlib import Path
 
+import pytest
+
 import guitarpro as gp
 from guitarpro.gpx import decompress, extractGPIF
 
@@ -94,6 +96,43 @@ def test_parse_gp7_zip_container():
     reference = gp.parse(str(SAMPLE))
     assert song.title == reference.title
     assert song == reference
+
+
+def test_compress_decompress_roundtrip():
+    from guitarpro.gpx import compress, decompress
+    gpif = extractGPIF(SAMPLE.read_bytes())
+    assert decompress(compress(gpif)) == gpif
+    for payload in (b'', b'A', b'ABC', b'\x00\x00\x00\x00', bytes(range(256)) * 8):
+        assert decompress(compress(payload)) == payload
+
+
+@pytest.mark.parametrize('sample', [SAMPLE, DEAR_SONG])
+def test_write_gpx_roundtrip(tmp_path, sample):
+    song = gp.parse(str(sample))
+    dest = tmp_path / 'out.gpx'
+    gp.write(song, str(dest), version=(6, 0, 0))
+    assert dest.read_bytes()[:4] == b'BCFZ'
+    reparsed = gp.parse(str(dest))
+    assert song == reparsed
+    assert hash(song) == hash(reparsed)
+
+
+def test_write_gp7_roundtrip(tmp_path):
+    song = gp.parse(str(SAMPLE))
+    dest = tmp_path / 'out.gp'
+    gp.write(song, str(dest), version=(7, 0, 0))
+    assert dest.read_bytes()[:2] == b'PK'
+    reparsed = gp.parse(str(dest))
+    assert song == reparsed
+
+
+def test_write_dispatches_by_extension(tmp_path):
+    song = gp.parse(str(SAMPLE))
+    for ext, magic in (('gpx', b'BCFZ'), ('gp', b'PK')):
+        dest = tmp_path / f'out.{ext}'
+        gp.write(song, str(dest))  # no explicit version
+        assert dest.read_bytes()[:len(magic)] == magic
+        assert gp.parse(str(dest)) == song
 
 
 def test_parse_counts():

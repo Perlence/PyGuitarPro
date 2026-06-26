@@ -106,6 +106,10 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
         gpfilebase = GPFileBase(fp, encoding)
         versionString = gpfilebase.readVersion()
     elif mode == 'wb':
+        gpxFormat = _gpxFormat(version, filename)
+        if gpxFormat is not None:
+            gpfile = GPXFile(fp, encoding, version=gpxFormat)
+            return gpfile, shouldClose
         isClipboard = song.clipboard is not None
         if version is None:
             version = song.versionTuple
@@ -123,6 +127,17 @@ def getVersionAndGPFile(versionString):
         return _GPFILES[versionString]
     except KeyError:
         raise GPException(f"unsupported version '{versionString}'")
+
+
+def _gpxFormat(version, filename):
+    """Return ``'gpx'``/``'gp'`` if *version* or *filename* targets GP6/GP7."""
+    if version is not None:
+        return {(6, 0, 0): 'gpx', (7, 0, 0): 'gp'}.get(tuple(version))
+    __, ext = os.path.splitext(filename)
+    ext = ext.lstrip('.').lower()
+    if ext in ('gpx', 'gp'):
+        return ext
+    return None
 
 
 def guessVersionByExtension(filename):
