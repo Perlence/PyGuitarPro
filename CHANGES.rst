@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+**Changes:**
+
+- Added reading of GP6 (``.gpx``) and GP7 (``.gp``) files. ``guitarpro.parse`` now
+  detects the container format and maps the embedded ``score.gpif`` document into
+  the existing ``Song`` model. Writing these formats is not supported.
+
+
 Version 0.11
 -------------
 

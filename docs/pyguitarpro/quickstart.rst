@@ -36,7 +36,8 @@ Functions :func:`guitarpro.parse` and :func:`guitarpro.write` support not only f
 
 .. note::
 
-   PyGuitarPro supports only GP3, GP4 and GP5 files. Support for GPX (Guitar Pro 6) files is out of scope of the
-   project.
+   PyGuitarPro reads and writes GP3, GP4 and GP5 files. GP6 (``.gpx``) and GP7 (``.gp``) files can be read but not
+   written; their parsing covers the core musical content (song info, tracks, tunings, measures, voices, beats,
+   durations and notes) but not yet every advanced effect.
 
 .. vim: tw=120 cc=121

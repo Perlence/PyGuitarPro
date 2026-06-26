@@ -4,6 +4,7 @@ from .iobase import GPFileBase
 from .gp3 import GP3File
 from .gp4 import GP4File
 from .gp5 import GP5File
+from .gpx import GPXFile
 from .models import GPException, Song
 
 __all__ = ('parse', 'write')
@@ -45,6 +46,9 @@ _EXT_VERSIONS = {
     'gp5': (5, 1, 0),
     'tmp': (5, 2, 0),
 }
+
+#: Magic numbers of the GP6 (``.gpx``) and GP7 (``.gp``) container formats.
+_GPX_MAGICS = (b'BCFZ', b'BCFS', b'PK\x03\x04')
 
 
 def parse(stream, encoding='cp1252') -> Song:
@@ -94,6 +98,11 @@ def _open(song, stream, mode='rb', version=None, encoding=None):
         filename = getattr(fp, 'name', '<file>')
 
     if mode == 'rb':
+        magic = fp.read(4)
+        fp.seek(0)
+        if magic in _GPX_MAGICS:
+            gpfile = GPXFile(fp, encoding)
+            return gpfile, shouldClose
         gpfilebase = GPFileBase(fp, encoding)
         versionString = gpfilebase.readVersion()
     elif mode == 'wb':
