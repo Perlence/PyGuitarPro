@@ -11,4 +11,4 @@ docs:
     uv run --no-default-groups --group docs sphinx-build -M html docs/ docs/_build
 
 docs-serve:
-    uv run --no-default-groups --group docs --with sphinx-autobuild sphinx-autobuild -M html docs/ docs/_build
+    uv run --no-default-groups --group docs-serve sphinx-autobuild -M html docs/ docs/_build

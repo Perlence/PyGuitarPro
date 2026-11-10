@@ -30,6 +30,10 @@ docs = [
     "sphinx>=7.4.7",
     "sphinx-rtd-theme>=3.0.2",
 ]
+docs-serve = [
+    {include-group = "docs"},
+    "sphinx-autobuild>=2024.10.3",
+]
 pre-commit = [
     "pre-commit>=4.3.0",
     "pre-commit-uv>=4.1.5",
