@@ -41,6 +41,9 @@ tests = [
 [tool.uv]
 default-groups = ["pre-commit", "tests"]
 
+[tool.uv.dependency-groups]
+pre-commit = {requires-python = ">=3.11"}
+
 [project.urls]
 Documentation = "https://pyguitarpro.readthedocs.io/"
 "Source code" = "https://github.com/Perlence/PyGuitarPro"
